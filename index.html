@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===================== RESET & BASE ===================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #FF4600;
+    --primary-hover: #E33400;
+    --primary-light: #FFF0EB;
+    --primary-subtle: #FFF7F5;
+
+    --gray-0: #FFFFFF;
+    --gray-50: #FAFAF9;
+    --gray-100: #F4F3F1;
+    --gray-200: #E8E6E3;
+    --gray-300: #D1CEC9;
+    --gray-400: #A8A49E;
+    --gray-500: #787470;
+    --gray-600: #524F4B;
+    --gray-700: #3A3835;
+    --gray-800: #252320;
+    --gray-900: #141311;
+
+    --border: #E8E6E3;
+    --border-strong: #D1CEC9;
+    --text-primary: #141311;
+    --text-secondary: #524F4B;
+    --text-tertiary: #A8A49E;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+
+    --font: 'Geist', -apple-system, sans-serif;
+    --font-mono: 'Geist Mono', monospace;
+
+    --sidebar-w: 220px;
+    --header-h: 52px;
+
+    --transition: 150ms ease;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: var(--gray-50);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===================== LAYOUT ===================== */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--gray-0);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .sidebar-logo .logo-mark {
+    width: 24px; height: 24px;
+    background: var(--primary);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sidebar-logo .logo-mark svg { width: 14px; height: 14px; }
+  .sidebar-logo .logo-text {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .nav-section {
+    padding: 16px 12px 4px;
+  }
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 0 4px;
+    margin-bottom: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 400;
+    transition: background var(--transition), color var(--transition);
+    user-select: none;
+    text-decoration: none;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
+  .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+  .nav-item .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-sub {
+    margin-left: 24px;
+    margin-top: 1px;
+  }
+  .nav-sub .nav-item {
+    font-size: 12px;
+    padding: 4px 8px;
+    color: var(--text-tertiary);
+  }
+  .nav-sub .nav-item:hover { color: var(--text-secondary); }
+  .nav-sub .nav-item.active { color: var(--primary); }
+
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    background: var(--gray-50);
+  }
+  .user-avatar {
+    width: 28px; height: 28px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--primary);
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 12px; font-weight: 500; color: var(--text-primary); truncate: ellipsis; }
+  .user-role { font-size: 11px; color: var(--text-tertiary); }
+  .logout-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition);
+  }
+  .logout-btn:hover { color: var(--text-primary); }
+
+  /* MAIN */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* TOPBAR */
+  #topbar {
+    height: var(--header-h);
+    background: var(--gray-0);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* CONTENT */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  /* ===================== COMPONENTS ===================== */
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary { background: var(--gray-0); color: var(--text-primary); border-color: var(--border-strong); }
+  .btn-secondary:hover { background: var(--gray-100); }
+  .btn-ghost { background: transparent; color: var(--text-secondary); }
+  .btn-ghost:hover { background: var(--gray-100); color: var(--text-primary); }
+  .btn-danger { background: transparent; color: #C0392B; border-color: #F5C6C2; }
+  .btn-danger:hover { background: #FEF2F1; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn-lg { height: 38px; padding: 0 16px; font-size: 14px; }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* Inputs */
+  .input {
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--gray-0);
+    outline: none;
+    transition: border-color var(--transition);
+    width: 100%;
+  }
+  .input:focus { border-color: var(--primary); }
+  .input::placeholder { color: var(--text-tertiary); }
+
+  .select {
+    height: 32px;
+    padding: 0 28px 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+  }
+  .select:focus { border-color: var(--primary); }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+  }
+  .badge-orange { background: var(--primary-light); color: var(--primary); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+  .badge-green { background: #EDFCF2; color: #1A7F3C; }
+  .badge-new { background: #FFF3E0; color: #E65100; }
+
+  /* Cards */
+  .card {
+    background: var(--gray-0);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .card-body { padding: 16px; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 40px; height: 40px;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+  }
+  .empty-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+  .empty-desc { font-size: 13px; color: var(--text-tertiary); }
+
+  /* Loading */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  #toast-container {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 9999;
+    pointer-events: none;
+  }
+  .toast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--gray-800);
+    color: white;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.2s ease;
+    pointer-events: all;
+    max-width: 320px;
+  }
+  .toast.success { background: #1A7F3C; }
+  .toast.error { background: #C0392B; }
+  @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--gray-0);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 14px; font-weight: 600; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 2px; }
+  .modal-close:hover { color: var(--text-primary); }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+  /* ===================== LOGIN ===================== */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: var(--gray-50);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500;
+  }
+  .login-box {
+    width: 360px;
+    background: var(--gray-0);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 28px;
+  }
+  .login-logo-mark {
+    width: 28px; height: 28px;
+    background: var(--primary);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .login-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--text-tertiary); margin-bottom: 24px; }
+  .login-form .form-group { margin-bottom: 12px; }
+  .login-form .input { height: 36px; }
+  .login-remember {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-secondary);
+    margin: 12px 0;
+    cursor: pointer;
+  }
+  .login-remember input { accent-color: var(--primary); }
+  .login-submit { width: 100%; height: 36px; font-size: 13px; }
+
+  /* ===================== COMPANY GRID ===================== */
+  .page-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+  .page-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .page-desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* Company section */
+  .company-section { margin-bottom: 32px; }
+  .company-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .company-name-label {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .company-idx {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+
+  /* Type scroll row */
+  .type-scroll {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .type-scroll::-webkit-scrollbar { display: none; }
+
+  /* Type card */
+  .type-card {
+    flex-shrink: 0;
+    width: 180px;
+    background: var(--gray-0);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .type-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .type-card-thumb {
+    height: 120px;
+    background: var(--gray-100);
+    overflow: hidden;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .type-card-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  .type-card:hover .type-card-thumb img { transform: scale(1.03); }
+  .type-card-thumb .no-img {
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .type-card-info { padding: 10px 12px; }
+  .type-card-subtype { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
+  .type-card-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .type-card-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 6px;
+  }
+  .type-card-count { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+
+  /* ===================== SUBTYPE VIEW ===================== */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-tertiary);
+    cursor: pointer; border: none; background: none;
+    padding: 0; margin-bottom: 16px;
+    transition: color var(--transition);
+  }
+  .back-btn:hover { color: var(--text-primary); }
+
+  .screen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .screen-item {
+    background: var(--gray-0);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    position: relative;
+  }
+  .screen-item:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .screen-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+  .screen-thumb {
+    width: 100%; aspect-ratio: 9/19;
+    background: var(--gray-100);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .screen-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .screen-thumb .no-img { font-size: 10px; color: var(--text-tertiary); }
+  .screen-info { padding: 6px 8px; }
+  .screen-order {
+    font-size: 10px; font-family: var(--font-mono);
+    color: var(--text-tertiary); margin-bottom: 2px;
+  }
+  .screen-type-name { font-size: 11px; font-weight: 500; color: var(--text-primary); line-height: 1.3; }
+  .screen-select-check {
+    position: absolute; top: 6px; left: 6px;
+    width: 18px; height: 18px;
+    background: var(--primary);
+    border-radius: 3px;
+    display: none; align-items: center; justify-content: center;
+  }
+  .screen-item.selected .screen-select-check { display: flex; }
+
+  /* Version tabs */
+  .version-tabs {
+    display: flex; gap: 4px;
+    margin-bottom: 16px;
+    background: var(--gray-100);
+    padding: 3px;
+    border-radius: var(--radius-md);
+    width: fit-content;
+  }
+  .version-tab {
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; border: none; background: none;
+    color: var(--text-secondary);
+    transition: background var(--transition), color var(--transition);
+    font-family: var(--font-mono);
+  }
+  .version-tab.active { background: var(--gray-0); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+  /* Change summary */
+  .change-summary {
+    background: var(--primary-subtle);
+    border: 1px solid #FFD0C0;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .change-summary-title {
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .change-row { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+  .change-tag {
+    font-size: 10px; font-weight: 600; font-family: var(--font-mono);
+    padding: 1px 5px; border-radius: 2px;
+  }
+  .change-tag.moved { background: #FFF3E0; color: #E65100; }
+  .change-tag.added { background: #EDFCF2; color: #1A7F3C; }
+  .change-tag.removed { background: #FEF2F1; color: #C0392B; }
+
+  /* ===================== SCREEN DETAIL ===================== */
+  .detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+  }
+  .detail-img-wrap {
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 400px;
+  }
+  .detail-img-wrap img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+  .detail-meta { }
+  .detail-meta-row {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .detail-meta-label { font-size: 11px; color: var(--text-tertiary); }
+  .detail-meta-value { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  .flow-strip {
+    margin-top: 20px;
+  }
+  .flow-strip-title { font-size: 12px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
+  .flow-items {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding-bottom: 4px; scrollbar-width: none;
+  }
+  .flow-items::-webkit-scrollbar { display: none; }
+  .flow-item {
+    flex-shrink: 0; width: 72px; cursor: pointer;
+    border-radius: var(--radius-md); overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color var(--transition);
+  }
+  .flow-item:hover { border-color: var(--gray-300); }
+  .flow-item.current { border-color: var(--primary); }
+  .flow-item-thumb {
+    height: 52px; background: var(--gray-100);
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .flow-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .flow-item-num {
+    font-size: 10px; font-family: var(--font-mono);
+    color: var(--text-tertiary); text-align: center; padding: 3px;
+    background: var(--gray-0);
+  }
+  .flow-item.current .flow-item-num { color: var(--primary); }
+
+  /* ===================== COMPARE ===================== */
+  .compare-setup {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .compare-slot {
+    background: var(--gray-0);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    min-height: 200px;
+  }
+  .compare-slot.filled { border-style: solid; border-color: var(--border); }
+  .compare-slot-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-bottom: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .compare-slot-name { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+  .compare-slot-meta { font-size: 12px; color: var(--text-tertiary); }
+
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .compare-col { }
+  .compare-col-header {
+    padding: 10px 12px;
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    font-size: 12px; font-weight: 500;
+  }
+
+  /* ===================== UPLOAD ===================== */
+  .upload-zone {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    background: var(--gray-0);
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-subtle); }
+  .upload-zone-icon { margin-bottom: 12px; color: var(--text-tertiary); }
+  .upload-zone-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .upload-zone-sub { font-size: 12px; color: var(--text-tertiary); }
+
+  .upload-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .upload-preview-item {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--gray-0);
+  }
+  .upload-preview-thumb {
+    width: 100%; aspect-ratio: 9/19;
+    background: var(--gray-100);
+    overflow: hidden;
+  }
+  .upload-preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .upload-preview-info { padding: 6px 8px; }
+  .upload-preview-name { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
+  .upload-preview-status { font-size: 10px; }
+  .upload-preview-status.uploading { color: #1A7F3C; }
+  .upload-preview-status.done { color: var(--text-tertiary); }
+  .upload-preview-status.error { color: #C0392B; }
+  .upload-preview-remove {
+    position: absolute; top: 4px; right: 4px;
+    width: 18px; height: 18px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%; border: none; cursor: pointer;
+    color: white; font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Step indicator */
+  .steps {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 24px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-tertiary);
+  }
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+  .step.active .step-num { background: var(--primary); border-color: var(--primary); color: white; }
+  .step.active { color: var(--text-primary); font-weight: 500; }
+  .step.done .step-num { background: #1A7F3C; border-color: #1A7F3C; color: white; }
+  .step-divider { width: 24px; height: 1px; background: var(--border); margin: 0 4px; }
+
+  /* ===================== FUNCTION VIEW ===================== */
+  .screen-type-nav {
+    width: 180px; min-width: 180px;
+    overflow-y: auto;
+  }
+  .screen-type-nav-item {
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    font-size: 12px; cursor: pointer;
+    color: var(--text-secondary);
+    transition: background var(--transition), color var(--transition);
+    border: none; background: none;
+    width: 100%; text-align: left;
+  }
+  .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
+  .screen-type-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+  .screen-type-section { margin-bottom: 8px; }
+  .screen-type-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 6px 10px 3px; }
+
+  .function-layout {
+    display: flex; gap: 16px;
+  }
+  .function-main { flex: 1; min-width: 0; }
+  .company-filter-chips {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .chip {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--gray-0);
+    color: var(--text-secondary);
+    transition: all var(--transition);
+  }
+  .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+  /* Drag handle */
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-tertiary);
+    padding: 2px;
+    display: flex; align-items: center;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* Table */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th {
+    text-align: left; padding: 8px 12px;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    background: var(--gray-50);
+  }
+  .table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: var(--gray-50); }
+
+  /* ===================== PAGES ===================== */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Order change modal radio */
+  .radio-group { display: flex; flex-direction: column; gap: 10px; }
+  .radio-option {
+    display: flex; gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+  }
+  .radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
+  .radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
+  .radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
+  .radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
+
+  /* ===================== CHANGE PASSWORD ===================== */
+  #change-pw-screen {
+    position: fixed; inset: 0;
+    background: var(--gray-50);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 400;
+  }
+  .change-pw-box {
+    width: 360px;
+    background: var(--gray-0);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="5" height="5" rx="1" fill="white"/>
+          <rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/>
+          <rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/>
+          <rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="login-logo-text">UX Archive</span>
+    </div>
+    <div class="login-title">로그인</div>
+    <div class="login-sub">사번과 비밀번호를 입력해주세요</div>
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label">사번</label>
+        <input class="input" type="text" id="login-id" placeholder="사번 입력" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input class="input" type="password" id="login-pw" placeholder="비밀번호 입력" autocomplete="current-password">
+      </div>
+      <label class="login-remember">
+        <input type="checkbox" id="login-remember"> 24시간 로그인 유지
+      </label>
+      <button class="btn btn-primary login-submit" onclick="doLogin()">로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD -->
+<div id="change-pw-screen" style="display:none">
+  <div class="change-pw-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg>
+      </div>
+      <span class="login-logo-text">UX Archive</span>
+    </div>
+    <div class="login-title">비밀번호 변경</div>
+    <div class="login-sub" style="margin-bottom:20px">최초 로그인입니다. 비밀번호를 변경해주세요.</div>
+    <div class="form-group">
+      <label class="form-label">현재 비밀번호</label>
+      <input class="input" type="password" id="cpw-current" placeholder="현재 비밀번호">
+    </div>
+    <div class="form-group">
+      <label class="form-label">새 비밀번호</label>
+      <input class="input" type="password" id="cpw-new" placeholder="새 비밀번호 (8자 이상)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">새 비밀번호 확인</label>
+      <input class="input" type="password" id="cpw-confirm" placeholder="새 비밀번호 재입력">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="doChangePassword()">변경하기</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg>
+      </div>
+      <span class="logo-text">UX Archive</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">조회</div>
+        <button class="nav-item active" id="nav-company" onclick="navigate('company')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          기업별 조회
+        </button>
+        <button class="nav-item" id="nav-function" onclick="navigate('function')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+          기능별 조회
+        </button>
+        <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>
+          화면 비교
+        </button>
+      </div>
+
+      <div class="nav-section" id="admin-nav" style="display:none">
+        <div class="nav-section-label">관리자</div>
+        <button class="nav-item" id="nav-upload" onclick="navigate('upload')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V3M5 6l3-3 3 3M3 13h10"/></svg>
+          화면 업로드
+        </button>
+        <button class="nav-item" id="nav-master" onclick="navigate('master')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 6v4M8 10h.01"/></svg>
+          마스터 관리
+        </button>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name-display">-</div>
+          <div class="user-role" id="user-role-display">-</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="로그아웃">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="topbar">
+      <div class="topbar-title" id="topbar-title">기업별 조회</div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+
+    <div id="content">
+      <!-- 기업별 조회 -->
+      <div class="page active" id="page-company">
+        <div id="company-view"></div>
+      </div>
+
+      <!-- 기능별 조회 -->
+      <div class="page" id="page-function">
+        <div class="function-layout">
+          <div class="screen-type-nav" id="screen-type-nav"></div>
+          <div class="function-main">
+            <div class="company-filter-chips" id="company-chips"></div>
+            <div id="function-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 화면 비교 -->
+      <div class="page" id="page-compare">
+        <div id="compare-view"></div>
+      </div>
+
+      <!-- 업로드 -->
+      <div class="page" id="page-upload">
+        <div id="upload-view"></div>
+      </div>
+
+      <!-- 마스터 관리 -->
+      <div class="page" id="page-master">
+        <div id="master-view"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER CHANGE MODAL -->
+<div id="order-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">순서 변경</div>
+      <button class="modal-close" onclick="closeOrderModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">순서 변경 유형을 선택해주세요.</p>
+      <div class="radio-group">
+        <label class="radio-option selected" id="radio-fix">
+          <input type="radio" name="order-type" value="fix" checked onchange="selectOrderType('fix')">
+          <div>
+            <div class="radio-option-title">단순 오류 수정</div>
+            <div class="radio-option-desc">기존 버전에서 순서만 수정합니다. 변경 히스토리가 남지 않습니다.</div>
+          </div>
+        </label>
+        <label class="radio-option" id="radio-version">
+          <input type="radio" name="order-type" value="version" onchange="selectOrderType('version')">
+          <div>
+            <div class="radio-option-title">실제 플로우 변경</div>
+            <div class="radio-option-desc">새 버전으로 업그레이드됩니다. 변경 내역이 자동으로 기록됩니다.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeOrderModal()">취소</button>
+      <button class="btn btn-primary" onclick="confirmOrderChange()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px">
+  <button onclick="closeLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px">×</button>
+  <img id="lightbox-img" src="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px">
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const API = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
+
+// ===================== STATE =====================
+let state = {
+  token: null,
+  user: null,
+  companies: [],
+  types: [],
+  subtypes: [],
+  screenTypes: [],
+  sets: [],
+  currentPage: 'company',
+  currentSet: null,
+  currentScreen: null,
+  compareA: null,
+  compareB: null,
+  uploadFiles: [],
+  orderModalData: null,
+  orderModalType: 'fix',
+};
+
+// ===================== API =====================
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+  const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 401) { doLogout(); return null; }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '오류가 발생했습니다');
+  return data;
+}
+
+// ===================== TOAST =====================
+function toast(msg, type = 'default') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ===================== AUTH =====================
+async function doLogin() {
+  const employee_id = document.getElementById('login-id').value.trim();
+  const password = document.getElementById('login-pw').value;
+  const remember = document.getElementById('login-remember').checked;
+  if (!employee_id || !password) return toast('사번과 비밀번호를 입력해주세요', 'error');
+  try {
+    const data = await api('POST', '/auth/login', { employee_id, password, remember });
+    if (!data) return;
+    state.token = data.token;
+    state.user = data.user;
+    localStorage.setItem('ux_token', data.token);
+    localStorage.setItem('ux_user', JSON.stringify(data.user));
+    if (data.user.is_first_login) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('change-pw-screen').style.display = 'flex';
+      document.getElementById('cpw-current').value = password;
+    } else {
+      initApp();
+    }
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function doChangePassword() {
+  const current = document.getElementById('cpw-current').value;
+  const newPw = document.getElementById('cpw-new').value;
+  const confirm = document.getElementById('cpw-confirm').value;
+  if (newPw.length < 8) return toast('비밀번호는 8자 이상이어야 합니다', 'error');
+  if (newPw !== confirm) return toast('비밀번호가 일치하지 않습니다', 'error');
+  try {
+    await api('POST', '/auth/change-password', { employee_id: state.user.employee_id, current_password: current, new_password: newPw });
+    toast('비밀번호가 변경되었습니다', 'success');
+    document.getElementById('change-pw-screen').style.display = 'none';
+    initApp();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function doLogout() {
+  localStorage.removeItem('ux_token');
+  localStorage.removeItem('ux_user');
+  state.token = null; state.user = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ===================== INIT =====================
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('change-pw-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  document.getElementById('user-name-display').textContent = state.user.name;
+  document.getElementById('user-role-display').textContent = state.user.role === 'admin' ? '관리자' : '일반';
+  document.getElementById('user-avatar').textContent = state.user.name[0];
+  if (state.user.role === 'admin') document.getElementById('admin-nav').style.display = 'block';
+
+  // 마스터 데이터 로드
+  const [companies, types, subtypes, screenTypes] = await Promise.all([
+    api('GET', '/companies'),
+    api('GET', '/types'),
+    api('GET', '/subtypes'),
+    api('GET', '/screen-types'),
+  ]);
+  state.companies = companies || [];
+  state.types = types || [];
+  state.subtypes = subtypes || [];
+  state.screenTypes = screenTypes || [];
+
+  navigate('company');
+}
+
+// ===================== NAVIGATION =====================
+function navigate(page) {
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${page}`);
+  if (navEl) navEl.classList.add('active');
+
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+
+  const titles = { company: '기업별 조회', function: '기능별 조회', compare: '화면 비교', upload: '화면 업로드', master: '마스터 관리' };
+  document.getElementById('topbar-title').textContent = titles[page] || '';
+  document.getElementById('topbar-actions').innerHTML = '';
+
+  if (page === 'company') renderCompanyView();
+  if (page === 'function') renderFunctionView();
+  if (page === 'compare') renderCompareView();
+  if (page === 'upload') renderUploadView();
+  if (page === 'master') renderMasterView();
+}
+
+// ===================== COMPANY VIEW =====================
+async function renderCompanyView() {
+  const el = document.getElementById('company-view');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const sets = await api('GET', '/screen-sets?latest_only=true');
+    state.sets = sets || [];
+
+    // 기업별 그룹
+    const byCompany = {};
+    state.companies.forEach(c => byCompany[c.code] = { company: c, sets: [] });
+    state.sets.forEach(s => { if (byCompany[s.company_code]) byCompany[s.company_code].sets.push(s); });
+
+    if (!state.sets.length) {
+      el.innerHTML = `
+        <div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">등록된 화면이 없습니다</div></div></div>
+        <div class="empty-state"><div class="empty-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#A8A49E" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg></div><div class="empty-title">화면이 없습니다</div><div class="empty-desc">관리자가 화면을 업로드하면 여기에 표시됩니다</div></div>`;
+      return;
+    }
+
+    let html = `<div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div></div>`;
+
+    state.companies.forEach((c, ci) => {
+      const cSets = byCompany[c.code]?.sets || [];
+      if (!cSets.length) return;
+
+      html += `<div class="company-section">
+        <div class="company-section-header">
+          <div class="company-name-label">
+            <span class="company-idx">${String(ci).padStart(2,'0')}.</span>
+            ${c.name}
+          </div>
+          <span class="badge badge-gray">${cSets.length}개 유형</span>
+        </div>
+        <div class="type-scroll">`;
+
+      cSets.forEach(s => {
+        const firstScreen = s.screens?.[0];
+        const thumbHtml = firstScreen?.signed_url
+          ? `<img src="${firstScreen.signed_url}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'no-img\\'>미리보기 없음</span>'">`
+          : `<span class="no-img">미리보기 없음</span>`;
+
+        const subtypeName = state.subtypes.find(st => st.code === s.subtype_code)?.name || s.subtype_code;
+        const hasChange = s.change_summary && (s.change_summary.order_changed?.length || s.change_summary.added?.length || s.change_summary.removed?.length);
+
+        html += `<div class="type-card" onclick="openSetDetail('${s.id}')">
+          <div class="type-card-thumb">${thumbHtml}</div>
+          <div class="type-card-info">
+            <div class="type-card-subtype">${subtypeName}</div>
+            <div class="type-card-name">${s.subtype?.name || subtypeName}</div>
+            <div class="type-card-meta">
+              <span class="type-card-count">${s.screens?.length || 0}화면</span>
+              <span class="badge ${hasChange ? 'badge-new' : 'badge-gray'}">${s.version}${hasChange ? ' · 변경' : ''}</span>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-title">불러오기 실패</div><div class="empty-desc">${e.message}</div></div>`;
+  }
+}
+
+async function openSetDetail(setId) {
+  const el = document.getElementById('company-view');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const set = await api('GET', `/screen-sets/${setId}`);
+    state.currentSet = set;
+
+    // 다른 버전 목록
+    const allVersions = await api('GET', `/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
+
+    renderSetDetail(set, allVersions || []);
+  } catch(e) {
+    toast(e.message, 'error');
+    renderCompanyView();
+  }
+}
+
+function renderSetDetail(set, allVersions) {
+  const el = document.getElementById('company-view');
+  const companyName = state.companies.find(c => c.code === set.company_code)?.name || set.company_code;
+  const subtypeName = state.subtypes.find(s => s.code === set.subtype_code)?.name || set.subtype_code;
+  const isAdmin = state.user?.role === 'admin';
+  const hasChange = set.change_summary && (set.change_summary.order_changed?.length || set.change_summary.added?.length || set.change_summary.removed?.length);
+
+  // Version tabs
+  const versionTabs = allVersions.map(v =>
+    `<button class="version-tab ${v.id === set.id ? 'active' : ''}" onclick="openSetDetail('${v.id}')">${v.version}</button>`
+  ).join('');
+
+  // Change summary
+  let changeSummaryHtml = '';
+  if (hasChange && set.change_summary) {
+    const cs = set.change_summary;
+    let rows = '';
+    (cs.order_changed || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag moved">이동</span>${c.screen_type} ${c.from}번 → ${c.to}번</div>`; });
+    (cs.added || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag added">추가</span>${state.screenTypes.find(s=>s.code===c)?.name || c}</div>`; });
+    (cs.removed || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag removed">삭제</span>${state.screenTypes.find(s=>s.code===c)?.name || c}</div>`; });
+    changeSummaryHtml = `<div class="change-summary"><div class="change-summary-title">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v5l3 2"/><circle cx="6" cy="6" r="5"/></svg>
+      이전 버전 대비 변경사항</div>${rows}</div>`;
+  }
+
+  // Screens grid
+  const screensHtml = set.screens?.map(s => {
+    const stName = state.screenTypes.find(st => st.code === s.screen_type_code)?.name || s.screen_type_code;
+    const thumbHtml = s.signed_url
+      ? `<img src="${s.signed_url}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'no-img\\'>없음</span>'">`
+      : `<span class="no-img">없음</span>`;
+    return `<div class="screen-item" onclick="openScreenDetail('${s.id}', '${set.id}')">
+      <div class="screen-thumb">${thumbHtml}</div>
+      <div class="screen-info">
+        <div class="screen-order">${String(s.order_no).padStart(3,'0')}</div>
+        <div class="screen-type-name">${stName}</div>
+      </div>
+    </div>`;
+  }).join('') || '';
+
+  el.innerHTML = `
+    <button class="back-btn" onclick="renderCompanyView()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>
+      기업별 조회
+    </button>
+    <div class="page-header">
+      <div>
+        <div class="page-title">${companyName} · ${subtypeName}</div>
+        <div class="page-desc">${set.type?.name || ''} · ${set.uploaded_at} 업로드</div>
+      </div>
+      ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="openReorderMode()">순서 편집</button>` : ''}
+    </div>
+    <div class="version-tabs">${versionTabs}</div>
+    ${changeSummaryHtml}
+    <div class="screen-grid">${screensHtml}</div>
+  `;
+}
+
+function openScreenDetail(screenId, setId) {
+  const set = state.currentSet;
+  if (!set) return;
+  const screen = set.screens?.find(s => s.id === screenId);
+  if (!screen) return;
+  state.currentScreen = screen;
+
+  const el = document.getElementById('company-view');
+  const companyName = state.companies.find(c => c.code === set.company_code)?.name || set.company_code;
+  const subtypeName = state.subtypes.find(s => s.code === set.subtype_code)?.name || set.subtype_code;
+  const stName = state.screenTypes.find(s => s.code === screen.screen_type_code)?.name || screen.screen_type_code;
+
+  // Flow strip
+  const flowHtml = set.screens?.map(s => {
+    const thumb = s.signed_url ? `<img src="${s.signed_url}" loading="lazy">` : '';
+    return `<div class="flow-item ${s.id === screenId ? 'current' : ''}" onclick="openScreenDetail('${s.id}','${setId}')">
+      <div class="flow-item-thumb">${thumb}</div>
+      <div class="flow-item-num">${String(s.order_no).padStart(3,'0')}</div>
+    </div>`;
+  }).join('') || '';
+
+  el.innerHTML = `
+    <button class="back-btn" onclick="renderSetDetail(state.currentSet, [])">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>
+      ${companyName} · ${subtypeName}
+    </button>
+    <div class="detail-layout">
+      <div>
+        <div class="detail-img-wrap" onclick="openLightbox('${screen.signed_url || ''}')">
+          ${screen.signed_url ? `<img src="${screen.signed_url}" style="cursor:zoom-in">` : '<span style="color:var(--text-tertiary)">이미지 없음</span>'}
+        </div>
+        <div class="flow-strip">
+          <div class="flow-strip-title">플로우 순서</div>
+          <div class="flow-items">${flowHtml}</div>
+        </div>
+      </div>
+      <div class="detail-meta card">
+        <div class="card-header"><div class="card-title">화면 정보</div></div>
+        <div class="card-body" style="padding:0">
+          <div class="detail-meta-row" style="padding:12px 16px">
+            <div class="detail-meta-label">기업</div>
+            <div class="detail-meta-value">${companyName}</div>
+          </div>
+          <div class="detail-meta-row" style="padding:12px 16px">
+            <div class="detail-meta-label">유형</div>
+            <div class="detail-meta-value">${set.type?.name || ''}</div>
+          </div>
+          <div class="detail-meta-row" style="padding:12px 16px">
+            <div class="detail-meta-label">유형상세</div>
+            <div class="detail-meta-value">${subtypeName}</div>
+          </div>
+          <div class="detail-meta-row" style="padding:12px 16px">
+            <div class="detail-meta-label">화면유형</div>
+            <div class="detail-meta-value">${stName}</div>
+          </div>
+          <div class="detail-meta-row" style="padding:12px 16px">
+            <div class="detail-meta-label">버전</div>
+            <div class="detail-meta-value"><span class="badge badge-orange">${set.version}</span></div>
+          </div>
+          <div class="detail-meta-row" style="padding:12px 16px;border-bottom:none">
+            <div class="detail-meta-label">업로드일자</div>
+            <div class="detail-meta-value">${set.uploaded_at}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== FUNCTION VIEW =====================
+async function renderFunctionView() {
+  // Screen type nav
+  const navEl = document.getElementById('screen-type-nav');
+  const categories = [...new Set(state.screenTypes.map(s => s.category).filter(Boolean))];
+  navEl.innerHTML = categories.map(cat => `
+    <div class="screen-type-section">
+      <div class="screen-type-section-label">${cat}</div>
+      ${state.screenTypes.filter(s => s.category === cat).map(s =>
+        `<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">${s.name}</button>`
+      ).join('')}
+    </div>
+  `).join('');
+
+  // Company chips
+  const chipsEl = document.getElementById('company-chips');
+  chipsEl.innerHTML = `<button class="chip active" onclick="filterFunctionCompany('all', this)">전체</button>` +
+    state.companies.map(c => `<button class="chip" onclick="filterFunctionCompany('${c.code}', this)">${c.name}</button>`).join('');
+
+  document.getElementById('function-grid').innerHTML = `<div class="empty-state"><div class="empty-title">화면 유형을 선택해주세요</div><div class="empty-desc">왼쪽에서 화면 유형을 선택하면 기업별 화면이 나타납니다</div></div>`;
+}
+
+let currentFunctionType = null;
+let currentFunctionCompany = 'all';
+
+async function loadFunctionScreens(typeCode) {
+  currentFunctionType = typeCode;
+  document.querySelectorAll('.screen-type-nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-code="${typeCode}"]`)?.classList.add('active');
+
+  const gridEl = document.getElementById('function-grid');
+  gridEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const companyParam = currentFunctionCompany !== 'all' ? `&company=${currentFunctionCompany}` : '';
+    const screens = await api('GET', `/screens?screen_type=${typeCode}${companyParam}`);
+
+    if (!screens?.length) {
+      gridEl.innerHTML = '<div class="empty-state"><div class="empty-title">화면 없음</div><div class="empty-desc">해당 화면 유형의 이미지가 없습니다</div></div>';
+      return;
+    }
+
+    gridEl.innerHTML = `<div class="screen-grid">${screens.map(s => {
+      const companyName = state.companies.find(c => c.code === s.set?.company_code)?.name || s.set?.company_code;
+      const thumbHtml = s.signed_url ? `<img src="${s.signed_url}" loading="lazy">` : `<span class="no-img">없음</span>`;
+      return `<div class="screen-item" onclick="openLightbox('${s.signed_url || ''}')">
+        <div class="screen-thumb">${thumbHtml}</div>
+        <div class="screen-info">
+          <div class="screen-order">${companyName}</div>
+          <div class="screen-type-name">${s.set?.version || ''} · ${s.set?.uploaded_at || ''}</div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch(e) {
+    gridEl.innerHTML = `<div class="empty-state"><div class="empty-title">오류</div><div class="empty-desc">${e.message}</div></div>`;
+  }
+}
+
+function filterFunctionCompany(code, el) {
+  currentFunctionCompany = code;
+  document.querySelectorAll('#company-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  if (currentFunctionType) loadFunctionScreens(currentFunctionType);
+}
+
+// ===================== COMPARE VIEW =====================
+function renderCompareView() {
+  const el = document.getElementById('compare-view');
+  renderCompareSetup(el);
+}
+
+function renderCompareSetup(el) {
+  const aName = state.compareA ? `${state.companies.find(c=>c.code===state.compareA.company_code)?.name} · ${state.subtypes.find(s=>s.code===state.compareA.subtype_code)?.name} · ${state.compareA.version}` : null;
+  const bName = state.compareB ? `${state.companies.find(c=>c.code===state.compareB.company_code)?.name} · ${state.subtypes.find(s=>s.code===state.compareB.subtype_code)?.name} · ${state.compareB.version}` : null;
+
+  el.innerHTML = `
+    <div class="page-header"><div><div class="page-title">화면 비교</div><div class="page-desc">두 세트의 화면을 나란히 비교합니다</div></div></div>
+    <div class="compare-setup">
+      <div class="compare-slot ${state.compareA ? 'filled' : ''}">
+        <div class="compare-slot-label">A 영역</div>
+        ${state.compareA ? `
+          <div class="compare-slot-name">${aName}</div>
+          <div class="compare-slot-meta">${state.compareA.screens?.length || 0}개 화면</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="openSetPicker('A')">변경</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearCompare('A')">초기화</button>
+          </div>
+        ` : `
+          <div style="margin-top:20px"><button class="btn btn-secondary" onclick="openSetPicker('A')">화면 선택</button></div>
+        `}
+      </div>
+      <div class="compare-slot ${state.compareB ? 'filled' : ''}">
+        <div class="compare-slot-label">B 영역</div>
+        ${state.compareB ? `
+          <div class="compare-slot-name">${bName}</div>
+          <div class="compare-slot-meta">${state.compareB.screens?.length || 0}개 화면</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="openSetPicker('B')">변경</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearCompare('B')">초기화</button>
+          </div>
+        ` : `
+          <div style="margin-top:20px"><button class="btn btn-secondary" onclick="openSetPicker('B')">화면 선택</button></div>
+        `}
+      </div>
+    </div>
+    ${state.compareA && state.compareB ? `
+      <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="runCompare()">비교 보기</button>
+      </div>
+    ` : ''}
+    <div id="compare-result"></div>
+  `;
+}
+
+function clearCompare(slot) {
+  if (slot === 'A') state.compareA = null;
+  else state.compareB = null;
+  renderCompareSetup(document.getElementById('compare-view'));
+}
+
+async function openSetPicker(slot) {
+  const sets = await api('GET', '/screen-sets?latest_only=false');
+  if (!sets) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:560px">
+      <div class="modal-header">
+        <div class="modal-title">${slot} 영역 화면 선택</div>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height:400px;overflow-y:auto">
+        ${sets.map(s => {
+          const companyName = state.companies.find(c=>c.code===s.company_code)?.name || s.company_code;
+          const subtypeName = state.subtypes.find(st=>st.code===s.subtype_code)?.name || s.subtype_code;
+          return `<div style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;transition:border-color 0.15s"
+            onmouseover="this.style.borderColor='var(--gray-300)'" onmouseout="this.style.borderColor='var(--border)'"
+            onclick="selectCompareSet('${slot}','${s.id}',this.closest('.modal-overlay'))">
+            <div style="font-size:13px;font-weight:500">${companyName} · ${subtypeName}</div>
+            <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${s.type?.name || ''} · <span class="badge badge-orange">${s.version}</span> · ${s.uploaded_at}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function selectCompareSet(slot, setId, overlay) {
+  overlay.remove();
+  const set = await api('GET', `/screen-sets/${setId}`);
+  if (!set) return;
+  if (slot === 'A') state.compareA = set;
+  else state.compareB = set;
+  renderCompareSetup(document.getElementById('compare-view'));
+}
+
+function runCompare() {
+  const el = document.getElementById('compare-result');
+  const a = state.compareA;
+  const b = state.compareB;
+
+  const renderCol = (set) => (set.screens || []).map(s => {
+    const stName = state.screenTypes.find(st=>st.code===s.screen_type_code)?.name || s.screen_type_code;
+    const thumbHtml = s.signed_url ? `<img src="${s.signed_url}" loading="lazy" style="width:100%;height:100%;object-fit:cover">` : `<span class="no-img">없음</span>`;
+    return `<div class="screen-item" style="margin-bottom:8px" onclick="openLightbox('${s.signed_url||''}')">
+      <div class="screen-thumb">${thumbHtml}</div>
+      <div class="screen-info">
+        <div class="screen-order">${String(s.order_no).padStart(3,'0')}</div>
+        <div class="screen-type-name">${stName}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const aLabel = `${state.companies.find(c=>c.code===a.company_code)?.name} · ${state.subtypes.find(s=>s.code===a.subtype_code)?.name} · ${a.version}`;
+  const bLabel = `${state.companies.find(c=>c.code===b.company_code)?.name} · ${state.subtypes.find(s=>s.code===b.subtype_code)?.name} · ${b.version}`;
+
+  el.innerHTML = `
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="compare-col-header">A · ${aLabel}</div>
+        ${renderCol(a)}
+      </div>
+      <div class="compare-col">
+        <div class="compare-col-header">B · ${bLabel}</div>
+        ${renderCol(b)}
+      </div>
+    </div>
+  `;
+}
+
+// ===================== UPLOAD VIEW =====================
+function renderUploadView() {
+  const el = document.getElementById('upload-view');
+  state.uploadFiles = [];
+  let uploadStep = 1;
+  let uploadMeta = {};
+
+  el.innerHTML = `
+    <div class="page-header"><div><div class="page-title">화면 업로드</div><div class="page-desc">새로운 화면 세트를 등록합니다</div></div></div>
+    <div class="steps">
+      <div class="step active" id="step-1"><div class="step-num">1</div>세트 정보</div>
+      <div class="step-divider"></div>
+      <div class="step" id="step-2"><div class="step-num">2</div>이미지 업로드</div>
+      <div class="step-divider"></div>
+      <div class="step" id="step-3"><div class="step-num">3</div>완료</div>
+    </div>
+
+    <div id="upload-step-1">
+      <div class="card" style="max-width:480px">
+        <div class="card-header"><div class="card-title">세트 정보 입력</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">기업</label>
+            <select class="select" id="up-company" style="width:100%">
+              <option value="">선택</option>
+              ${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">유형</label>
+            <select class="select" id="up-type" style="width:100%">
+              <option value="">선택</option>
+              ${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">유형상세</label>
+            <select class="select" id="up-subtype" style="width:100%">
+              <option value="">선택</option>
+              ${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">버전</label>
+            <input class="input" id="up-version" placeholder="예) V1, V2" value="V1">
+            <div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">업로드 일자</label>
+            <input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}">
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:4px">
+            <button class="btn btn-primary" onclick="goUploadStep2()">다음</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="upload-step-2" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">이미지 업로드</div>
+          <div style="font-size:12px;color:var(--text-tertiary)">순서대로 드래그해서 업로드 순서를 변경할 수 있습니다</div>
+        </div>
+        <div class="card-body">
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('drag')">
+            <div class="upload-zone-icon">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8M10 14l6-6 6 6M6 24h20"/></svg>
+            </div>
+            <div class="upload-zone-text">클릭하거나 드래그하여 이미지 업로드</div>
+            <div class="upload-zone-sub">PNG, JPG, WebP 지원 · 여러 파일 한번에 가능</div>
+          </div>
+          <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFileSelect(event)">
+          <div class="upload-preview-grid" id="upload-preview"></div>
+          <div style="margin-top:16px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="goUploadStep1()">← 이전</button>
+            <div style="display:flex;gap:8px">
+              <span id="upload-count" style="font-size:12px;color:var(--text-tertiary);align-self:center">0개 선택됨</span>
+              <button class="btn btn-primary" id="start-upload-btn" onclick="startUpload()" disabled>업로드 시작</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="upload-step-3" style="display:none">
+      <div class="empty-state">
+        <div class="empty-icon" style="background:var(--primary-light)">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M4 10l5 5 7-8"/></svg>
+        </div>
+        <div class="empty-title">업로드 완료</div>
+        <div class="empty-desc" id="upload-done-desc">화면이 등록되었습니다</div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="renderUploadView()">추가 업로드</button>
+          <button class="btn btn-primary" onclick="navigate('company')">기업별 조회로 이동</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function goUploadStep1() {
+  document.getElementById('upload-step-2').style.display = 'none';
+  document.getElementById('upload-step-1').style.display = 'block';
+  document.getElementById('step-1').classList.add('active');
+  document.getElementById('step-2').classList.remove('active');
+}
+
+function goUploadStep2() {
+  const company = document.getElementById('up-company').value;
+  const type = document.getElementById('up-type').value;
+  const subtype = document.getElementById('up-subtype').value;
+  const version = document.getElementById('up-version').value.trim();
+  const date = document.getElementById('up-date').value;
+  if (!company || !type || !subtype || !version || !date) return toast('모든 항목을 입력해주세요', 'error');
+  state.uploadMeta = { company, type, subtype, version, date };
+  document.getElementById('upload-step-1').style.display = 'none';
+  document.getElementById('upload-step-2').style.display = 'block';
+  document.getElementById('step-1').classList.remove('active');
+  document.getElementById('step-1').classList.add('done');
+  document.getElementById('step-2').classList.add('active');
+}
+
+function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag'); }
+function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag'); addFiles(e.dataTransfer.files); }
+function handleFileSelect(e) { addFiles(e.target.files); }
+
+function addFiles(files) {
+  Array.from(files).forEach(f => {
+    if (!f.type.startsWith('image/')) return;
+    state.uploadFiles.push({ file: f, status: 'pending', screenTypeCode: '' });
+  });
+  renderUploadPreviews();
+}
+
+function renderUploadPreviews() {
+  const el = document.getElementById('upload-preview');
+  const countEl = document.getElementById('upload-count');
+  const btnEl = document.getElementById('start-upload-btn');
+  countEl.textContent = `${state.uploadFiles.length}개 선택됨`;
+  btnEl.disabled = state.uploadFiles.length === 0;
+
+  el.innerHTML = state.uploadFiles.map((item, i) => {
+    const url = URL.createObjectURL(item.file);
+    const stOptions = state.screenTypes.map(s => `<option value="${s.code}" ${item.screenTypeCode===s.code?'selected':''}>${s.name}</option>`).join('');
+    return `<div class="upload-preview-item">
+      <div class="upload-preview-thumb"><img src="${url}" onload="URL.revokeObjectURL('${url}')"></div>
+      <div class="upload-preview-info">
+        <div class="upload-preview-name">${i+1}. ${item.file.name}</div>
+        <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="setScreenType(${i},this.value)">
+          <option value="">화면유형 선택</option>
+          ${stOptions}
+        </select>
+        <div class="upload-preview-status ${item.status==='done'?'done':item.status==='error'?'error':item.status==='uploading'?'uploading':''}">${item.status==='done'?'완료':item.status==='error'?'실패':item.status==='uploading'?'업로드 중...':''}</div>
+      </div>
+      <button class="upload-preview-remove" onclick="removeUploadFile(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function setScreenType(i, code) { state.uploadFiles[i].screenTypeCode = code; }
+function removeUploadFile(i) { state.uploadFiles.splice(i, 1); renderUploadPreviews(); }
+
+async function startUpload() {
+  const meta = state.uploadMeta;
+  if (!meta) return;
+
+  const untyped = state.uploadFiles.filter(f => !f.screenTypeCode);
+  if (untyped.length) return toast('모든 화면의 화면유형을 선택해주세요', 'error');
+
+  // 세트 먼저 생성
+  let setId;
+  try {
+    const screenList = state.uploadFiles.map((f, i) => ({ screen_type_code: f.screenTypeCode, order_no: i + 1 }));
+    const newSet = await api('POST', '/screen-sets', {
+      company_code: meta.company, type_code: meta.type, subtype_code: meta.subtype,
+      version: meta.version, uploaded_at: meta.date, screens: screenList
+    });
+    setId = newSet.id;
+  } catch(e) { return toast('세트 생성 실패: ' + e.message, 'error'); }
+
+  // 이미지 업로드
+  for (let i = 0; i < state.uploadFiles.length; i++) {
+    const item = state.uploadFiles[i];
+    item.status = 'uploading';
+    renderUploadPreviews();
+    try {
+      const ext = item.file.name.split('.').pop() || 'png';
+      const urlRes = await api('POST', '/storage/upload-url', {
+        company_code: meta.company, type_code: meta.type, subtype_code: meta.subtype,
+        screen_type_code: item.screenTypeCode, version: meta.version, order_no: i + 1, ext
+      });
+      await fetch(urlRes.upload_url, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
+      await api('POST', '/screens', { set_id: setId, screen_type_code: item.screenTypeCode, order_no: i + 1, imgsrc: urlRes.file_path });
+      item.status = 'done';
+    } catch(e) {
+      item.status = 'error';
+      console.error(e);
+    }
+    renderUploadPreviews();
+  }
+
+  const doneCount = state.uploadFiles.filter(f => f.status === 'done').length;
+  document.getElementById('upload-step-2').style.display = 'none';
+  document.getElementById('upload-step-3').style.display = 'block';
+  document.getElementById('step-2').classList.remove('active');
+  document.getElementById('step-2').classList.add('done');
+  document.getElementById('step-3').classList.add('active');
+  document.getElementById('upload-done-desc').textContent = `${doneCount}개 화면이 등록되었습니다`;
+  toast('업로드 완료!', 'success');
+}
+
+// ===================== MASTER VIEW =====================
+function renderMasterView() {
+  const el = document.getElementById('master-view');
+  const tabs = ['companies', 'types', 'subtypes', 'screen_types'];
+  const tabLabels = { companies: '기업', types: '유형', subtypes: '유형상세', screen_types: '화면유형' };
+  let activeTab = 'companies';
+
+  const renderTab = (tab) => {
+    activeTab = tab;
+    const data = { companies: state.companies, types: state.types, subtypes: state.subtypes, screen_types: state.screenTypes }[tab];
+    const cols = tab === 'companies' ? ['code','name','order_no'] : tab === 'screen_types' ? ['code','name','category','order_no'] : ['code','name','order_no'];
+
+    document.getElementById('master-table-wrap').innerHTML = `
+      <table class="table">
+        <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}<th></th></tr></thead>
+        <tbody>${(data||[]).map(row=>`<tr>${cols.map(c=>`<td>${row[c]||''}</td>`).join('')}<td></td></tr>`).join('')}</tbody>
+      </table>
+    `;
+    document.querySelectorAll('.master-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  };
+
+  el.innerHTML = `
+    <div class="page-header"><div><div class="page-title">마스터 관리</div><div class="page-desc">기업, 유형, 화면유형 등 기초 데이터를 관리합니다</div></div></div>
+    <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--gray-100);padding:3px;border-radius:var(--radius-md);width:fit-content">
+      ${tabs.map(t=>`<button class="version-tab master-tab" data-tab="${t}" onclick="(function(){${tabs.map(tt=>`document.querySelector('[data-tab=${tt}]').classList.remove('active');`).join('')}this.classList.add('active');renderMasterTabContent('${t}')}).call(this)">${tabLabels[t]}</button>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="master-tab-title">기업 목록</div>
+      </div>
+      <div id="master-table-wrap"></div>
+    </div>
+  `;
+
+  window.renderMasterTabContent = renderTab;
+  renderTab('companies');
+  document.querySelector('[data-tab="companies"]').classList.add('active');
+}
+
+// ===================== ORDER MODAL =====================
+function openReorderMode() { toast('순서 편집 기능은 다음 업데이트에 포함됩니다', 'default'); }
+function closeOrderModal() { document.getElementById('order-modal').style.display = 'none'; }
+function selectOrderType(type) {
+  state.orderModalType = type;
+  document.getElementById('radio-fix').classList.toggle('selected', type === 'fix');
+  document.getElementById('radio-version').classList.toggle('selected', type === 'version');
+}
+function confirmOrderChange() { closeOrderModal(); toast('순서가 변경되었습니다', 'success'); }
+
+// ===================== LIGHTBOX =====================
+function openLightbox(url) {
+  if (!url) return;
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = url;
+  lb.style.display = 'flex';
+}
+function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
+document.getElementById('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
+
+// ===================== KEYBOARD =====================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ===================== AUTO LOGIN =====================
+(function() {
+  const token = localStorage.getItem('ux_token');
+  const user = localStorage.getItem('ux_user');
+  if (token && user) {
+    state.token = token;
+    state.user = JSON.parse(user);
+    initApp();
+  }
+})();
+</script>
+</body>
+</html>
