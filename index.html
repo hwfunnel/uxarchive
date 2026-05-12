@@ -1823,42 +1823,189 @@ async function startUpload() {
 }
 
 // ===================== MASTER VIEW =====================
+let masterActiveTab = 'companies';
+
 function renderMasterView() {
   const el = document.getElementById('master-view');
-  const tabs = ['companies', 'types', 'subtypes', 'screen_types'];
-  const tabLabels = { companies: '기업', types: '유형', subtypes: '유형상세', screen_types: '화면유형' };
-  let activeTab = 'companies';
-
-  const renderTab = (tab) => {
-    activeTab = tab;
-    const data = { companies: state.companies, types: state.types, subtypes: state.subtypes, screen_types: state.screenTypes }[tab];
-    const cols = tab === 'companies' ? ['code','name','order_no'] : tab === 'screen_types' ? ['code','name','category','order_no'] : ['code','name','order_no'];
-
-    document.getElementById('master-table-wrap').innerHTML = `
-      <table class="table">
-        <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}<th></th></tr></thead>
-        <tbody>${(data||[]).map(row=>`<tr>${cols.map(c=>`<td>${row[c]||''}</td>`).join('')}<td></td></tr>`).join('')}</tbody>
-      </table>
-    `;
-    document.querySelectorAll('.master-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  };
-
   el.innerHTML = `
     <div class="page-header"><div><div class="page-title">마스터 관리</div><div class="page-desc">기업, 유형, 화면유형 등 기초 데이터를 관리합니다</div></div></div>
+
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius-md);margin-bottom:20px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#B45309" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M8 2l6 12H2L8 2z"/><path d="M8 7v3M8 11v.5"/></svg>
+      <div style="font-size:13px;color:#92400E;line-height:1.6"><strong>주의</strong> — 마스터 데이터 변경은 기존 화면 분류 전체에 영향을 줍니다. 반드시 신중하게 검토 후 수정해주세요. 코드(CODE) 변경 시 기존 이미지 경로가 깨질 수 있습니다.</div>
+    </div>
+
     <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--gray-100);padding:3px;border-radius:var(--radius-md);width:fit-content">
-      ${tabs.map(t=>`<button class="version-tab master-tab" data-tab="${t}" onclick="(function(){${tabs.map(tt=>`document.querySelector('[data-tab=${tt}]').classList.remove('active');`).join('')}this.classList.add('active');renderMasterTabContent('${t}')}).call(this)">${tabLabels[t]}</button>`).join('')}
+      <button class="version-tab master-tab active" data-tab="companies" onclick="switchMasterTab('companies')">기업</button>
+      <button class="version-tab master-tab" data-tab="types" onclick="switchMasterTab('types')">유형</button>
+      <button class="version-tab master-tab" data-tab="subtypes" onclick="switchMasterTab('subtypes')">유형상세</button>
+      <button class="version-tab master-tab" data-tab="screen_types" onclick="switchMasterTab('screen_types')">화면유형</button>
     </div>
     <div class="card">
-      <div class="card-header">
+      <div class="card-header" style="justify-content:space-between">
         <div class="card-title" id="master-tab-title">기업 목록</div>
+        <button class="btn btn-primary btn-sm" onclick="openMasterAddModal()">+ 추가</button>
       </div>
       <div id="master-table-wrap"></div>
     </div>
   `;
+  switchMasterTab('companies');
+}
 
-  window.renderMasterTabContent = renderTab;
-  renderTab('companies');
-  document.querySelector('[data-tab="companies"]').classList.add('active');
+function switchMasterTab(tab) {
+  masterActiveTab = tab;
+  const labels = { companies: '기업 목록', types: '유형 목록', subtypes: '유형상세 목록', screen_types: '화면유형 목록' };
+  document.querySelectorAll('.master-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('master-tab-title').textContent = labels[tab];
+  renderMasterTable(tab);
+}
+
+function renderMasterTable(tab) {
+  const data = { companies: state.companies, types: state.types, subtypes: state.subtypes, screen_types: state.screenTypes }[tab] || [];
+  const isScreenType = tab === 'screen_types';
+  const isCompany = tab === 'companies';
+
+  const colHeaders = isScreenType
+    ? ['코드','이름','카테고리','순서','']
+    : isCompany
+    ? ['코드','이름','URL','순서','활성','']
+    : ['코드','이름','순서',''];
+
+  const rows = data.map(row => {
+    const cells = isScreenType
+      ? `<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
+      : isCompany
+      ? `<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url ? `<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>` : '<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active ? '<span class="badge badge-green">활성</span>' : '<span class="badge badge-gray">비활성</span>'}</td>`
+      : `<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
+    return `<tr>
+      ${cells}
+      <td style="text-align:right;width:120px">
+        <button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('master-table-wrap').innerHTML = `
+    <table class="table">
+      <thead><tr>${colHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows || `<tr><td colspan="${colHeaders.length}" style="text-align:center;padding:24px;color:var(--text-tertiary)">데이터가 없습니다</td></tr>`}</tbody>
+    </table>
+  `;
+}
+
+function openMasterAddModal() {
+  const tab = masterActiveTab;
+  const isScreenType = tab === 'screen_types';
+  const isCompany = tab === 'companies';
+
+  const fields = isScreenType
+    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) CERT_INPUT"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 본인인증 입력"></div>
+       <div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" placeholder="예) 신규가입"></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 30"></div>`
+    : isCompany
+    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) HWS"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 한화손해보험"></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 4"></div>`
+    : `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) NEW_JOIN"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 신규가입"></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 7"></div>`;
+
+  showModal('추가', fields, async () => {
+    const code = document.getElementById('mf-code').value.trim().toUpperCase();
+    const name = document.getElementById('mf-name').value.trim();
+    const order_no = parseInt(document.getElementById('mf-order').value) || 0;
+    const category = document.getElementById('mf-category')?.value.trim();
+    if (!code || !name) return toast('코드와 이름을 입력해주세요', 'error');
+
+    const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
+    const body = isScreenType ? { code, name, category, order_no } : isCompany ? { code, name, order_no, is_active: true } : { code, name, order_no };
+    try {
+      await api('POST', pathMap[tab], body);
+      await reloadMasterData(tab);
+      renderMasterTable(tab);
+      toast('추가되었습니다', 'success');
+      closeModal();
+    } catch(e) { toast(e.message, 'error'); }
+  });
+}
+
+function openMasterEditModal(row) {
+  const tab = masterActiveTab;
+  const isScreenType = tab === 'screen_types';
+  const isCompany = tab === 'companies';
+
+  const fields = isScreenType
+    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
+       <div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" value="${row.category||''}"></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>`
+    : isCompany
+    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
+       <div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" value="${row.url||''}" placeholder="https://..."></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>
+       <div class="form-group"><label class="form-label">활성 여부</label><select class="select" id="mf-active" style="width:100%"><option value="true" ${row.is_active?'selected':''}>활성</option><option value="false" ${!row.is_active?'selected':''}>비활성</option></select></div>`
+    : `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
+       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
+       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>`;
+
+  showModal('수정', fields, async () => {
+    const name = document.getElementById('mf-name').value.trim();
+    const order_no = parseInt(document.getElementById('mf-order').value) || 0;
+    const category = document.getElementById('mf-category')?.value.trim();
+    const is_active = document.getElementById('mf-active')?.value === 'true';
+    const url = document.getElementById('mf-url')?.value.trim();
+    if (!name) return toast('이름을 입력해주세요', 'error');
+
+    const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
+    const body = isScreenType ? { name, category, order_no } : isCompany ? { name, order_no, is_active, url } : { name, order_no };
+    try {
+      await api('PATCH', `${pathMap[tab]}/${row.code}`, body);
+      await reloadMasterData(tab);
+      renderMasterTable(tab);
+      toast('수정되었습니다', 'success');
+      closeModal();
+    } catch(e) { toast(e.message, 'error'); }
+  });
+}
+
+async function reloadMasterData(tab) {
+  if (tab === 'companies') { const d = await api('GET', '/companies'); if(d) state.companies = d; }
+  else if (tab === 'types') { const d = await api('GET', '/types'); if(d) state.types = d; }
+  else if (tab === 'subtypes') { const d = await api('GET', '/subtypes'); if(d) state.subtypes = d; }
+  else if (tab === 'screen_types') { const d = await api('GET', '/screen-types'); if(d) state.screenTypes = d; }
+}
+
+// 공용 모달
+function showModal(title, fieldsHtml, onConfirm) {
+  const existing = document.getElementById('generic-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'generic-modal';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">${title}</div>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">${fieldsHtml}</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+        <button class="btn btn-primary" id="modal-confirm-btn">확인</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('modal-confirm-btn').onclick = onConfirm;
+}
+
+function closeModal() {
+  const el = document.getElementById('generic-modal');
+  if (el) el.remove();
 }
 
 // ===================== ORDER MODAL =====================
