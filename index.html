@@ -264,8 +264,31 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
+
+/* ===== 추가 스타일 ===== */
+.draggable-card { position: relative; cursor: grab; }
+.draggable-card:active { cursor: grabbing; }
+.drag-handle { position: absolute; top: 6px; right: 6px; z-index: 2; color: var(--gray-400); opacity: 0; transition: opacity var(--transition); pointer-events: none; }
+.draggable-card:hover .drag-handle { opacity: 1; }
+.drag-over { border-color: var(--primary) !important; box-shadow: 0 0 0 2px var(--primary-light) !important; }
+.compare-check-box { width: 18px; height: 18px; background: rgba(255,255,255,0.9); border: 1.5px solid var(--border-strong); border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+.compare-check-box.checked { background: var(--primary); border-color: var(--primary); }
+.compare-item { position: relative; cursor: pointer; }
+.compare-item.compare-checked { border-color: var(--primary) !important; }
+.compare-item.compare-checked .screen-card-thumb::after { content:''; position:absolute; inset:0; background:rgba(255,70,0,0.06); pointer-events:none; }
+.tag-select-box { position: relative; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--gray-0); transition: border-color var(--transition); }
+.tag-select-box:focus-within { border-color: var(--primary); }
+.tag-select-input-wrap { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px; min-height: 32px; align-items: center; cursor: text; }
+.tag-select-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag-select-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--primary-light); color: var(--primary); border-radius: 3px; padding: 2px 6px 2px 8px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tag-select-tag button { background: none; border: none; cursor: pointer; color: var(--primary); opacity: 0.6; font-size: 14px; padding: 0 0 0 2px; line-height: 1; }
+.tag-select-tag button:hover { opacity: 1; }
+.tag-select-input { border: none; outline: none; font-family: var(--font); font-size: 13px; background: transparent; min-width: 80px; flex: 1; padding: 2px 0; color: var(--text-primary); }
+.tag-select-input::placeholder { color: var(--text-tertiary); }
+.tag-select-dropdown { position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; max-height: 200px; overflow-y: auto; }
+.tag-select-option { padding: 8px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+.tag-select-option:hover { background: var(--gray-50); }
 </style>
-</head>
 <body>
 <div id="toast-container"></div>
 
@@ -399,6 +422,7 @@ let state = {
   token:null, user:null, companies:[], types:[], subtypes:[], screenTypes:[],
   sets:[], currentSet:null, compareA:null, compareB:null,
   uploadFiles:[], uploadMeta:{}, orderModalType:'fix',
+  compareAOrder:null, compareBOrder:null, // 비교 섹션 임시 순서
 };
 
 async function api(method, path, body) {
@@ -508,7 +532,16 @@ async function renderCompanyView() {
     state.companies.forEach((c,ci)=>{
       const cSets=byCompany[c.code]?.sets||[];
       if(!cSets.length)return;
-      html+=`<div class="company-section"><div class="company-section-header"><div class="company-name-label"><span class="company-idx">${String(ci).padStart(2,'0')}.</span>${c.name}</div><span class="badge badge-gray">${cSets.length}개 유형</span></div><div class="screen-grid-5">`;
+      html+=`<div class="company-section">
+        <div class="company-section-header">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-tertiary)">${String(ci).padStart(2,'0')}</span>
+            <span style="font-size:22px;font-weight:700;letter-spacing:-0.03em">${c.name}</span>
+            ${c.url?`<a href="${c.url}" target="_blank" style="font-size:11px;color:var(--primary);text-decoration:none;opacity:0.8">↗ 사이트</a>`:''}
+          </div>
+          <span class="badge badge-gray">${cSets.length}개 유형상세</span>
+        </div>
+        <div class="screen-grid-5">`;
       cSets.forEach(s=>{
         const firstScreen=s.screens?.[0];
         const subtypeName=state.subtypes.find(st=>st.code===s.subtype_code)?.name||s.subtype_code;
@@ -518,9 +551,9 @@ async function renderCompanyView() {
         html+=`<div class="screen-card" onclick="openSetDetail('${s.id}')">
           <div class="screen-card-thumb">${thumbHtml}</div>
           <div class="screen-card-info">
-            <div class="screen-card-sub">${typeName}</div>
-            <div class="screen-card-name">${subtypeName}</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+            <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:3px">${typeName}</div>
+            <div style="font-size:13px;font-weight:600;letter-spacing:-0.01em;line-height:1.3">${subtypeName}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
               <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
               <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
             </div>
@@ -546,6 +579,9 @@ async function openSetDetail(setId) {
   } catch(e) { toast(e.message,'error'); renderCompanyView(); }
 }
 
+// ===================== SET DETAIL + DRAG & DROP ORDER =====================
+let dragSrcIdx=null;
+
 function renderSetDetail(set, allVersions) {
   const el=document.getElementById('company-view');
   const companyName=state.companies.find(c=>c.code===set.company_code)?.name||set.company_code;
@@ -568,10 +604,16 @@ function renderSetDetail(set, allVersions) {
     changeSummaryHtml=`<div class="change-summary"><div class="change-summary-title"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 3v3l2 1"/></svg>이전 버전 대비 변경사항</div>${rows}</div>`;
   }
 
-  const screensHtml=(set.screens||[]).map(s=>{
+  // 화면 그리드 - 드래그앤드랍 지원 (관리자만)
+  const screens=set.screens||[];
+  const screensHtml=screens.map((s,i)=>{
     const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
     const thumbHtml=s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:`<span class="no-img">없음</span>`;
-    return `<div class="screen-card" onclick="openScreenDetail('${s.id}','${set.id}')">
+    return `<div class="screen-card ${isAdmin?'draggable-card':''}" 
+      data-idx="${i}" data-screen-id="${s.id}"
+      ${isAdmin?`draggable="true" ondragstart="onSetDragStart(event,${i})" ondragover="onSetDragOver(event,${i})" ondrop="onSetDrop(event,${i})" ondragend="onSetDragEnd(event)"`:''} 
+      onclick="openScreenDetail('${s.id}','${set.id}')">
+      ${isAdmin?`<div class="drag-handle" title="드래그로 순서 변경"><svg width="10" height="14" viewBox="0 0 10 14" fill="none"><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="7" cy="3" r="1.5" fill="currentColor"/><circle cx="3" cy="7" r="1.5" fill="currentColor"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/><circle cx="3" cy="11" r="1.5" fill="currentColor"/><circle cx="7" cy="11" r="1.5" fill="currentColor"/></svg></div>`:''}
       <div class="screen-card-thumb">${thumbHtml}</div>
       <div class="screen-card-info">
         <div class="screen-card-order">${String(s.order_no).padStart(3,'0')}</div>
@@ -585,12 +627,96 @@ function renderSetDetail(set, allVersions) {
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>기업별 조회
     </button>
     <div class="page-header">
-      <div><div class="page-title">${companyName} · ${subtypeName}</div><div class="page-desc">${typeName} · ${set.uploaded_at} 업로드</div></div>
-      ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="toast('순서 편집 기능은 다음 업데이트에 포함됩니다')">순서 편집</button>`:''}
+      <div>
+        <div class="page-title">${companyName} · ${subtypeName}</div>
+        <div class="page-desc">${typeName} · ${set.uploaded_at} 업로드</div>
+      </div>
     </div>
     <div class="version-tabs">${versionTabs}</div>
     ${changeSummaryHtml}
-    <div class="screen-grid-5">${screensHtml}</div>`;
+    ${isAdmin?`<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>드래그로 순서를 변경할 수 있습니다</div>`:''}
+    <div class="screen-grid-5" id="set-detail-grid">${screensHtml}</div>`;
+}
+
+// 세트 상세 드래그앤드랍
+let setDragOrder=null; // 현재 드래그 중인 순서 배열 (screen objects)
+
+function onSetDragStart(e,idx){
+  dragSrcIdx=idx;
+  if(!setDragOrder) setDragOrder=[...(state.currentSet?.screens||[])];
+  e.currentTarget.style.opacity='0.4';
+  e.dataTransfer.effectAllowed='move';
+}
+function onSetDragOver(e,idx){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  // 드래그 중 위치 표시
+  document.querySelectorAll('.draggable-card').forEach(c=>c.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onSetDrop(e,idx){
+  e.preventDefault();
+  if(dragSrcIdx===null||dragSrcIdx===idx)return;
+  if(!setDragOrder) setDragOrder=[...(state.currentSet?.screens||[])];
+  const arr=[...setDragOrder];
+  const [moved]=arr.splice(dragSrcIdx,1);
+  arr.splice(idx,0,moved);
+  setDragOrder=arr;
+  // 미리보기 리렌더
+  rerenderSetGrid(arr);
+}
+function onSetDragEnd(e){
+  e.currentTarget.style.opacity='';
+  document.querySelectorAll('.draggable-card').forEach(c=>{c.classList.remove('drag-over');c.style.opacity='';});
+  if(setDragOrder) showOrderSaveModal();
+  dragSrcIdx=null;
+}
+
+function rerenderSetGrid(screens){
+  const grid=document.getElementById('set-detail-grid');
+  if(!grid)return;
+  screens.forEach((s,i)=>{
+    const card=grid.querySelector(`[data-screen-id="${s.id}"]`);
+    if(card){
+      card.setAttribute('data-idx',i);
+      const orderEl=card.querySelector('.screen-card-order');
+      if(orderEl)orderEl.textContent=String(i+1).padStart(3,'0');
+    }
+  });
+  // DOM 순서도 재정렬
+  screens.forEach(s=>{
+    const card=grid.querySelector(`[data-screen-id="${s.id}"]`);
+    if(card)grid.appendChild(card);
+  });
+}
+
+function showOrderSaveModal(){
+  showModal('순서를 변경하시겠어요?',
+    `<p style="font-size:13px;color:var(--text-secondary);line-height:1.6">드래그한 순서로 변경합니다.<br>이 작업은 실제 DB에 저장됩니다.</p>`,
+    async()=>{
+      try{
+        // 각 화면의 order_no를 새 순서대로 PATCH
+        for(let i=0;i<setDragOrder.length;i++){
+          await api('PATCH',`/screens/${setDragOrder[i].id}`,{order_no:i+1});
+        }
+        // state 업데이트
+        setDragOrder.forEach((s,i)=>{s.order_no=i+1;});
+        state.currentSet.screens=setDragOrder;
+        setDragOrder=null;
+        closeModal();
+        toast('순서가 저장되었습니다','success');
+        renderSetDetail(state.currentSet,[]);
+      }catch(e){toast(e.message,'error');}
+    }
+  );
+  // 취소 시 원복
+  setTimeout(()=>{
+    const cancelBtn=document.querySelector('#generic-modal .btn-secondary');
+    if(cancelBtn){
+      const orig=cancelBtn.onclick;
+      cancelBtn.onclick=()=>{setDragOrder=null;closeModal();renderSetDetail(state.currentSet,[]);};
+    }
+  },50);
 }
 
 function openScreenDetail(screenId, setId) {
@@ -694,9 +820,32 @@ function filterFunctionCompany(code,el){
 // ===================== COMPARE VIEW =====================
 function renderCompareView() {
   const el=document.getElementById('compare-view');
-  el.innerHTML=`<div class="page-header"><div><div class="page-title">화면 비교</div><div class="page-desc">두 세트의 화면을 나란히 비교합니다</div></div></div><div class="compare-layout" id="compare-cols"></div>`;
+  el.innerHTML=`
+    <div class="page-header">
+      <div>
+        <div class="page-title">화면 비교</div>
+        <div class="page-desc">두 세트의 화면을 나란히 비교합니다</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="toast('AI 화면 분석 기능은 준비 중입니다')">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4.5 8.5l4-4M4.5 4.5h4v4"/></svg>
+          AI 화면 분석
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="toast('AI 플로우 분석 기능은 준비 중입니다')">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6.5h9M8 3.5l3 3-3 3"/></svg>
+          AI 플로우 분석
+        </button>
+      </div>
+    </div>
+    <div class="compare-layout" id="compare-cols"></div>`;
   renderCompareCols();
 }
+
+// 비교 섹션 체크/삭제 상태
+let compareChecked={A:new Set(),B:new Set()};
+// 비교 섹션 임시 순서 (slot -> screens[])
+let compareOrder={A:null,B:null};
+let compareDragSrc={slot:null,idx:null};
 
 function renderCompareCols() {
   const el=document.getElementById('compare-cols');
@@ -713,30 +862,101 @@ function renderCompareCols() {
     const companyName=state.companies.find(c=>c.code===data.company_code)?.name||data.company_code||'';
     const subtypeName=state.subtypes.find(s=>s.code===data.subtype_code)?.name||data.subtype_code||'';
     const typeName=state.types.find(t=>t.code===data.type_code)?.name||data.type_code||'';
-    const screens=data.selectedScreens||data.screens||[];
-    return `<div>
+    const screens=compareOrder[slot]||(data.selectedScreens||data.screens||[]);
+    const checked=compareChecked[slot];
+
+    return `<div id="compare-col-${slot}">
       <div class="compare-col-header" onclick="openScreenPicker('${slot}')">
         <span class="compare-col-label">${slot}</span>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:500">${companyName} · ${subtypeName}</div>
-          <div style="font-size:11px;color:var(--text-tertiary)">${typeName} · <span class="badge badge-orange" style="font-size:10px">${data.version||''}</span> · ${screens.length}화면</div>
+          <div style="font-size:12px;font-weight:500">${companyName}${subtypeName?' · '+subtypeName:''}</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">${typeName}${data.version?' · ':''}<span class="badge badge-orange" style="font-size:10px">${data.version||''}</span> · ${screens.length}화면</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M2 5l5 5 5-5"/></svg>
       </div>
-      <div class="compare-grid-3">${screens.map(s=>{
-        const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
-        return `<div class="screen-card" onclick="openLightbox('${s.signed_url||''}')">
-          <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
-          <div class="screen-card-info">
-            <div class="screen-card-order">${String(s.order_no).padStart(3,'0')}</div>
-            <div class="screen-card-name">${stName}</div>
-          </div>
-        </div>`;
-      }).join('')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--text-tertiary)">드래그로 순서 변경 · 체크 후 삭제 가능</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--text-tertiary)">${checked.size>0?checked.size+'개 선택':''}</span>
+          ${checked.size>0?`<button class="btn btn-danger btn-sm" onclick="deleteCompareChecked('${slot}')">삭제</button>`:''}
+        </div>
+      </div>
+      <div class="compare-grid-3" id="compare-grid-${slot}">
+        ${screens.map((s,i)=>{
+          const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
+          const isChk=checked.has(s.id||i);
+          return `<div class="screen-card compare-item ${isChk?'compare-checked':''}"
+            data-slot="${slot}" data-idx="${i}" data-sid="${s.id||''}"
+            draggable="true"
+            ondragstart="onCompareDragStart(event,'${slot}',${i})"
+            ondragover="onCompareDragOver(event,'${slot}',${i})"
+            ondrop="onCompareDrop(event,'${slot}',${i})"
+            ondragend="onCompareDragEnd(event)"
+            onclick="toggleCompareCheck('${slot}','${s.id||i}',event)">
+            <div style="position:absolute;top:6px;left:6px;z-index:2">
+              <div class="compare-check-box ${isChk?'checked':''}">
+                ${isChk?`<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg>`:''}
+              </div>
+            </div>
+            <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
+            <div class="screen-card-info">
+              <div class="screen-card-order">${String(i+1).padStart(3,'0')}</div>
+              <div class="screen-card-name">${stName}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
   };
 
   el.innerHTML=renderCol('A',state.compareA)+renderCol('B',state.compareB);
+}
+
+function toggleCompareCheck(slot,sid,e){
+  // 드래그 중에는 체크 무시
+  if(e.target.closest('.screen-card-thumb'))return openLightbox(e.currentTarget.querySelector('img')?.src||'');
+  const s=compareChecked[slot];
+  if(s.has(sid))s.delete(sid);else s.add(sid);
+  renderCompareCols();
+}
+
+function deleteCompareChecked(slot){
+  const data=slot==='A'?state.compareA:state.compareB;
+  if(!data)return;
+  const screens=compareOrder[slot]||(data.selectedScreens||[]);
+  const checked=compareChecked[slot];
+  const filtered=screens.filter(s=>!checked.has(s.id));
+  compareOrder[slot]=filtered;
+  compareChecked[slot]=new Set();
+  renderCompareCols();
+}
+
+// 비교 섹션 드래그앤드랍
+function onCompareDragStart(e,slot,idx){
+  compareDragSrc={slot,idx};
+  e.currentTarget.style.opacity='0.4';
+  e.dataTransfer.effectAllowed='move';
+}
+function onCompareDragOver(e,slot,idx){
+  e.preventDefault();
+  if(compareDragSrc.slot!==slot)return;
+  document.querySelectorAll('.compare-item').forEach(c=>c.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onCompareDrop(e,slot,idx){
+  e.preventDefault();
+  if(compareDragSrc.slot!==slot||compareDragSrc.idx===idx)return;
+  const data=slot==='A'?state.compareA:state.compareB;
+  const arr=[...(compareOrder[slot]||(data.selectedScreens||[]))];
+  const [moved]=arr.splice(compareDragSrc.idx,1);
+  arr.splice(idx,0,moved);
+  compareOrder[slot]=arr;
+}
+function onCompareDragEnd(e){
+  e.currentTarget.style.opacity='';
+  document.querySelectorAll('.compare-item').forEach(c=>{c.classList.remove('drag-over');c.style.opacity='';});
+  compareDragSrc={slot:null,idx:null};
+  renderCompareCols();
 }
 
 // ===================== SCREEN PICKER =====================
@@ -798,8 +1018,6 @@ async function openScreenPicker(slot) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
-
-  // 기존 선택값 있으면 바로 로드
   if(pickerFilters.company){updatePickerFilterStyles();await loadPickerScreens();}
 }
 
@@ -824,91 +1042,48 @@ async function loadPickerScreens(){
   const body=document.getElementById('picker-body');
   if(!body)return;
   const {company,type,subtype,screen_type,version}=pickerFilters;
-  // 아무 필터도 없으면 안내
-  if(!company&&!screen_type){
-    body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';
-    return;
-  }
+  if(!company&&!screen_type){body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';return;}
   body.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
     let screens=[];
-
     if(company&&type&&subtype){
-      // ── 세트 특정 (기업+유형+유형상세) ─────────────────────────
       const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&subtype=${subtype}&latest_only=false`);
-      // 버전 셀렉트 채우기
       const vSel=document.getElementById('pf-version');
       if(vSel&&sets) vSel.innerHTML=`<option value="">버전 전체</option>`+sets.map(s=>`<option value="${s.version}" ${version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
-
       let targetSets=sets||[];
       if(version) targetSets=targetSets.filter(s=>s.version===version);
       else {
-        // latest만 (버전 미선택 시 최신 1개)
         const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
         targetSets=latest?[latest]:[];
-        if(latest&&!version){
-          pickerFilters.version=latest.version;
-          if(vSel) Array.from(vSel.options).forEach(o=>{o.selected=o.value===latest.version;});
-          updatePickerFilterStyles();
-        }
+        if(latest){pickerFilters.version=latest.version;const vSel2=document.getElementById('pf-version');if(vSel2)Array.from(vSel2.options).forEach(o=>{o.selected=o.value===latest.version;});updatePickerFilterStyles();}
       }
-      for(const s of targetSets){
-        const detail=await api('GET',`/screen-sets/${s.id}`);
-        screens.push(...(detail?.screens||[]));
-      }
-      if(screen_type) screens=screens.filter(s=>s.screen_type_code===screen_type);
-
+      for(const s of targetSets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company&&type){
-      // ── 기업+유형 (유형상세 미선택) ──────────────────────────────
       const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&latest_only=true`)||[];
-      for(const s of sets){
-        const detail=await api('GET',`/screen-sets/${s.id}`);
-        screens.push(...(detail?.screens||[]));
-      }
-      if(screen_type) screens=screens.filter(s=>s.screen_type_code===screen_type);
-
+      for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company){
-      // ── 기업만 ─────────────────────────────────────────────────
-      // /screens 엔드포인트에 company 파라미터 사용
-      const cp=`&company=${company}`;
-      if(screen_type){
-        screens=await api('GET',`/screens?screen_type=${screen_type}${cp}`)||[];
-      } else {
-        // 기업의 최신 세트 전체
-        const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];
-        for(const s of sets){
-          const detail=await api('GET',`/screen-sets/${s.id}`);
-          screens.push(...(detail?.screens||[]));
-        }
-      }
-
-    } else if(screen_type){
-      // ── 화면유형만 ──────────────────────────────────────────────
-      screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];
-    }
-
-    // 중복 제거 (set 여러 개 로드 시)
-    const seen=new Set();
-    screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
-    // 순서 정렬
+      if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}&company=${company}`)||[];}
+      else{const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));};}
+    } else if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];}
+    const seen=new Set();screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
     screens.sort((a,b)=>a.order_no-b.order_no);
-
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
     body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
       const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
       const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';
-      const subtypeName=state.subtypes.find(st=>st.code===s.set?.subtype_code)?.name||'';
+      const subtypeName2=state.subtypes.find(st=>st.code===s.set?.subtype_code)?.name||'';
       const isSel=pickerSelected.has(s.id);
-      // 기업·유형상세 여러 개 섞인 경우 라벨 표시
       const showMeta=!company||(company&&!subtype);
       return `<div class="picker-item ${isSel?'selected':''}" id="picker-item-${s.id}" onclick="togglePickerItem('${s.id}')">
         <div class="picker-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
         <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">없음</div>'}</div>
         <div class="picker-item-info">
-          <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}${showMeta&&companyName?` · ${companyName}`:''}</div>
+          <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}${showMeta&&companyName?' · '+companyName:''}</div>
           <div class="picker-item-name">${stName}</div>
-          ${showMeta&&subtypeName?`<div style="font-size:9px;color:var(--text-tertiary)">${subtypeName}</div>`:''}
+          ${showMeta&&subtypeName2?`<div style="font-size:9px;color:var(--text-tertiary)">${subtypeName2}</div>`:''}
         </div>
       </div>`;
     }).join('')}</div>`;
@@ -916,11 +1091,7 @@ async function loadPickerScreens(){
   } catch(e){body.innerHTML=`<div class="picker-empty"><span>오류: ${e.message}</span></div>`;}
 }
 
-function togglePickerItem(id){
-  if(pickerSelected.has(id))pickerSelected.delete(id);else pickerSelected.add(id);
-  document.getElementById(`picker-item-${id}`)?.classList.toggle('selected',pickerSelected.has(id));
-  updatePickerCount();
-}
+function togglePickerItem(id){if(pickerSelected.has(id))pickerSelected.delete(id);else pickerSelected.add(id);document.getElementById(`picker-item-${id}`)?.classList.toggle('selected',pickerSelected.has(id));updatePickerCount();}
 function pickerSelectAll(){pickerScreens.forEach(s=>pickerSelected.add(s.id));document.querySelectorAll('.picker-item').forEach(el=>el.classList.add('selected'));updatePickerCount();}
 function pickerDeselectAll(){pickerSelected.clear();document.querySelectorAll('.picker-item').forEach(el=>el.classList.remove('selected'));updatePickerCount();}
 function updatePickerCount(){const el=document.getElementById('picker-count');if(el)el.textContent=`${pickerSelected.size}개 선택됨`;}
@@ -930,12 +1101,31 @@ function applyPickerSelection(){
   if(!selected.length&&pickerScreens.length>0)selected=[...pickerScreens];
   if(pickerOrderKeep)selected=selected.sort((a,b)=>a.order_no-b.order_no);
   const setData={company_code:pickerFilters.company,type_code:pickerFilters.type,subtype_code:pickerFilters.subtype,version:pickerFilters.version,selectedScreens:selected};
-  if(pickerSlot==='A')state.compareA=setData;else state.compareB=setData;
+  if(pickerSlot==='A'){state.compareA=setData;compareOrder.A=null;compareChecked.A=new Set();}
+  else{state.compareB=setData;compareOrder.B=null;compareChecked.B=new Set();}
   document.getElementById('picker-overlay')?.remove();
   renderCompareCols();
 }
 
 // ===================== UPLOAD VIEW =====================
+// 4번: 파일명에서 화면유형 코드 자동 매칭
+function guessScreenTypeFromFilename(filename){
+  // 파일명을 대문자로 변환 후 각 화면유형 코드와 매칭
+  const upper=filename.toUpperCase().replace(/\.[^.]+$/,''); // 확장자 제거
+  // 우선순위: 정확히 _ 구분된 토큰으로 매칭
+  const tokens=upper.split(/[_\-\s\.]+/);
+  for(const st of state.screenTypes){
+    const code=st.code.toUpperCase();
+    if(tokens.includes(code))return st.code;
+  }
+  // 토큰 매칭 안되면 부분 포함 검사 (긴 코드 우선)
+  const sorted=[...state.screenTypes].sort((a,b)=>b.code.length-a.code.length);
+  for(const st of sorted){
+    if(upper.includes(st.code.toUpperCase()))return st.code;
+  }
+  return '';
+}
+
 function renderUploadView(){
   const el=document.getElementById('upload-view');
   state.uploadFiles=[];
@@ -954,7 +1144,17 @@ function renderUploadView(){
         <div class="card-body">
           <div class="form-group"><label class="form-label">기업</label><select class="select" id="up-company" style="width:100%"><option value="">선택</option>${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
           <div class="form-group"><label class="form-label">유형</label><select class="select" id="up-type" style="width:100%"><option value="">선택</option>${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">유형상세</label><select class="select" id="up-subtype" style="width:100%"><option value="">선택</option>${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}</select></div>
+          <div class="form-group">
+            <label class="form-label">유형상세</label>
+            <div id="up-subtype-tags" class="tag-select-box">
+              <div class="tag-select-input-wrap">
+                <div id="up-subtype-tags-list" class="tag-select-tags"></div>
+                <input type="text" id="up-subtype-input" class="tag-select-input" placeholder="검색 또는 선택..." autocomplete="off" oninput="filterSubtypeDropdown(this.value)" onfocus="showSubtypeDropdown()" onblur="setTimeout(hideSubtypeDropdown,200)">
+              </div>
+              <div id="up-subtype-dropdown" class="tag-select-dropdown" style="display:none"></div>
+            </div>
+            <input type="hidden" id="up-subtype" value="">
+          </div>
           <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
           <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="goUploadStep2()">다음</button></div>
@@ -963,7 +1163,10 @@ function renderUploadView(){
     </div>
     <div id="upload-step-2" style="display:none">
       <div class="card">
-        <div class="card-header"><div class="card-title">이미지 업로드</div></div>
+        <div class="card-header">
+          <div class="card-title">이미지 업로드</div>
+          <div style="font-size:12px;color:var(--text-tertiary)">파일명에 화면유형 코드가 포함되면 자동 적용됩니다</div>
+        </div>
         <div class="card-body">
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event)" ondragleave="this.classList.remove('drag')">
             <div style="margin-bottom:12px;color:var(--text-tertiary)"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8M10 14l6-6 6 6M6 24h20"/></svg></div>
@@ -993,11 +1196,72 @@ function renderUploadView(){
         </div>
       </div>
     </div>`;
+  // 유형상세 태그 셀렉트 초기화
+  initSubtypeTagSelect();
+}
+
+// ===================== 유형상세 태그 셀렉트 (5번) =====================
+let subtypeTagSelected=[];
+
+function initSubtypeTagSelect(){
+  subtypeTagSelected=[];
+  filterSubtypeDropdown('');
+}
+
+function filterSubtypeDropdown(q){
+  const dd=document.getElementById('up-subtype-dropdown');
+  if(!dd)return;
+  const filtered=state.subtypes.filter(s=>
+    !subtypeTagSelected.includes(s.code)&&
+    (s.name.toLowerCase().includes(q.toLowerCase())||s.code.toLowerCase().includes(q.toLowerCase()))
+  );
+  dd.innerHTML=filtered.length
+    ?filtered.map(s=>`<div class="tag-select-option" onmousedown="selectSubtypeTag('${s.code}','${s.name}')">${s.name} <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.code}</span></div>`).join('')
+    :`<div style="padding:10px 12px;font-size:12px;color:var(--text-tertiary)">검색 결과 없음</div>`;
+}
+
+function showSubtypeDropdown(){
+  const dd=document.getElementById('up-subtype-dropdown');
+  if(dd)dd.style.display='block';
+  filterSubtypeDropdown(document.getElementById('up-subtype-input')?.value||'');
+}
+function hideSubtypeDropdown(){
+  const dd=document.getElementById('up-subtype-dropdown');
+  if(dd)dd.style.display='none';
+}
+
+function selectSubtypeTag(code,name){
+  if(!subtypeTagSelected.includes(code)){
+    subtypeTagSelected.push(code);
+    renderSubtypeTags();
+    // hidden input에 첫번째(또는 단일) 값 세팅
+    const hi=document.getElementById('up-subtype');
+    if(hi)hi.value=subtypeTagSelected[subtypeTagSelected.length-1];
+  }
+  const inp=document.getElementById('up-subtype-input');
+  if(inp){inp.value='';inp.focus();}
+}
+
+function removeSubtypeTag(code){
+  subtypeTagSelected=subtypeTagSelected.filter(c=>c!==code);
+  renderSubtypeTags();
+  const hi=document.getElementById('up-subtype');
+  if(hi)hi.value=subtypeTagSelected[0]||'';
+}
+
+function renderSubtypeTags(){
+  const list=document.getElementById('up-subtype-tags-list');
+  if(!list)return;
+  list.innerHTML=subtypeTagSelected.map(code=>{
+    const name=state.subtypes.find(s=>s.code===code)?.name||code;
+    return `<span class="tag-select-tag">${name}<button onclick="removeSubtypeTag('${code}')" type="button">×</button></span>`;
+  }).join('');
 }
 
 function goUploadStep1(){document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-1').style.display='block';document.getElementById('step-1').classList.add('active');document.getElementById('step-2').classList.remove('active');}
 function goUploadStep2(){
-  const company=document.getElementById('up-company').value,type=document.getElementById('up-type').value,subtype=document.getElementById('up-subtype').value;
+  const company=document.getElementById('up-company').value,type=document.getElementById('up-type').value;
+  const subtype=document.getElementById('up-subtype').value;
   const version=document.getElementById('up-version').value.trim(),date=document.getElementById('up-date').value;
   if(!company||!type||!subtype||!version||!date)return toast('모든 항목을 입력해주세요','error');
   state.uploadMeta={company,type,subtype,version,date};
@@ -1007,7 +1271,16 @@ function goUploadStep2(){
 }
 function handleDrop(e){addFiles(e.dataTransfer.files);}
 function handleFileSelect(e){addFiles(e.target.files);}
-function addFiles(files){Array.from(files).forEach(f=>{if(f.type.startsWith('image/'))state.uploadFiles.push({file:f,status:'pending',screenTypeCode:''});});renderUploadPreviews();}
+function addFiles(files){
+  Array.from(files).forEach(f=>{
+    if(f.type.startsWith('image/')){
+      // 4번: 파일명에서 화면유형 자동 매칭
+      const autoCode=guessScreenTypeFromFilename(f.name);
+      state.uploadFiles.push({file:f,status:'pending',screenTypeCode:autoCode});
+    }
+  });
+  renderUploadPreviews();
+}
 function renderUploadPreviews(){
   const el=document.getElementById('upload-preview');
   document.getElementById('upload-count').textContent=`${state.uploadFiles.length}개 선택됨`;
@@ -1015,11 +1288,17 @@ function renderUploadPreviews(){
   const stOpts=state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
   el.innerHTML=state.uploadFiles.map((item,i)=>{
     const url=URL.createObjectURL(item.file);
+    const autoMatched=!!item.screenTypeCode;
     return `<div class="upload-preview-item">
       <div class="upload-preview-thumb"><img src="${url}"></div>
       <div class="upload-preview-info">
         <div class="upload-preview-name">${i+1}. ${item.file.name}</div>
-        <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value"><option value="">화면유형 선택</option>${stOpts}</select>
+        <div style="position:relative">
+          <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value">
+            <option value="">화면유형 선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`,`value="${item.screenTypeCode}" selected`)}
+          </select>
+          ${autoMatched?`<span style="position:absolute;top:-14px;right:0;font-size:9px;color:var(--primary);font-weight:600">자동 매칭</span>`:''}
+        </div>
         ${item.status==='done'?'<span style="font-size:10px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size:10px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size:10px;color:var(--primary)">업로드 중...</span>':''}
       </div>
       <button class="upload-preview-remove" onclick="state.uploadFiles.splice(${i},1);renderUploadPreviews()">×</button>
@@ -1079,28 +1358,17 @@ function renderMasterView(){
   switchMasterTab('companies');
 }
 
-function switchMasterTab(tab){
-  masterActiveTab=tab;
-  document.querySelectorAll('.master-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-  const labels={companies:'기업 목록',types:'유형 목록',subtypes:'유형상세 목록',screen_types:'화면유형 목록'};
-  document.getElementById('master-tab-title').textContent=labels[tab];
-  renderMasterTable(tab);
-}
+function switchMasterTab(tab){masterActiveTab=tab;document.querySelectorAll('.master-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));const labels={companies:'기업 목록',types:'유형 목록',subtypes:'유형상세 목록',screen_types:'화면유형 목록'};document.getElementById('master-tab-title').textContent=labels[tab];renderMasterTable(tab);}
 
 function renderMasterTable(tab){
   const data={companies:state.companies,types:state.types,subtypes:state.subtypes,screen_types:state.screenTypes}[tab]||[];
-  const isScreenType=tab==='screen_types', isCompany=tab==='companies';
+  const isScreenType=tab==='screen_types',isCompany=tab==='companies';
   const colHeaders=isScreenType?['코드','이름','카테고리','순서','']:isCompany?['코드','이름','URL','순서','활성','']:['코드','이름','순서',''];
   const rows=data.map(row=>{
-    const cells=isScreenType
-      ?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
-      :isCompany
-      ?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
+    const cells=isScreenType?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
+      :isCompany?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
       :`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
-    return `<tr>${cells}<td style="text-align:right;width:160px">
-      <button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button>
-      <button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button>
-    </td></tr>`;
+    return `<tr>${cells}<td style="text-align:right;width:160px"><button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button><button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button></td></tr>`;
   }).join('');
   document.getElementById('master-table-wrap').innerHTML=`<table class="table"><thead><tr>${colHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${colHeaders.length}" style="text-align:center;padding:24px;color:var(--text-tertiary)">데이터가 없습니다</td></tr>`}</tbody></table>`;
 }
@@ -1123,12 +1391,7 @@ function openMasterAddModal(){
       if(isCompany)body.url=document.getElementById('mf-url')?.value.trim();
       if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
-      try{
-        const newItem=await api('POST',pathMap[tab],body);
-        const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];
-        state[stateKey].push(newItem);state[stateKey].sort((a,b)=>a.order_no-b.order_no);
-        closeModal();toast('추가되었습니다','success');renderMasterTable(tab);
-      }catch(e){toast(e.message,'error');}
+      try{const newItem=await api('POST',pathMap[tab],body);const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];state[stateKey].push(newItem);state[stateKey].sort((a,b)=>a.order_no-b.order_no);closeModal();toast('추가되었습니다','success');renderMasterTable(tab);}catch(e){toast(e.message,'error');}
     }
   );
 }
@@ -1144,18 +1407,13 @@ function openMasterEditModal(row){
      ${isScreenType?`<div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" value="${row.category||''}"></div>`:''}
      <div class="form-group"><label class="form-label">순서</label><input class="input" type="number" id="mf-order" value="${row.order_no}"></div>`,
     async()=>{
-      const name=document.getElementById('mf-name').value.trim();
-      const order_no=parseInt(document.getElementById('mf-order').value)||0;
+      const name=document.getElementById('mf-name').value.trim();const order_no=parseInt(document.getElementById('mf-order').value)||0;
       if(!name)return toast('이름을 입력해주세요','error');
       const body={name,order_no};
       if(isCompany){body.url=document.getElementById('mf-url')?.value.trim();body.is_active=document.getElementById('mf-active')?.value==='true';}
       if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
-      try{
-        await api('PATCH',`${pathMap[tab]}/${row.code}`,body);
-        await reloadMasterData(tab);renderMasterTable(tab);
-        closeModal();toast('수정되었습니다','success');
-      }catch(e){toast(e.message,'error');}
+      try{await api('PATCH',`${pathMap[tab]}/${row.code}`,body);await reloadMasterData(tab);renderMasterTable(tab);closeModal();toast('수정되었습니다','success');}catch(e){toast(e.message,'error');}
     }
   );
 }
@@ -1168,17 +1426,11 @@ async function reloadMasterData(tab){
 }
 
 function confirmMasterDelete(tab,code,name){
-  showModal('삭제 확인',
-    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>삭제하면 복구할 수 없습니다.</div><div style="font-size:14px"><strong>${name}</strong> (${code})을 삭제하시겠습니까?</div>`,
+  showModal('삭제 확인',`<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>삭제하면 복구할 수 없습니다.</div><div style="font-size:14px"><strong>${name}</strong> (${code})을 삭제하시겠습니까?</div>`,
     async()=>{
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
-      try{
-        await api('DELETE',`${pathMap[tab]}/${code}`);
-        const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];
-        state[stateKey]=state[stateKey].filter(r=>r.code!==code);
-        closeModal();toast('삭제되었습니다','success');renderMasterTable(tab);
-      }catch(e){toast(e.message,'error');}
-    }, true
+      try{await api('DELETE',`${pathMap[tab]}/${code}`);const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];state[stateKey]=state[stateKey].filter(r=>r.code!==code);closeModal();toast('삭제되었습니다','success');renderMasterTable(tab);}catch(e){toast(e.message,'error');}
+    },true
   );
 }
 
@@ -1191,14 +1443,8 @@ function showModal(title,fieldsHtml,onConfirm,danger=false){
   document.getElementById('modal-confirm-btn').onclick=onConfirm;
 }
 function closeModal(){document.getElementById('generic-modal')?.remove();}
-
-function selectOrderType(type){
-  state.orderModalType=type;
-  document.getElementById('radio-fix').classList.toggle('selected',type==='fix');
-  document.getElementById('radio-version').classList.toggle('selected',type==='version');
-}
+function selectOrderType(type){state.orderModalType=type;document.getElementById('radio-fix').classList.toggle('selected',type==='fix');document.getElementById('radio-version').classList.toggle('selected',type==='version');}
 function confirmOrderChange(){document.getElementById('order-modal').style.display='none';toast('순서가 변경되었습니다','success');}
-
 function openLightbox(url){if(!url)return;document.getElementById('lightbox-img').src=url;document.getElementById('lightbox').style.display='flex';}
 function closeLightbox(){document.getElementById('lightbox').style.display='none';}
 
