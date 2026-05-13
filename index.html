@@ -7,970 +7,330 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ===================== RESET & BASE ===================== */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #FF4600; --primary-hover: #E33400; --primary-light: #FFF0EB; --primary-subtle: #FFF7F5;
+  --gray-0: #FFFFFF; --gray-50: #FAFAF9; --gray-100: #F4F3F1; --gray-200: #E8E6E3;
+  --gray-300: #D1CEC9; --gray-400: #A8A49E; --gray-500: #787470; --gray-600: #524F4B;
+  --gray-700: #3A3835; --gray-800: #252320; --gray-900: #141311;
+  --border: #E8E6E3; --border-strong: #D1CEC9;
+  --text-primary: #141311; --text-secondary: #524F4B; --text-tertiary: #A8A49E;
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px;
+  --font: 'Geist', -apple-system, sans-serif; --font-mono: 'Geist Mono', monospace;
+  --sidebar-w: 220px; --header-h: 52px; --transition: 150ms ease;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--gray-50); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+#app { display: flex; height: 100vh; overflow: hidden; }
 
-  :root {
-    --primary: #FF4600;
-    --primary-hover: #E33400;
-    --primary-light: #FFF0EB;
-    --primary-subtle: #FFF7F5;
+/* SIDEBAR */
+#sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; background: var(--gray-0); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-logo { height: var(--header-h); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border); gap: 8px; flex-shrink: 0; }
+.logo-mark { width: 24px; height: 24px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
+.logo-text { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+.nav-section { padding: 16px 12px 4px; }
+.nav-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); padding: 0 4px; margin-bottom: 2px; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-md); cursor: pointer; color: var(--text-secondary); font-size: 13px; font-weight: 400; transition: background var(--transition), color var(--transition); border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.user-chip { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius-md); background: var(--gray-50); }
+.user-avatar { width: 28px; height: 28px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 12px; font-weight: 500; }
+.user-role { font-size: 11px; color: var(--text-tertiary); }
+.logout-btn { background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 4px; border-radius: var(--radius-sm); }
+.logout-btn:hover { color: var(--text-primary); }
 
-    --gray-0: #FFFFFF;
-    --gray-50: #FAFAF9;
-    --gray-100: #F4F3F1;
-    --gray-200: #E8E6E3;
-    --gray-300: #D1CEC9;
-    --gray-400: #A8A49E;
-    --gray-500: #787470;
-    --gray-600: #524F4B;
-    --gray-700: #3A3835;
-    --gray-800: #252320;
-    --gray-900: #141311;
+/* MAIN */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#topbar { height: var(--header-h); background: var(--gray-0); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0; }
+.topbar-title { font-size: 14px; font-weight: 500; flex: 1; }
+#content { flex: 1; overflow-y: auto; padding: 24px; }
 
-    --border: #E8E6E3;
-    --border-strong: #D1CEC9;
-    --text-primary: #141311;
-    --text-secondary: #524F4B;
-    --text-tertiary: #A8A49E;
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 32px; border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all var(--transition); white-space: nowrap; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--gray-0); color: var(--text-primary); border-color: var(--border-strong); }
+.btn-secondary:hover { background: var(--gray-100); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-danger { background: transparent; color: #C0392B; border-color: #F5C6C2; }
+.btn-danger:hover { background: #FEF2F1; }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
 
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
+/* INPUTS */
+.input { height: 32px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; color: var(--text-primary); background: var(--gray-0); outline: none; transition: border-color var(--transition); width: 100%; }
+.input:focus { border-color: var(--primary); }
+.input::placeholder { color: var(--text-tertiary); }
+.select { height: 32px; padding: 0 28px 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; color: var(--text-primary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; }
+.select:focus { border-color: var(--primary); }
 
-    --font: 'Geist', -apple-system, sans-serif;
-    --font-mono: 'Geist Mono', monospace;
+/* BADGES */
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 500; font-family: var(--font-mono); }
+.badge-orange { background: var(--primary-light); color: var(--primary); }
+.badge-gray { background: var(--gray-100); color: var(--gray-600); }
+.badge-green { background: #EDFCF2; color: #1A7F3C; }
+.badge-new { background: #FFF3E0; color: #E65100; }
 
-    --sidebar-w: 220px;
-    --header-h: 52px;
+/* CARD */
+.card { background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.card-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13px; font-weight: 600; }
+.card-body { padding: 16px; }
 
-    --transition: 150ms ease;
-  }
+/* SCREEN CARD - 390:844 비율 */
+.screen-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.screen-card { background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: border-color var(--transition), box-shadow var(--transition); }
+.screen-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.screen-card-thumb { width: 100%; position: relative; padding-top: calc(844 / 390 * 100%); background: var(--gray-100); overflow: hidden; }
+.screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.screen-card-thumb .no-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-tertiary); }
+.screen-card-info { padding: 6px 8px; }
+.screen-card-order { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); margin-bottom: 2px; }
+.screen-card-name { font-size: 11px; font-weight: 500; line-height: 1.3; }
+.screen-card-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
 
-  html, body {
-    height: 100%;
-    font-family: var(--font);
-    background: var(--gray-50);
-    color: var(--text-primary);
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
+/* COMPARE - 1열 3개 */
+.compare-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 
-  /* ===================== LAYOUT ===================== */
-  #app { display: flex; height: 100vh; overflow: hidden; }
+/* PAGE HEADER */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 16px; }
+.page-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.page-desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+.back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-tertiary); cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; transition: color var(--transition); }
+.back-btn:hover { color: var(--text-primary); }
 
-  /* SIDEBAR */
-  #sidebar {
-    width: var(--sidebar-w);
-    min-width: var(--sidebar-w);
-    height: 100vh;
-    background: var(--gray-0);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* COMPANY SECTION */
+.company-section { margin-bottom: 36px; }
+.company-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.company-name-label { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.company-idx { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); }
 
-  .sidebar-logo {
-    height: var(--header-h);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--border);
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  .sidebar-logo .logo-mark {
-    width: 24px; height: 24px;
-    background: var(--primary);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .sidebar-logo .logo-mark svg { width: 14px; height: 14px; }
-  .sidebar-logo .logo-text {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text-primary);
-  }
+/* VERSION TABS */
+.version-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--gray-100); padding: 3px; border-radius: var(--radius-md); width: fit-content; }
+.version-tab { padding: 4px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-secondary); transition: all var(--transition); font-family: var(--font-mono); }
+.version-tab.active { background: var(--gray-0); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 
-  .sidebar-nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
+/* CHANGE SUMMARY */
+.change-summary { background: var(--primary-subtle); border: 1px solid #FFD0C0; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; }
+.change-summary-title { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.change-row { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.change-tag { font-size: 10px; font-weight: 600; font-family: var(--font-mono); padding: 1px 5px; border-radius: 2px; }
+.change-tag.moved { background: #FFF3E0; color: #E65100; }
+.change-tag.added { background: #EDFCF2; color: #1A7F3C; }
+.change-tag.removed { background: #FEF2F1; color: #C0392B; }
 
-  .nav-section {
-    padding: 16px 12px 4px;
-  }
-  .nav-section-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-    padding: 0 4px;
-    margin-bottom: 2px;
-  }
+/* DETAIL */
+.detail-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 400px; }
+.detail-img-wrap img { max-width: 390px; max-height: 80vh; object-fit: contain; }
+.detail-meta-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.detail-meta-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
+.detail-meta-value { font-size: 13px; font-weight: 500; }
+.flow-strip { margin-top: 20px; }
+.flow-strip-title { font-size: 12px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
+.flow-items { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.flow-items::-webkit-scrollbar { display: none; }
+.flow-item { flex-shrink: 0; width: 64px; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
+.flow-item:hover { border-color: var(--gray-300); }
+.flow-item.current { border-color: var(--primary); }
+.flow-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
+.flow-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.flow-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
+.flow-item.current .flow-item-num { color: var(--primary); }
 
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 400;
-    transition: background var(--transition), color var(--transition);
-    user-select: none;
-    text-decoration: none;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-  }
-  .nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
-  .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
-  .nav-item .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
-  .nav-item.active .nav-icon { opacity: 1; }
+/* COMPARE PAGE */
+.compare-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.compare-col-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--gray-100); border-radius: var(--radius-md); margin-bottom: 12px; cursor: pointer; transition: background var(--transition); border: 1px solid transparent; }
+.compare-col-header:hover { background: var(--gray-200); }
+.compare-col-label { font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; flex-shrink: 0; }
+.compare-col-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); gap: 12px; cursor: pointer; transition: all var(--transition); }
+.compare-col-empty:hover { border-color: var(--primary); background: var(--primary-subtle); }
 
-  .nav-sub {
-    margin-left: 24px;
-    margin-top: 1px;
-  }
-  .nav-sub .nav-item {
-    font-size: 12px;
-    padding: 4px 8px;
-    color: var(--text-tertiary);
-  }
-  .nav-sub .nav-item:hover { color: var(--text-secondary); }
-  .nav-sub .nav-item.active { color: var(--primary); }
+/* SCREEN PICKER MODAL */
+.picker-modal { background: var(--gray-0); border-radius: var(--radius-lg); border: 1px solid var(--border); width: 100%; max-width: 880px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.14); overflow: hidden; }
+.picker-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.picker-title { font-size: 14px; font-weight: 600; }
+.picker-filters { display: flex; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; flex-shrink: 0; background: var(--gray-50); }
+.filter-pill { height: 30px; padding: 0 10px 0 10px; border: 1px solid var(--border-strong); border-radius: 20px; font-family: var(--font); font-size: 12px; color: var(--text-secondary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; padding-right: 24px; }
+.filter-pill:focus { border-color: var(--primary); }
+.filter-pill.active { border-color: var(--primary); background-color: var(--primary-light); color: var(--primary); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23FF4600' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+.picker-order-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; margin-left: auto; white-space: nowrap; }
+.picker-order-toggle input { accent-color: var(--primary); }
+.picker-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.picker-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.picker-item { cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: all var(--transition); position: relative; }
+.picker-item:hover { border-color: var(--gray-300); }
+.picker-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+.picker-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
+.picker-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.picker-item-info { padding: 4px 6px; background: var(--gray-0); }
+.picker-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); }
+.picker-item-name { font-size: 10px; font-weight: 500; line-height: 1.3; }
+.picker-check { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background: var(--primary); border-radius: 3px; display: none; align-items: center; justify-content: center; }
+.picker-item.selected .picker-check { display: flex; }
+.picker-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.picker-empty { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-tertiary); font-size: 13px; flex-direction: column; gap: 8px; }
 
-  .sidebar-footer {
-    padding: 12px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .user-chip {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px;
-    border-radius: var(--radius-md);
-    background: var(--gray-50);
-  }
-  .user-avatar {
-    width: 28px; height: 28px;
-    background: var(--primary-light);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 600; color: var(--primary);
-    flex-shrink: 0;
-  }
-  .user-info { flex: 1; min-width: 0; }
-  .user-name { font-size: 12px; font-weight: 500; color: var(--text-primary); truncate: ellipsis; }
-  .user-role { font-size: 11px; color: var(--text-tertiary); }
-  .logout-btn {
-    background: none; border: none; cursor: pointer;
-    color: var(--text-tertiary); padding: 4px;
-    border-radius: var(--radius-sm);
-    transition: color var(--transition);
-  }
-  .logout-btn:hover { color: var(--text-primary); }
+/* FUNCTION VIEW */
+.function-layout { display: flex; gap: 16px; }
+.screen-type-nav { width: 180px; min-width: 180px; overflow-y: auto; }
+.screen-type-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
+.screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 12px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
+.screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
+.screen-type-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.function-main { flex: 1; min-width: 0; }
+.company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip { padding: 3px 10px; border-radius: 3px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); }
+.chip.active { background: var(--primary); border-color: var(--primary); color: white; }
 
-  /* MAIN */
-  #main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-  }
+/* UPLOAD */
+.upload-zone { border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 40px 20px; text-align: center; cursor: pointer; transition: all var(--transition); background: var(--gray-0); }
+.upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-subtle); }
+.upload-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 16px; }
+.upload-preview-item { position: relative; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.upload-preview-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
+.upload-preview-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.upload-preview-info { padding: 6px 8px; }
+.upload-preview-name { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
+.upload-preview-remove { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(0,0,0,0.5); border-radius: 50%; border: none; cursor: pointer; color: white; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.steps { display: flex; align-items: center; margin-bottom: 24px; }
+.step { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-100); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.step.active .step-num { background: var(--primary); border-color: var(--primary); color: white; }
+.step.active { color: var(--text-primary); font-weight: 500; }
+.step.done .step-num { background: #1A7F3C; border-color: #1A7F3C; color: white; }
+.step-divider { width: 24px; height: 1px; background: var(--border); margin: 0 4px; }
 
-  /* TOPBAR */
-  #topbar {
-    height: var(--header-h);
-    background: var(--gray-0);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-  .topbar-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-primary);
-    flex: 1;
-  }
-  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+/* FORM */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+.form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
 
-  /* CONTENT */
-  #content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-  }
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal { background: var(--gray-0); border-radius: var(--radius-lg); border: 1px solid var(--border); width: 100%; max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); overflow: hidden; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 14px; font-weight: 600; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 2px; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* ===================== COMPONENTS ===================== */
+/* TABLE */
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--gray-50); }
+.table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: var(--gray-50); }
 
-  /* Buttons */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 6px;
-    padding: 0 12px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
-    white-space: nowrap;
-    text-decoration: none;
-  }
-  .btn-primary { background: var(--primary); color: white; }
-  .btn-primary:hover { background: var(--primary-hover); }
-  .btn-secondary { background: var(--gray-0); color: var(--text-primary); border-color: var(--border-strong); }
-  .btn-secondary:hover { background: var(--gray-100); }
-  .btn-ghost { background: transparent; color: var(--text-secondary); }
-  .btn-ghost:hover { background: var(--gray-100); color: var(--text-primary); }
-  .btn-danger { background: transparent; color: #C0392B; border-color: #F5C6C2; }
-  .btn-danger:hover { background: #FEF2F1; }
-  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
-  .btn-lg { height: 38px; padding: 0 16px; font-size: 14px; }
-  .btn svg { width: 14px; height: 14px; }
+/* TOAST */
+#toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
+.toast { display: flex; align-items: center; padding: 10px 14px; background: var(--gray-800); color: white; border-radius: var(--radius-md); font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.2s ease; pointer-events: all; max-width: 320px; }
+.toast.success { background: #1A7F3C; }
+.toast.error { background: #C0392B; }
+@keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.loading { display: flex; align-items: center; justify-content: center; padding: 60px; }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+.empty-icon { width: 40px; height: 40px; background: var(--gray-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.empty-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.empty-desc { font-size: 13px; color: var(--text-tertiary); }
 
-  /* Inputs */
-  .input {
-    height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    font-family: var(--font);
-    font-size: 13px;
-    color: var(--text-primary);
-    background: var(--gray-0);
-    outline: none;
-    transition: border-color var(--transition);
-    width: 100%;
-  }
-  .input:focus { border-color: var(--primary); }
-  .input::placeholder { color: var(--text-tertiary); }
+/* LOGIN */
+#login-screen { position: fixed; inset: 0; background: var(--gray-50); display: flex; align-items: center; justify-content: center; z-index: 500; }
+.login-box { width: 360px; background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+.login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+.login-logo-mark { width: 28px; height: 28px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
+#change-pw-screen { position: fixed; inset: 0; background: var(--gray-50); display: flex; align-items: center; justify-content: center; z-index: 400; }
 
-  .select {
-    height: 32px;
-    padding: 0 28px 0 10px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    font-family: var(--font);
-    font-size: 13px;
-    color: var(--text-primary);
-    background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
-    -webkit-appearance: none;
-    outline: none;
-    cursor: pointer;
-    transition: border-color var(--transition);
-  }
-  .select:focus { border-color: var(--primary); }
+/* RADIO */
+.radio-option { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition); margin-bottom: 10px; }
+.radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
+.radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
+.radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
+.radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
 
-  /* Badges */
-  .badge {
-    display: inline-flex; align-items: center;
-    padding: 2px 7px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: var(--font-mono);
-    letter-spacing: 0.01em;
-  }
-  .badge-orange { background: var(--primary-light); color: var(--primary); }
-  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
-  .badge-green { background: #EDFCF2; color: #1A7F3C; }
-  .badge-new { background: #FFF3E0; color: #E65100; }
-
-  /* Cards */
-  .card {
-    background: var(--gray-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-  .card-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  .card-body { padding: 16px; }
-
-  /* Filter bar */
-  .filter-bar {
-    display: flex; align-items: center; gap: 8px;
-    flex-wrap: wrap;
-  }
-  .filter-label { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
-
-  /* Empty state */
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 60px 20px;
-    text-align: center;
-  }
-  .empty-icon {
-    width: 40px; height: 40px;
-    background: var(--gray-100);
-    border-radius: var(--radius-lg);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 12px;
-  }
-  .empty-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
-  .empty-desc { font-size: 13px; color: var(--text-tertiary); }
-
-  /* Loading */
-  .loading {
-    display: flex; align-items: center; justify-content: center;
-    padding: 40px;
-  }
-  .spinner {
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Toast */
-  #toast-container {
-    position: fixed; bottom: 20px; right: 20px;
-    display: flex; flex-direction: column; gap: 8px;
-    z-index: 9999;
-    pointer-events: none;
-  }
-  .toast {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px;
-    background: var(--gray-800);
-    color: white;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: slideIn 0.2s ease;
-    pointer-events: all;
-    max-width: 320px;
-  }
-  .toast.success { background: #1A7F3C; }
-  .toast.error { background: #C0392B; }
-  @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-  }
-  .modal {
-    background: var(--gray-0);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    width: 100%;
-    max-width: 480px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-    overflow: hidden;
-  }
-  .modal-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .modal-title { font-size: 14px; font-weight: 600; }
-  .modal-close { background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 2px; }
-  .modal-close:hover { color: var(--text-primary); }
-  .modal-body { padding: 20px; }
-  .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-
-  /* Form */
-  .form-group { margin-bottom: 16px; }
-  .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
-  .form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
-
-  /* ===================== LOGIN ===================== */
-  #login-screen {
-    position: fixed; inset: 0;
-    background: var(--gray-50);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 500;
-  }
-  .login-box {
-    width: 360px;
-    background: var(--gray-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 32px;
-  }
-  .login-logo {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 28px;
-  }
-  .login-logo-mark {
-    width: 28px; height: 28px;
-    background: var(--primary);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .login-logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-  .login-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-  .login-sub { font-size: 13px; color: var(--text-tertiary); margin-bottom: 24px; }
-  .login-form .form-group { margin-bottom: 12px; }
-  .login-form .input { height: 36px; }
-  .login-remember {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-secondary);
-    margin: 12px 0;
-    cursor: pointer;
-  }
-  .login-remember input { accent-color: var(--primary); }
-  .login-submit { width: 100%; height: 36px; font-size: 13px; }
-
-  /* ===================== COMPANY GRID ===================== */
-  .page-header {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
-  }
-  .page-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
-  .page-desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
-
-  /* Company section */
-  .company-section { margin-bottom: 32px; }
-  .company-section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .company-name-label {
-    font-size: 13px; font-weight: 600;
-    color: var(--text-primary);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .company-idx {
-    font-size: 11px;
-    font-family: var(--font-mono);
-    color: var(--text-tertiary);
-  }
-
-  /* Type scroll row */
-  .type-scroll {
-    display: flex; gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .type-scroll::-webkit-scrollbar { display: none; }
-
-  /* Type card */
-  .type-card {
-    flex-shrink: 0;
-    width: 180px;
-    background: var(--gray-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    cursor: pointer;
-    transition: border-color var(--transition), box-shadow var(--transition);
-  }
-  .type-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  .type-card-thumb {
-    height: 120px;
-    background: var(--gray-100);
-    overflow: hidden;
-    position: relative;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .type-card-thumb img {
-    width: 100%; height: 100%; object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-  .type-card:hover .type-card-thumb img { transform: scale(1.03); }
-  .type-card-thumb .no-img {
-    font-size: 11px; color: var(--text-tertiary);
-  }
-  .type-card-info { padding: 10px 12px; }
-  .type-card-subtype { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
-  .type-card-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
-  .type-card-meta {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 6px;
-  }
-  .type-card-count { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
-
-  /* ===================== SUBTYPE VIEW ===================== */
-  .back-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-tertiary);
-    cursor: pointer; border: none; background: none;
-    padding: 0; margin-bottom: 16px;
-    transition: color var(--transition);
-  }
-  .back-btn:hover { color: var(--text-primary); }
-
-  .screen-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  .screen-item {
-    background: var(--gray-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    cursor: pointer;
-    transition: border-color var(--transition), box-shadow var(--transition);
-    position: relative;
-  }
-  .screen-item:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  .screen-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
-  .screen-thumb {
-    width: 100%; aspect-ratio: 9/19;
-    background: var(--gray-100);
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .screen-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .screen-thumb .no-img { font-size: 10px; color: var(--text-tertiary); }
-  .screen-info { padding: 6px 8px; }
-  .screen-order {
-    font-size: 10px; font-family: var(--font-mono);
-    color: var(--text-tertiary); margin-bottom: 2px;
-  }
-  .screen-type-name { font-size: 11px; font-weight: 500; color: var(--text-primary); line-height: 1.3; }
-  .screen-select-check {
-    position: absolute; top: 6px; left: 6px;
-    width: 18px; height: 18px;
-    background: var(--primary);
-    border-radius: 3px;
-    display: none; align-items: center; justify-content: center;
-  }
-  .screen-item.selected .screen-select-check { display: flex; }
-
-  /* Version tabs */
-  .version-tabs {
-    display: flex; gap: 4px;
-    margin-bottom: 16px;
-    background: var(--gray-100);
-    padding: 3px;
-    border-radius: var(--radius-md);
-    width: fit-content;
-  }
-  .version-tab {
-    padding: 4px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px; font-weight: 500;
-    cursor: pointer; border: none; background: none;
-    color: var(--text-secondary);
-    transition: background var(--transition), color var(--transition);
-    font-family: var(--font-mono);
-  }
-  .version-tab.active { background: var(--gray-0); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-
-  /* Change summary */
-  .change-summary {
-    background: var(--primary-subtle);
-    border: 1px solid #FFD0C0;
-    border-radius: var(--radius-md);
-    padding: 12px 14px;
-    margin-bottom: 16px;
-  }
-  .change-summary-title {
-    font-size: 12px; font-weight: 600; color: var(--primary);
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .change-row { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
-  .change-tag {
-    font-size: 10px; font-weight: 600; font-family: var(--font-mono);
-    padding: 1px 5px; border-radius: 2px;
-  }
-  .change-tag.moved { background: #FFF3E0; color: #E65100; }
-  .change-tag.added { background: #EDFCF2; color: #1A7F3C; }
-  .change-tag.removed { background: #FEF2F1; color: #C0392B; }
-
-  /* ===================== SCREEN DETAIL ===================== */
-  .detail-layout {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 20px;
-    align-items: start;
-  }
-  .detail-img-wrap {
-    background: var(--gray-100);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-    min-height: 400px;
-  }
-  .detail-img-wrap img { max-width: 100%; max-height: 80vh; object-fit: contain; }
-  .detail-meta { }
-  .detail-meta-row {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  .detail-meta-label { font-size: 11px; color: var(--text-tertiary); }
-  .detail-meta-value { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-
-  .flow-strip {
-    margin-top: 20px;
-  }
-  .flow-strip-title { font-size: 12px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
-  .flow-items {
-    display: flex; gap: 6px; overflow-x: auto;
-    padding-bottom: 4px; scrollbar-width: none;
-  }
-  .flow-items::-webkit-scrollbar { display: none; }
-  .flow-item {
-    flex-shrink: 0; width: 72px; cursor: pointer;
-    border-radius: var(--radius-md); overflow: hidden;
-    border: 1px solid var(--border);
-    transition: border-color var(--transition);
-  }
-  .flow-item:hover { border-color: var(--gray-300); }
-  .flow-item.current { border-color: var(--primary); }
-  .flow-item-thumb {
-    height: 52px; background: var(--gray-100);
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
-  }
-  .flow-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .flow-item-num {
-    font-size: 10px; font-family: var(--font-mono);
-    color: var(--text-tertiary); text-align: center; padding: 3px;
-    background: var(--gray-0);
-  }
-  .flow-item.current .flow-item-num { color: var(--primary); }
-
-  /* ===================== COMPARE ===================== */
-  .compare-setup {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-    margin-bottom: 20px;
-  }
-  .compare-slot {
-    background: var(--gray-0);
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius-lg);
-    padding: 16px;
-    min-height: 200px;
-  }
-  .compare-slot.filled { border-style: solid; border-color: var(--border); }
-  .compare-slot-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-bottom: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
-  .compare-slot-name { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
-  .compare-slot-meta { font-size: 12px; color: var(--text-tertiary); }
-
-  .compare-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-  }
-  .compare-col { }
-  .compare-col-header {
-    padding: 10px 12px;
-    background: var(--gray-100);
-    border-radius: var(--radius-md);
-    margin-bottom: 10px;
-    font-size: 12px; font-weight: 500;
-  }
-
-  /* ===================== UPLOAD ===================== */
-  .upload-zone {
-    border: 2px dashed var(--border-strong);
-    border-radius: var(--radius-lg);
-    padding: 40px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color var(--transition), background var(--transition);
-    background: var(--gray-0);
-  }
-  .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-subtle); }
-  .upload-zone-icon { margin-bottom: 12px; color: var(--text-tertiary); }
-  .upload-zone-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-  .upload-zone-sub { font-size: 12px; color: var(--text-tertiary); }
-
-  .upload-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .upload-preview-item {
-    position: relative;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: var(--gray-0);
-  }
-  .upload-preview-thumb {
-    width: 100%; aspect-ratio: 9/19;
-    background: var(--gray-100);
-    overflow: hidden;
-  }
-  .upload-preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .upload-preview-info { padding: 6px 8px; }
-  .upload-preview-name { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
-  .upload-preview-status { font-size: 10px; }
-  .upload-preview-status.uploading { color: #1A7F3C; }
-  .upload-preview-status.done { color: var(--text-tertiary); }
-  .upload-preview-status.error { color: #C0392B; }
-  .upload-preview-remove {
-    position: absolute; top: 4px; right: 4px;
-    width: 18px; height: 18px;
-    background: rgba(0,0,0,0.5);
-    border-radius: 50%; border: none; cursor: pointer;
-    color: white; font-size: 10px;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  /* Step indicator */
-  .steps {
-    display: flex; align-items: center; gap: 0;
-    margin-bottom: 24px;
-  }
-  .step {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; color: var(--text-tertiary);
-  }
-  .step-num {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--gray-100);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 600; color: var(--text-tertiary);
-    flex-shrink: 0;
-  }
-  .step.active .step-num { background: var(--primary); border-color: var(--primary); color: white; }
-  .step.active { color: var(--text-primary); font-weight: 500; }
-  .step.done .step-num { background: #1A7F3C; border-color: #1A7F3C; color: white; }
-  .step-divider { width: 24px; height: 1px; background: var(--border); margin: 0 4px; }
-
-  /* ===================== FUNCTION VIEW ===================== */
-  .screen-type-nav {
-    width: 180px; min-width: 180px;
-    overflow-y: auto;
-  }
-  .screen-type-nav-item {
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
-    font-size: 12px; cursor: pointer;
-    color: var(--text-secondary);
-    transition: background var(--transition), color var(--transition);
-    border: none; background: none;
-    width: 100%; text-align: left;
-  }
-  .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
-  .screen-type-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
-  .screen-type-section { margin-bottom: 8px; }
-  .screen-type-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 6px 10px 3px; }
-
-  .function-layout {
-    display: flex; gap: 16px;
-  }
-  .function-main { flex: 1; min-width: 0; }
-  .company-filter-chips {
-    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
-  }
-  .chip {
-    padding: 3px 10px;
-    border-radius: 3px;
-    font-size: 12px; cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--gray-0);
-    color: var(--text-secondary);
-    transition: all var(--transition);
-  }
-  .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
-
-  /* Drag handle */
-  .drag-handle {
-    cursor: grab;
-    color: var(--text-tertiary);
-    padding: 2px;
-    display: flex; align-items: center;
-  }
-  .drag-handle:active { cursor: grabbing; }
-
-  /* Divider */
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-  /* Table */
-  .table { width: 100%; border-collapse: collapse; }
-  .table th {
-    text-align: left; padding: 8px 12px;
-    font-size: 11px; font-weight: 600;
-    color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border);
-    background: var(--gray-50);
-  }
-  .table td {
-    padding: 10px 12px;
-    font-size: 13px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text-primary);
-  }
-  .table tr:last-child td { border-bottom: none; }
-  .table tr:hover td { background: var(--gray-50); }
-
-  /* ===================== PAGES ===================== */
-  .page { display: none; }
-  .page.active { display: block; }
-
-  /* Order change modal radio */
-  .radio-group { display: flex; flex-direction: column; gap: 10px; }
-  .radio-option {
-    display: flex; gap: 10px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: border-color var(--transition), background var(--transition);
-  }
-  .radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
-  .radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
-  .radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
-  .radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-  .radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
-
-  /* ===================== CHANGE PASSWORD ===================== */
-  #change-pw-screen {
-    position: fixed; inset: 0;
-    background: var(--gray-50);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 400;
-  }
-  .change-pw-box {
-    width: 360px;
-    background: var(--gray-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 32px;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
+#lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.page { display: none; }
+.page.active { display: block; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-300); }
 </style>
 </head>
 <body>
-
-<!-- TOAST -->
 <div id="toast-container"></div>
 
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-mark">
-        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="5" height="5" rx="1" fill="white"/>
-          <rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/>
-          <rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/>
-          <rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/>
-        </svg>
-      </div>
-      <span class="login-logo-text">UX Archive</span>
+      <div class="login-logo-mark"><svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg></div>
+      <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em">UX Archive</span>
     </div>
-    <div class="login-title">로그인</div>
-    <div class="login-sub">사번과 비밀번호를 입력해주세요</div>
-    <div class="login-form">
-      <div class="form-group">
-        <label class="form-label">사번</label>
-        <input class="input" type="text" id="login-id" placeholder="사번 입력" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label class="form-label">비밀번호</label>
-        <input class="input" type="password" id="login-pw" placeholder="비밀번호 입력" autocomplete="current-password">
-      </div>
-      <label class="login-remember">
-        <input type="checkbox" id="login-remember"> 24시간 로그인 유지
-      </label>
-      <button class="btn btn-primary login-submit" onclick="doLogin()">로그인</button>
-    </div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:4px">로그인</div>
+    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:24px">사번과 비밀번호를 입력해주세요</div>
+    <div class="form-group"><label class="form-label">사번</label><input class="input" type="text" id="login-id" placeholder="사번 입력" style="height:36px"></div>
+    <div class="form-group"><label class="form-label">비밀번호</label><input class="input" type="password" id="login-pw" placeholder="비밀번호 입력" style="height:36px"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);margin:12px 0;cursor:pointer"><input type="checkbox" id="login-remember" style="accent-color:var(--primary)"> 24시간 로그인 유지</label>
+    <button class="btn btn-primary" style="width:100%;height:36px" onclick="doLogin()">로그인</button>
   </div>
 </div>
 
-<!-- CHANGE PASSWORD -->
+<!-- CHANGE PW -->
 <div id="change-pw-screen" style="display:none">
-  <div class="change-pw-box">
+  <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-mark">
-        <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg>
-      </div>
-      <span class="login-logo-text">UX Archive</span>
+      <div class="login-logo-mark"><svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg></div>
+      <span style="font-size:15px;font-weight:600">UX Archive</span>
     </div>
-    <div class="login-title">비밀번호 변경</div>
-    <div class="login-sub" style="margin-bottom:20px">최초 로그인입니다. 비밀번호를 변경해주세요.</div>
-    <div class="form-group">
-      <label class="form-label">현재 비밀번호</label>
-      <input class="input" type="password" id="cpw-current" placeholder="현재 비밀번호">
-    </div>
-    <div class="form-group">
-      <label class="form-label">새 비밀번호</label>
-      <input class="input" type="password" id="cpw-new" placeholder="새 비밀번호 (8자 이상)">
-    </div>
-    <div class="form-group">
-      <label class="form-label">새 비밀번호 확인</label>
-      <input class="input" type="password" id="cpw-confirm" placeholder="새 비밀번호 재입력">
-    </div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:4px">비밀번호 변경</div>
+    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:20px">최초 로그인입니다. 비밀번호를 변경해주세요.</div>
+    <div class="form-group"><label class="form-label">현재 비밀번호</label><input class="input" type="password" id="cpw-current"></div>
+    <div class="form-group"><label class="form-label">새 비밀번호</label><input class="input" type="password" id="cpw-new" placeholder="8자 이상"></div>
+    <div class="form-group"><label class="form-label">새 비밀번호 확인</label><input class="input" type="password" id="cpw-confirm"></div>
     <button class="btn btn-primary" style="width:100%" onclick="doChangePassword()">변경하기</button>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app" style="display:none">
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-mark">
-        <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg>
-      </div>
+      <div class="logo-mark"><svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg></div>
       <span class="logo-text">UX Archive</span>
     </div>
-
     <nav class="sidebar-nav">
       <div class="nav-section">
         <div class="nav-section-label">조회</div>
         <button class="nav-item active" id="nav-company" onclick="navigate('company')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
-          기업별 조회
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>기업별 조회
         </button>
         <button class="nav-item" id="nav-function" onclick="navigate('function')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
-          기능별 조회
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>기능별 조회
         </button>
         <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>
-          화면 비교
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>화면 비교
         </button>
       </div>
-
       <div class="nav-section" id="admin-nav" style="display:none">
         <div class="nav-section-label">관리자</div>
         <button class="nav-item" id="nav-upload" onclick="navigate('upload')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V3M5 6l3-3 3 3M3 13h10"/></svg>
-          화면 업로드
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V3M5 6l3-3 3 3M3 13h10"/></svg>화면 업로드
         </button>
         <button class="nav-item" id="nav-master" onclick="navigate('master')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 6v4M8 10h.01"/></svg>
-          마스터 관리
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>마스터 관리
         </button>
       </div>
     </nav>
-
     <div class="sidebar-footer">
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">U</div>
@@ -985,639 +345,548 @@
     </div>
   </div>
 
-  <!-- MAIN -->
   <div id="main">
     <div id="topbar">
       <div class="topbar-title" id="topbar-title">기업별 조회</div>
-      <div class="topbar-actions" id="topbar-actions"></div>
+      <div id="topbar-actions"></div>
     </div>
-
     <div id="content">
-      <!-- 기업별 조회 -->
-      <div class="page active" id="page-company">
-        <div id="company-view"></div>
-      </div>
-
-      <!-- 기능별 조회 -->
+      <div class="page active" id="page-company"><div id="company-view"></div></div>
       <div class="page" id="page-function">
         <div class="function-layout">
           <div class="screen-type-nav" id="screen-type-nav"></div>
           <div class="function-main">
-            <div class="company-filter-chips" id="company-chips"></div>
+            <div class="company-chips" id="company-chips"></div>
             <div id="function-grid"></div>
           </div>
         </div>
       </div>
-
-      <!-- 화면 비교 -->
-      <div class="page" id="page-compare">
-        <div id="compare-view"></div>
-      </div>
-
-      <!-- 업로드 -->
-      <div class="page" id="page-upload">
-        <div id="upload-view"></div>
-      </div>
-
-      <!-- 마스터 관리 -->
-      <div class="page" id="page-master">
-        <div id="master-view"></div>
-      </div>
+      <div class="page" id="page-compare"><div id="compare-view"></div></div>
+      <div class="page" id="page-upload"><div id="upload-view"></div></div>
+      <div class="page" id="page-master"><div id="master-view"></div></div>
     </div>
   </div>
 </div>
 
-<!-- ORDER CHANGE MODAL -->
+<!-- ORDER MODAL -->
 <div id="order-modal" class="modal-overlay" style="display:none">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">순서 변경</div>
-      <button class="modal-close" onclick="closeOrderModal()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-      </button>
+      <button class="modal-close" onclick="document.getElementById('order-modal').style.display='none'"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">순서 변경 유형을 선택해주세요.</p>
-      <div class="radio-group">
-        <label class="radio-option selected" id="radio-fix">
-          <input type="radio" name="order-type" value="fix" checked onchange="selectOrderType('fix')">
-          <div>
-            <div class="radio-option-title">단순 오류 수정</div>
-            <div class="radio-option-desc">기존 버전에서 순서만 수정합니다. 변경 히스토리가 남지 않습니다.</div>
-          </div>
-        </label>
-        <label class="radio-option" id="radio-version">
-          <input type="radio" name="order-type" value="version" onchange="selectOrderType('version')">
-          <div>
-            <div class="radio-option-title">실제 플로우 변경</div>
-            <div class="radio-option-desc">새 버전으로 업그레이드됩니다. 변경 내역이 자동으로 기록됩니다.</div>
-          </div>
-        </label>
-      </div>
+      <label class="radio-option selected" id="radio-fix"><input type="radio" name="order-type" value="fix" checked onchange="selectOrderType('fix')"><div><div class="radio-option-title">단순 오류 수정</div><div class="radio-option-desc">기존 버전에서 순서만 수정합니다.</div></div></label>
+      <label class="radio-option" id="radio-version"><input type="radio" name="order-type" value="version" onchange="selectOrderType('version')"><div><div class="radio-option-title">실제 플로우 변경</div><div class="radio-option-desc">새 버전으로 업그레이드됩니다.</div></div></label>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeOrderModal()">취소</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('order-modal').style.display='none'">취소</button>
       <button class="btn btn-primary" onclick="confirmOrderChange()">확인</button>
     </div>
   </div>
 </div>
 
-<!-- IMAGE LIGHTBOX -->
-<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px">
-  <button onclick="closeLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px">×</button>
-  <img id="lightbox-img" src="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px">
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button onclick="closeLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.1);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center">×</button>
+  <img id="lightbox-img" src="" style="max-width:90%;max-height:90%;object-fit:contain;border-radius:4px">
 </div>
 
 <script>
-// ===================== CONFIG =====================
 const API = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
-
-// ===================== STATE =====================
 let state = {
-  token: null,
-  user: null,
-  companies: [],
-  types: [],
-  subtypes: [],
-  screenTypes: [],
-  sets: [],
-  currentPage: 'company',
-  currentSet: null,
-  currentScreen: null,
-  compareA: null,
-  compareB: null,
-  uploadFiles: [],
-  orderModalData: null,
-  orderModalType: 'fix',
+  token:null, user:null, companies:[], types:[], subtypes:[], screenTypes:[],
+  sets:[], currentSet:null, compareA:null, compareB:null,
+  uploadFiles:[], uploadMeta:{}, orderModalType:'fix',
 };
 
-// ===================== API =====================
 async function api(method, path, body) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {'Content-Type':'application/json'};
   if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-  const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
-  if (res.status === 401) { doLogout(); return null; }
+  const res = await fetch(API+path, {method, headers, body: body?JSON.stringify(body):undefined});
+  if (res.status===401) { doLogout(); return null; }
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || '오류가 발생했습니다');
+  if (!res.ok) throw new Error(data.error||'오류가 발생했습니다');
   return data;
 }
 
-// ===================== TOAST =====================
-function toast(msg, type = 'default') {
+function toast(msg, type='default') {
   const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
+  el.className = `toast ${type}`; el.textContent = msg;
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(()=>el.remove(), 3000);
 }
 
-// ===================== AUTH =====================
 async function doLogin() {
   const employee_id = document.getElementById('login-id').value.trim();
   const password = document.getElementById('login-pw').value;
   const remember = document.getElementById('login-remember').checked;
-  if (!employee_id || !password) return toast('사번과 비밀번호를 입력해주세요', 'error');
+  if (!employee_id||!password) return toast('사번과 비밀번호를 입력해주세요','error');
   try {
-    const data = await api('POST', '/auth/login', { employee_id, password, remember });
+    const data = await api('POST','/auth/login',{employee_id,password,remember});
     if (!data) return;
-    state.token = data.token;
-    state.user = data.user;
-    localStorage.setItem('ux_token', data.token);
-    localStorage.setItem('ux_user', JSON.stringify(data.user));
+    state.token=data.token; state.user=data.user;
+    localStorage.setItem('ux_token',data.token);
+    localStorage.setItem('ux_user',JSON.stringify(data.user));
     if (data.user.is_first_login) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('change-pw-screen').style.display = 'flex';
-      document.getElementById('cpw-current').value = password;
-    } else {
-      initApp();
-    }
-  } catch(e) { toast(e.message, 'error'); }
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('change-pw-screen').style.display='flex';
+      document.getElementById('cpw-current').value=password;
+    } else { initApp(); }
+  } catch(e) { toast(e.message,'error'); }
 }
 
 async function doChangePassword() {
   const current = document.getElementById('cpw-current').value;
   const newPw = document.getElementById('cpw-new').value;
   const confirm = document.getElementById('cpw-confirm').value;
-  if (newPw.length < 8) return toast('비밀번호는 8자 이상이어야 합니다', 'error');
-  if (newPw !== confirm) return toast('비밀번호가 일치하지 않습니다', 'error');
+  if (newPw.length<8) return toast('비밀번호는 8자 이상이어야 합니다','error');
+  if (newPw!==confirm) return toast('비밀번호가 일치하지 않습니다','error');
   try {
-    await api('POST', '/auth/change-password', { employee_id: state.user.employee_id, current_password: current, new_password: newPw });
-    toast('비밀번호가 변경되었습니다', 'success');
-    document.getElementById('change-pw-screen').style.display = 'none';
+    await api('POST','/auth/change-password',{employee_id:state.user.employee_id,current_password:current,new_password:newPw});
+    toast('비밀번호가 변경되었습니다','success');
+    document.getElementById('change-pw-screen').style.display='none';
     initApp();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) { toast(e.message,'error'); }
 }
 
 function doLogout() {
-  localStorage.removeItem('ux_token');
-  localStorage.removeItem('ux_user');
-  state.token = null; state.user = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  localStorage.removeItem('ux_token'); localStorage.removeItem('ux_user');
+  state.token=null; state.user=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
 }
 
-// ===================== INIT =====================
 async function initApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('change-pw-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-
-  document.getElementById('user-name-display').textContent = state.user.name;
-  document.getElementById('user-role-display').textContent = state.user.role === 'admin' ? '관리자' : '일반';
-  document.getElementById('user-avatar').textContent = state.user.name[0];
-  if (state.user.role === 'admin') document.getElementById('admin-nav').style.display = 'block';
-
-  // 마스터 데이터 로드
-  const [companies, types, subtypes, screenTypes] = await Promise.all([
-    api('GET', '/companies'),
-    api('GET', '/types'),
-    api('GET', '/subtypes'),
-    api('GET', '/screen-types'),
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('change-pw-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-name-display').textContent=state.user.name;
+  document.getElementById('user-role-display').textContent=state.user.role==='admin'?'관리자':'일반';
+  document.getElementById('user-avatar').textContent=state.user.name[0];
+  if (state.user.role==='admin') document.getElementById('admin-nav').style.display='block';
+  const [companies,types,subtypes,screenTypes] = await Promise.all([
+    api('GET','/companies'), api('GET','/types'), api('GET','/subtypes'), api('GET','/screen-types')
   ]);
-  state.companies = companies || [];
-  state.types = types || [];
-  state.subtypes = subtypes || [];
-  state.screenTypes = screenTypes || [];
-
+  state.companies=companies||[]; state.types=types||[];
+  state.subtypes=subtypes||[]; state.screenTypes=screenTypes||[];
   navigate('company');
 }
 
-// ===================== NAVIGATION =====================
 function navigate(page) {
-  state.currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const navEl = document.getElementById(`nav-${page}`);
-  if (navEl) navEl.classList.add('active');
-
-  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  state.currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`nav-${page}`)?.classList.add('active');
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-
-  const titles = { company: '기업별 조회', function: '기능별 조회', compare: '화면 비교', upload: '화면 업로드', master: '마스터 관리' };
-  document.getElementById('topbar-title').textContent = titles[page] || '';
-  document.getElementById('topbar-actions').innerHTML = '';
-
-  if (page === 'company') renderCompanyView();
-  if (page === 'function') renderFunctionView();
-  if (page === 'compare') renderCompareView();
-  if (page === 'upload') renderUploadView();
-  if (page === 'master') renderMasterView();
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리'};
+  document.getElementById('topbar-title').textContent=titles[page]||'';
+  document.getElementById('topbar-actions').innerHTML='';
+  if (page==='company') renderCompanyView();
+  if (page==='function') renderFunctionView();
+  if (page==='compare') renderCompareView();
+  if (page==='upload') renderUploadView();
+  if (page==='master') renderMasterView();
 }
 
 // ===================== COMPANY VIEW =====================
 async function renderCompanyView() {
   const el = document.getElementById('company-view');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
   try {
-    const sets = await api('GET', '/screen-sets?latest_only=true');
-    state.sets = sets || [];
-
-    // 기업별 그룹
+    const sets = await api('GET','/screen-sets?latest_only=true');
+    state.sets = sets||[];
     const byCompany = {};
-    state.companies.forEach(c => byCompany[c.code] = { company: c, sets: [] });
-    state.sets.forEach(s => { if (byCompany[s.company_code]) byCompany[s.company_code].sets.push(s); });
-
+    state.companies.forEach(c=>byCompany[c.code]={company:c,sets:[]});
+    state.sets.forEach(s=>{if(byCompany[s.company_code])byCompany[s.company_code].sets.push(s);});
     if (!state.sets.length) {
-      el.innerHTML = `
-        <div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">등록된 화면이 없습니다</div></div></div>
-        <div class="empty-state"><div class="empty-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#A8A49E" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg></div><div class="empty-title">화면이 없습니다</div><div class="empty-desc">관리자가 화면을 업로드하면 여기에 표시됩니다</div></div>`;
+      el.innerHTML=`<div class="page-header"><div><div class="page-title">기업별 조회</div></div></div><div class="empty-state"><div class="empty-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#A8A49E" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg></div><div class="empty-title">화면이 없습니다</div><div class="empty-desc">관리자가 화면을 업로드하면 여기에 표시됩니다</div></div>`;
       return;
     }
-
-    let html = `<div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div></div>`;
-
-    state.companies.forEach((c, ci) => {
-      const cSets = byCompany[c.code]?.sets || [];
-      if (!cSets.length) return;
-
-      html += `<div class="company-section">
-        <div class="company-section-header">
-          <div class="company-name-label">
-            <span class="company-idx">${String(ci).padStart(2,'0')}.</span>
-            ${c.name}
-          </div>
-          <span class="badge badge-gray">${cSets.length}개 유형</span>
-        </div>
-        <div class="type-scroll">`;
-
-      cSets.forEach(s => {
-        const firstScreen = s.screens?.[0];
-        const thumbHtml = firstScreen?.signed_url
-          ? `<img src="${firstScreen.signed_url}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'no-img\\'>미리보기 없음</span>'">`
-          : `<span class="no-img">미리보기 없음</span>`;
-
-        const subtypeName = state.subtypes.find(st => st.code === s.subtype_code)?.name || s.subtype_code;
-        const hasChange = s.change_summary && (s.change_summary.order_changed?.length || s.change_summary.added?.length || s.change_summary.removed?.length);
-
-        html += `<div class="type-card" onclick="openSetDetail('${s.id}')">
-          <div class="type-card-thumb">${thumbHtml}</div>
-          <div class="type-card-info">
-            <div class="type-card-subtype">${subtypeName}</div>
-            <div class="type-card-name">${s.subtype?.name || subtypeName}</div>
-            <div class="type-card-meta">
-              <span class="type-card-count">${s.screens?.length || 0}화면</span>
-              <span class="badge ${hasChange ? 'badge-new' : 'badge-gray'}">${s.version}${hasChange ? ' · 변경' : ''}</span>
+    let html=`<div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div></div>`;
+    state.companies.forEach((c,ci)=>{
+      const cSets=byCompany[c.code]?.sets||[];
+      if(!cSets.length)return;
+      html+=`<div class="company-section"><div class="company-section-header"><div class="company-name-label"><span class="company-idx">${String(ci).padStart(2,'0')}.</span>${c.name}</div><span class="badge badge-gray">${cSets.length}개 유형</span></div><div class="screen-grid-5">`;
+      cSets.forEach(s=>{
+        const firstScreen=s.screens?.[0];
+        const subtypeName=state.subtypes.find(st=>st.code===s.subtype_code)?.name||s.subtype_code;
+        const typeName=state.types.find(t=>t.code===s.type_code)?.name||s.type_code;
+        const hasChange=s.change_summary&&(s.change_summary.order_changed?.length||s.change_summary.added?.length||s.change_summary.removed?.length);
+        const thumbHtml=firstScreen?.signed_url?`<img src="${firstScreen.signed_url}" loading="lazy">`:`<span class="no-img">없음</span>`;
+        html+=`<div class="screen-card" onclick="openSetDetail('${s.id}')">
+          <div class="screen-card-thumb">${thumbHtml}</div>
+          <div class="screen-card-info">
+            <div class="screen-card-sub">${typeName}</div>
+            <div class="screen-card-name">${subtypeName}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+              <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
+              <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
             </div>
           </div>
         </div>`;
       });
-
-      html += `</div></div>`;
+      html+=`</div></div>`;
     });
-
-    el.innerHTML = html;
+    el.innerHTML=html;
   } catch(e) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-title">불러오기 실패</div><div class="empty-desc">${e.message}</div></div>`;
+    el.innerHTML=`<div class="empty-state"><div class="empty-title">불러오기 실패</div><div class="empty-desc">${e.message}</div></div>`;
   }
 }
 
 async function openSetDetail(setId) {
-  const el = document.getElementById('company-view');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
+  const el=document.getElementById('company-view');
+  el.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
-    const set = await api('GET', `/screen-sets/${setId}`);
-    state.currentSet = set;
-
-    // 다른 버전 목록
-    const allVersions = await api('GET', `/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
-
-    renderSetDetail(set, allVersions || []);
-  } catch(e) {
-    toast(e.message, 'error');
-    renderCompanyView();
-  }
+    const set=await api('GET',`/screen-sets/${setId}`);
+    state.currentSet=set;
+    const allVersions=await api('GET',`/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
+    renderSetDetail(set,allVersions||[]);
+  } catch(e) { toast(e.message,'error'); renderCompanyView(); }
 }
 
 function renderSetDetail(set, allVersions) {
-  const el = document.getElementById('company-view');
-  const companyName = state.companies.find(c => c.code === set.company_code)?.name || set.company_code;
-  const subtypeName = state.subtypes.find(s => s.code === set.subtype_code)?.name || set.subtype_code;
-  const isAdmin = state.user?.role === 'admin';
-  const hasChange = set.change_summary && (set.change_summary.order_changed?.length || set.change_summary.added?.length || set.change_summary.removed?.length);
+  const el=document.getElementById('company-view');
+  const companyName=state.companies.find(c=>c.code===set.company_code)?.name||set.company_code;
+  const subtypeName=state.subtypes.find(s=>s.code===set.subtype_code)?.name||set.subtype_code;
+  const typeName=state.types.find(t=>t.code===set.type_code)?.name||set.type_code;
+  const isAdmin=state.user?.role==='admin';
+  const hasChange=set.change_summary&&(set.change_summary.order_changed?.length||set.change_summary.added?.length||set.change_summary.removed?.length);
 
-  // Version tabs
-  const versionTabs = allVersions.map(v =>
-    `<button class="version-tab ${v.id === set.id ? 'active' : ''}" onclick="openSetDetail('${v.id}')">${v.version}</button>`
+  const versionTabs=(allVersions.length?allVersions:[set]).map(v=>
+    `<button class="version-tab ${v.id===set.id?'active':''}" onclick="openSetDetail('${v.id}')">${v.version}</button>`
   ).join('');
 
-  // Change summary
-  let changeSummaryHtml = '';
-  if (hasChange && set.change_summary) {
-    const cs = set.change_summary;
-    let rows = '';
-    (cs.order_changed || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag moved">이동</span>${c.screen_type} ${c.from}번 → ${c.to}번</div>`; });
-    (cs.added || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag added">추가</span>${state.screenTypes.find(s=>s.code===c)?.name || c}</div>`; });
-    (cs.removed || []).forEach(c => { rows += `<div class="change-row"><span class="change-tag removed">삭제</span>${state.screenTypes.find(s=>s.code===c)?.name || c}</div>`; });
-    changeSummaryHtml = `<div class="change-summary"><div class="change-summary-title">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v5l3 2"/><circle cx="6" cy="6" r="5"/></svg>
-      이전 버전 대비 변경사항</div>${rows}</div>`;
+  let changeSummaryHtml='';
+  if(hasChange&&set.change_summary){
+    const cs=set.change_summary;
+    let rows='';
+    (cs.order_changed||[]).forEach(c=>{rows+=`<div class="change-row"><span class="change-tag moved">이동</span>${state.screenTypes.find(s=>s.code===c.screen_type)?.name||c.screen_type} ${c.from}번 → ${c.to}번</div>`;});
+    (cs.added||[]).forEach(c=>{rows+=`<div class="change-row"><span class="change-tag added">추가</span>${state.screenTypes.find(s=>s.code===c)?.name||c}</div>`;});
+    (cs.removed||[]).forEach(c=>{rows+=`<div class="change-row"><span class="change-tag removed">삭제</span>${state.screenTypes.find(s=>s.code===c)?.name||c}</div>`;});
+    changeSummaryHtml=`<div class="change-summary"><div class="change-summary-title"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 3v3l2 1"/></svg>이전 버전 대비 변경사항</div>${rows}</div>`;
   }
 
-  // Screens grid
-  const screensHtml = set.screens?.map(s => {
-    const stName = state.screenTypes.find(st => st.code === s.screen_type_code)?.name || s.screen_type_code;
-    const thumbHtml = s.signed_url
-      ? `<img src="${s.signed_url}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'no-img\\'>없음</span>'">`
-      : `<span class="no-img">없음</span>`;
-    return `<div class="screen-item" onclick="openScreenDetail('${s.id}', '${set.id}')">
-      <div class="screen-thumb">${thumbHtml}</div>
-      <div class="screen-info">
-        <div class="screen-order">${String(s.order_no).padStart(3,'0')}</div>
-        <div class="screen-type-name">${stName}</div>
+  const screensHtml=(set.screens||[]).map(s=>{
+    const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
+    const thumbHtml=s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:`<span class="no-img">없음</span>`;
+    return `<div class="screen-card" onclick="openScreenDetail('${s.id}','${set.id}')">
+      <div class="screen-card-thumb">${thumbHtml}</div>
+      <div class="screen-card-info">
+        <div class="screen-card-order">${String(s.order_no).padStart(3,'0')}</div>
+        <div class="screen-card-name">${stName}</div>
       </div>
     </div>`;
-  }).join('') || '';
+  }).join('');
 
-  el.innerHTML = `
+  el.innerHTML=`
     <button class="back-btn" onclick="renderCompanyView()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>
-      기업별 조회
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>기업별 조회
     </button>
     <div class="page-header">
-      <div>
-        <div class="page-title">${companyName} · ${subtypeName}</div>
-        <div class="page-desc">${set.type?.name || ''} · ${set.uploaded_at} 업로드</div>
-      </div>
-      ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="openReorderMode()">순서 편집</button>` : ''}
+      <div><div class="page-title">${companyName} · ${subtypeName}</div><div class="page-desc">${typeName} · ${set.uploaded_at} 업로드</div></div>
+      ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="toast('순서 편집 기능은 다음 업데이트에 포함됩니다')">순서 편집</button>`:''}
     </div>
     <div class="version-tabs">${versionTabs}</div>
     ${changeSummaryHtml}
-    <div class="screen-grid">${screensHtml}</div>
-  `;
+    <div class="screen-grid-5">${screensHtml}</div>`;
 }
 
 function openScreenDetail(screenId, setId) {
-  const set = state.currentSet;
-  if (!set) return;
-  const screen = set.screens?.find(s => s.id === screenId);
-  if (!screen) return;
-  state.currentScreen = screen;
+  const set=state.currentSet;
+  if(!set)return;
+  const screen=set.screens?.find(s=>s.id===screenId);
+  if(!screen)return;
+  const companyName=state.companies.find(c=>c.code===set.company_code)?.name||set.company_code;
+  const subtypeName=state.subtypes.find(s=>s.code===set.subtype_code)?.name||set.subtype_code;
+  const typeName=state.types.find(t=>t.code===set.type_code)?.name||set.type_code;
+  const stName=state.screenTypes.find(s=>s.code===screen.screen_type_code)?.name||screen.screen_type_code;
+  const el=document.getElementById('company-view');
 
-  const el = document.getElementById('company-view');
-  const companyName = state.companies.find(c => c.code === set.company_code)?.name || set.company_code;
-  const subtypeName = state.subtypes.find(s => s.code === set.subtype_code)?.name || set.subtype_code;
-  const stName = state.screenTypes.find(s => s.code === screen.screen_type_code)?.name || screen.screen_type_code;
-
-  // Flow strip
-  const flowHtml = set.screens?.map(s => {
-    const thumb = s.signed_url ? `<img src="${s.signed_url}" loading="lazy">` : '';
-    return `<div class="flow-item ${s.id === screenId ? 'current' : ''}" onclick="openScreenDetail('${s.id}','${setId}')">
+  const flowHtml=(set.screens||[]).map(s=>{
+    const thumb=s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'';
+    return `<div class="flow-item ${s.id===screenId?'current':''}" onclick="openScreenDetail('${s.id}','${setId}')">
       <div class="flow-item-thumb">${thumb}</div>
       <div class="flow-item-num">${String(s.order_no).padStart(3,'0')}</div>
     </div>`;
-  }).join('') || '';
+  }).join('');
 
-  el.innerHTML = `
-    <button class="back-btn" onclick="renderSetDetail(state.currentSet, [])">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>
-      ${companyName} · ${subtypeName}
+  el.innerHTML=`
+    <button class="back-btn" onclick="renderSetDetail(state.currentSet,[])">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
     </button>
-    <div class="detail-layout">
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
       <div>
-        <div class="detail-img-wrap" onclick="openLightbox('${screen.signed_url || ''}')">
-          ${screen.signed_url ? `<img src="${screen.signed_url}" style="cursor:zoom-in">` : '<span style="color:var(--text-tertiary)">이미지 없음</span>'}
+        <div class="detail-img-wrap" onclick="openLightbox('${screen.signed_url||''}')">
+          ${screen.signed_url?`<img src="${screen.signed_url}" style="cursor:zoom-in;max-width:390px">`:'<span style="color:var(--text-tertiary)">이미지 없음</span>'}
         </div>
         <div class="flow-strip">
           <div class="flow-strip-title">플로우 순서</div>
           <div class="flow-items">${flowHtml}</div>
         </div>
       </div>
-      <div class="detail-meta card">
+      <div class="card">
         <div class="card-header"><div class="card-title">화면 정보</div></div>
-        <div class="card-body" style="padding:0">
-          <div class="detail-meta-row" style="padding:12px 16px">
-            <div class="detail-meta-label">기업</div>
-            <div class="detail-meta-value">${companyName}</div>
-          </div>
-          <div class="detail-meta-row" style="padding:12px 16px">
-            <div class="detail-meta-label">유형</div>
-            <div class="detail-meta-value">${set.type?.name || ''}</div>
-          </div>
-          <div class="detail-meta-row" style="padding:12px 16px">
-            <div class="detail-meta-label">유형상세</div>
-            <div class="detail-meta-value">${subtypeName}</div>
-          </div>
-          <div class="detail-meta-row" style="padding:12px 16px">
-            <div class="detail-meta-label">화면유형</div>
-            <div class="detail-meta-value">${stName}</div>
-          </div>
-          <div class="detail-meta-row" style="padding:12px 16px">
-            <div class="detail-meta-label">버전</div>
-            <div class="detail-meta-value"><span class="badge badge-orange">${set.version}</span></div>
-          </div>
-          <div class="detail-meta-row" style="padding:12px 16px;border-bottom:none">
-            <div class="detail-meta-label">업로드일자</div>
-            <div class="detail-meta-value">${set.uploaded_at}</div>
-          </div>
+        <div style="padding:0">
+          <div class="detail-meta-row"><div class="detail-meta-label">기업</div><div class="detail-meta-value">${companyName}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">유형</div><div class="detail-meta-value">${typeName}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">유형상세</div><div class="detail-meta-value">${subtypeName}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${set.version}</span></div></div>
+          <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 // ===================== FUNCTION VIEW =====================
 async function renderFunctionView() {
-  // Screen type nav
-  const navEl = document.getElementById('screen-type-nav');
-  const categories = [...new Set(state.screenTypes.map(s => s.category).filter(Boolean))];
-  navEl.innerHTML = categories.map(cat => `
-    <div class="screen-type-section">
+  const navEl=document.getElementById('screen-type-nav');
+  const categories=[...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
+  navEl.innerHTML=categories.map(cat=>`
+    <div>
       <div class="screen-type-section-label">${cat}</div>
-      ${state.screenTypes.filter(s => s.category === cat).map(s =>
-        `<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">${s.name}</button>`
-      ).join('')}
-    </div>
-  `).join('');
+      ${state.screenTypes.filter(s=>s.category===cat).map(s=>`<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">${s.name}</button>`).join('')}
+    </div>`).join('');
 
-  // Company chips
-  const chipsEl = document.getElementById('company-chips');
-  chipsEl.innerHTML = `<button class="chip active" onclick="filterFunctionCompany('all', this)">전체</button>` +
-    state.companies.map(c => `<button class="chip" onclick="filterFunctionCompany('${c.code}', this)">${c.name}</button>`).join('');
+  const chipsEl=document.getElementById('company-chips');
+  chipsEl.innerHTML=`<button class="chip active" onclick="filterFunctionCompany('all',this)">전체</button>`+
+    state.companies.map(c=>`<button class="chip" onclick="filterFunctionCompany('${c.code}',this)">${c.name}</button>`).join('');
 
-  document.getElementById('function-grid').innerHTML = `<div class="empty-state"><div class="empty-title">화면 유형을 선택해주세요</div><div class="empty-desc">왼쪽에서 화면 유형을 선택하면 기업별 화면이 나타납니다</div></div>`;
+  document.getElementById('function-grid').innerHTML=`<div class="empty-state"><div class="empty-title">화면 유형을 선택해주세요</div><div class="empty-desc">왼쪽에서 화면 유형을 선택하면 기업별 화면이 나타납니다</div></div>`;
 }
 
-let currentFunctionType = null;
-let currentFunctionCompany = 'all';
+let currentFunctionType=null, currentFunctionCompany='all';
 
 async function loadFunctionScreens(typeCode) {
-  currentFunctionType = typeCode;
-  document.querySelectorAll('.screen-type-nav-item').forEach(el => el.classList.remove('active'));
+  currentFunctionType=typeCode;
+  document.querySelectorAll('.screen-type-nav-item').forEach(el=>el.classList.remove('active'));
   document.querySelector(`[data-code="${typeCode}"]`)?.classList.add('active');
-
-  const gridEl = document.getElementById('function-grid');
-  gridEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
+  const gridEl=document.getElementById('function-grid');
+  gridEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
-    const companyParam = currentFunctionCompany !== 'all' ? `&company=${currentFunctionCompany}` : '';
-    const screens = await api('GET', `/screens?screen_type=${typeCode}${companyParam}`);
-
-    if (!screens?.length) {
-      gridEl.innerHTML = '<div class="empty-state"><div class="empty-title">화면 없음</div><div class="empty-desc">해당 화면 유형의 이미지가 없습니다</div></div>';
-      return;
-    }
-
-    gridEl.innerHTML = `<div class="screen-grid">${screens.map(s => {
-      const companyName = state.companies.find(c => c.code === s.set?.company_code)?.name || s.set?.company_code;
-      const thumbHtml = s.signed_url ? `<img src="${s.signed_url}" loading="lazy">` : `<span class="no-img">없음</span>`;
-      return `<div class="screen-item" onclick="openLightbox('${s.signed_url || ''}')">
-        <div class="screen-thumb">${thumbHtml}</div>
-        <div class="screen-info">
-          <div class="screen-order">${companyName}</div>
-          <div class="screen-type-name">${s.set?.version || ''} · ${s.set?.uploaded_at || ''}</div>
-        </div>
-      </div>`;
-    }).join('')}</div>`;
-  } catch(e) {
-    gridEl.innerHTML = `<div class="empty-state"><div class="empty-title">오류</div><div class="empty-desc">${e.message}</div></div>`;
-  }
+    const companyParam=currentFunctionCompany!=='all'?`&company=${currentFunctionCompany}`:'';
+    const screens=await api('GET',`/screens?screen_type=${typeCode}${companyParam}`);
+    if(!screens?.length){gridEl.innerHTML='<div class="empty-state"><div class="empty-title">화면 없음</div><div class="empty-desc">해당 화면 유형의 이미지가 없습니다</div></div>';return;}
+    const stName=state.screenTypes.find(s=>s.code===typeCode)?.name||typeCode;
+    gridEl.innerHTML=`<div style="margin-bottom:12px;font-size:13px;font-weight:500">${stName} <span style="color:var(--text-tertiary);font-weight:400">${screens.length}개</span></div>
+      <div class="screen-grid-5">${screens.map(s=>{
+        const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||s.set?.company_code;
+        return `<div class="screen-card" onclick="openLightbox('${s.signed_url||''}')">
+          <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
+          <div class="screen-card-info">
+            <div class="screen-card-name">${companyName}</div>
+            <div class="screen-card-sub">${s.set?.version||''} · ${s.set?.uploaded_at||''}</div>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+  } catch(e){gridEl.innerHTML=`<div class="empty-state"><div class="empty-title">오류</div><div class="empty-desc">${e.message}</div></div>`;}
 }
 
-function filterFunctionCompany(code, el) {
-  currentFunctionCompany = code;
-  document.querySelectorAll('#company-chips .chip').forEach(c => c.classList.remove('active'));
+function filterFunctionCompany(code,el){
+  currentFunctionCompany=code;
+  document.querySelectorAll('#company-chips .chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
-  if (currentFunctionType) loadFunctionScreens(currentFunctionType);
+  if(currentFunctionType)loadFunctionScreens(currentFunctionType);
 }
 
 // ===================== COMPARE VIEW =====================
 function renderCompareView() {
-  const el = document.getElementById('compare-view');
-  renderCompareSetup(el);
+  const el=document.getElementById('compare-view');
+  el.innerHTML=`<div class="page-header"><div><div class="page-title">화면 비교</div><div class="page-desc">두 세트의 화면을 나란히 비교합니다</div></div></div><div class="compare-layout" id="compare-cols"></div>`;
+  renderCompareCols();
 }
 
-function renderCompareSetup(el) {
-  const aName = state.compareA ? `${state.companies.find(c=>c.code===state.compareA.company_code)?.name} · ${state.subtypes.find(s=>s.code===state.compareA.subtype_code)?.name} · ${state.compareA.version}` : null;
-  const bName = state.compareB ? `${state.companies.find(c=>c.code===state.compareB.company_code)?.name} · ${state.subtypes.find(s=>s.code===state.compareB.subtype_code)?.name} · ${state.compareB.version}` : null;
+function renderCompareCols() {
+  const el=document.getElementById('compare-cols');
+  if(!el)return;
 
-  el.innerHTML = `
-    <div class="page-header"><div><div class="page-title">화면 비교</div><div class="page-desc">두 세트의 화면을 나란히 비교합니다</div></div></div>
-    <div class="compare-setup">
-      <div class="compare-slot ${state.compareA ? 'filled' : ''}">
-        <div class="compare-slot-label">A 영역</div>
-        ${state.compareA ? `
-          <div class="compare-slot-name">${aName}</div>
-          <div class="compare-slot-meta">${state.compareA.screens?.length || 0}개 화면</div>
-          <div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="openSetPicker('A')">변경</button>
-            <button class="btn btn-ghost btn-sm" onclick="clearCompare('A')">초기화</button>
+  const renderCol=(slot,data)=>{
+    if(!data){
+      return `<div><div style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">${slot} 영역</div>
+        <div class="compare-col-empty" onclick="openScreenPicker('${slot}')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+          <div style="font-size:13px;color:var(--text-tertiary)">화면 선택</div>
+        </div></div>`;
+    }
+    const companyName=state.companies.find(c=>c.code===data.company_code)?.name||data.company_code||'';
+    const subtypeName=state.subtypes.find(s=>s.code===data.subtype_code)?.name||data.subtype_code||'';
+    const typeName=state.types.find(t=>t.code===data.type_code)?.name||data.type_code||'';
+    const screens=data.selectedScreens||data.screens||[];
+    return `<div>
+      <div class="compare-col-header" onclick="openScreenPicker('${slot}')">
+        <span class="compare-col-label">${slot}</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:500">${companyName} · ${subtypeName}</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">${typeName} · <span class="badge badge-orange" style="font-size:10px">${data.version||''}</span> · ${screens.length}화면</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M2 5l5 5 5-5"/></svg>
+      </div>
+      <div class="compare-grid-3">${screens.map(s=>{
+        const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
+        return `<div class="screen-card" onclick="openLightbox('${s.signed_url||''}')">
+          <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
+          <div class="screen-card-info">
+            <div class="screen-card-order">${String(s.order_no).padStart(3,'0')}</div>
+            <div class="screen-card-name">${stName}</div>
           </div>
-        ` : `
-          <div style="margin-top:20px"><button class="btn btn-secondary" onclick="openSetPicker('A')">화면 선택</button></div>
-        `}
-      </div>
-      <div class="compare-slot ${state.compareB ? 'filled' : ''}">
-        <div class="compare-slot-label">B 영역</div>
-        ${state.compareB ? `
-          <div class="compare-slot-name">${bName}</div>
-          <div class="compare-slot-meta">${state.compareB.screens?.length || 0}개 화면</div>
-          <div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="openSetPicker('B')">변경</button>
-            <button class="btn btn-ghost btn-sm" onclick="clearCompare('B')">초기화</button>
-          </div>
-        ` : `
-          <div style="margin-top:20px"><button class="btn btn-secondary" onclick="openSetPicker('B')">화면 선택</button></div>
-        `}
-      </div>
-    </div>
-    ${state.compareA && state.compareB ? `
-      <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" onclick="runCompare()">비교 보기</button>
-      </div>
-    ` : ''}
-    <div id="compare-result"></div>
-  `;
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  };
+
+  el.innerHTML=renderCol('A',state.compareA)+renderCol('B',state.compareB);
 }
 
-function clearCompare(slot) {
-  if (slot === 'A') state.compareA = null;
-  else state.compareB = null;
-  renderCompareSetup(document.getElementById('compare-view'));
-}
+// ===================== SCREEN PICKER =====================
+let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
+let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
 
-async function openSetPicker(slot) {
-  const sets = await api('GET', '/screen-sets?latest_only=false');
-  if (!sets) return;
+async function openScreenPicker(slot) {
+  pickerSlot=slot;
+  pickerSelected=new Set();
+  const existing=slot==='A'?state.compareA:state.compareB;
+  pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
+  if(existing){
+    pickerFilters.company=existing.company_code||'';
+    pickerFilters.type=existing.type_code||'';
+    pickerFilters.subtype=existing.subtype_code||'';
+    pickerFilters.version=existing.version||'';
+  }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal" style="max-width:560px">
-      <div class="modal-header">
-        <div class="modal-title">${slot} 영역 화면 선택</div>
-        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-        </button>
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay'; overlay.id='picker-overlay';
+  overlay.innerHTML=`
+    <div class="picker-modal">
+      <div class="picker-header">
+        <div class="picker-title">화면 선택 — ${slot} 영역</div>
+        <button class="modal-close" onclick="document.getElementById('picker-overlay').remove()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
-      <div class="modal-body" style="max-height:400px;overflow-y:auto">
-        ${sets.map(s => {
-          const companyName = state.companies.find(c=>c.code===s.company_code)?.name || s.company_code;
-          const subtypeName = state.subtypes.find(st=>st.code===s.subtype_code)?.name || s.subtype_code;
-          return `<div style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;transition:border-color 0.15s"
-            onmouseover="this.style.borderColor='var(--gray-300)'" onmouseout="this.style.borderColor='var(--border)'"
-            onclick="selectCompareSet('${slot}','${s.id}',this.closest('.modal-overlay'))">
-            <div style="font-size:13px;font-weight:500">${companyName} · ${subtypeName}</div>
-            <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${s.type?.name || ''} · <span class="badge badge-orange">${s.version}</span> · ${s.uploaded_at}</div>
-          </div>`;
-        }).join('')}
+      <div class="picker-filters">
+        <select class="filter-pill" id="pf-company" onchange="onPickerFilter('company',this.value)">
+          <option value="">기업명</option>
+          ${state.companies.map(c=>`<option value="${c.code}" ${pickerFilters.company===c.code?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-type" onchange="onPickerFilter('type',this.value)">
+          <option value="">유형</option>
+          ${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-subtype" onchange="onPickerFilter('subtype',this.value)">
+          <option value="">유형상세</option>
+          ${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-screen-type" onchange="onPickerFilter('screen_type',this.value)">
+          <option value="">화면유형</option>
+          ${state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-version" onchange="onPickerFilter('version',this.value)">
+          <option value="">버전</option>
+        </select>
+        <label class="picker-order-toggle"><input type="checkbox" id="picker-order-keep" ${pickerOrderKeep?'checked':''} onchange="pickerOrderKeep=this.checked"> 순서 유지</label>
       </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-async function selectCompareSet(slot, setId, overlay) {
-  overlay.remove();
-  const set = await api('GET', `/screen-sets/${setId}`);
-  if (!set) return;
-  if (slot === 'A') state.compareA = set;
-  else state.compareB = set;
-  renderCompareSetup(document.getElementById('compare-view'));
-}
-
-function runCompare() {
-  const el = document.getElementById('compare-result');
-  const a = state.compareA;
-  const b = state.compareB;
-
-  const renderCol = (set) => (set.screens || []).map(s => {
-    const stName = state.screenTypes.find(st=>st.code===s.screen_type_code)?.name || s.screen_type_code;
-    const thumbHtml = s.signed_url ? `<img src="${s.signed_url}" loading="lazy" style="width:100%;height:100%;object-fit:cover">` : `<span class="no-img">없음</span>`;
-    return `<div class="screen-item" style="margin-bottom:8px" onclick="openLightbox('${s.signed_url||''}')">
-      <div class="screen-thumb">${thumbHtml}</div>
-      <div class="screen-info">
-        <div class="screen-order">${String(s.order_no).padStart(3,'0')}</div>
-        <div class="screen-type-name">${stName}</div>
+      <div class="picker-body" id="picker-body">
+        <div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>
+      </div>
+      <div class="picker-footer">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="pickerSelectAll()">전체선택</button>
+          <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
+          <span style="font-size:12px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
+        </div>
+        <button class="btn btn-primary" onclick="applyPickerSelection()">적용하기</button>
       </div>
     </div>`;
-  }).join('');
+  document.body.appendChild(overlay);
 
-  const aLabel = `${state.companies.find(c=>c.code===a.company_code)?.name} · ${state.subtypes.find(s=>s.code===a.subtype_code)?.name} · ${a.version}`;
-  const bLabel = `${state.companies.find(c=>c.code===b.company_code)?.name} · ${state.subtypes.find(s=>s.code===b.subtype_code)?.name} · ${b.version}`;
+  // 기존 선택값 있으면 바로 로드
+  if(pickerFilters.company){updatePickerFilterStyles();await loadPickerScreens();}
+}
 
-  el.innerHTML = `
-    <div class="compare-grid">
-      <div class="compare-col">
-        <div class="compare-col-header">A · ${aLabel}</div>
-        ${renderCol(a)}
-      </div>
-      <div class="compare-col">
-        <div class="compare-col-header">B · ${bLabel}</div>
-        ${renderCol(b)}
-      </div>
-    </div>
-  `;
+async function onPickerFilter(key,value) {
+  pickerFilters[key]=value;
+  if(key!=='version'&&pickerFilters.company&&pickerFilters.type&&pickerFilters.subtype){
+    const sets=await api('GET',`/screen-sets?company=${pickerFilters.company}&type=${pickerFilters.type}&subtype=${pickerFilters.subtype}&latest_only=false`);
+    const vSel=document.getElementById('pf-version');
+    if(vSel&&sets) vSel.innerHTML=`<option value="">버전</option>`+sets.map(s=>`<option value="${s.version}" ${pickerFilters.version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
+  }
+  updatePickerFilterStyles();
+  await loadPickerScreens();
+}
+
+function updatePickerFilterStyles(){
+  [['company','pf-company'],['type','pf-type'],['subtype','pf-subtype'],['screen_type','pf-screen-type'],['version','pf-version']].forEach(([key,id])=>{
+    document.getElementById(id)?.classList.toggle('active',!!pickerFilters[key]);
+  });
+}
+
+async function loadPickerScreens(){
+  const body=document.getElementById('picker-body');
+  if(!body)return;
+  if(!pickerFilters.company&&!pickerFilters.screen_type){body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';return;}
+  body.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try {
+    let screens=[];
+    if(pickerFilters.company&&pickerFilters.type&&pickerFilters.subtype){
+      const sets=await api('GET',`/screen-sets?company=${pickerFilters.company}&type=${pickerFilters.type}&subtype=${pickerFilters.subtype}&latest_only=false`);
+      let targetSet=pickerFilters.version?sets?.find(s=>s.version===pickerFilters.version):sets?.find(s=>s.is_latest)||sets?.[0];
+      if(targetSet&&!pickerFilters.version){
+        pickerFilters.version=targetSet.version;
+        const vSel=document.getElementById('pf-version');
+        if(vSel&&sets) vSel.innerHTML=`<option value="">버전</option>`+sets.map(s=>`<option value="${s.version}" ${s.version===pickerFilters.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
+        updatePickerFilterStyles();
+      }
+      if(targetSet?.id){
+        const setDetail=await api('GET',`/screen-sets/${targetSet.id}`);
+        screens=setDetail?.screens||[];
+        if(pickerFilters.screen_type)screens=screens.filter(s=>s.screen_type_code===pickerFilters.screen_type);
+      }
+    } else if(pickerFilters.screen_type){
+      const cp=pickerFilters.company?`&company=${pickerFilters.company}`:'';
+      screens=await api('GET',`/screens?screen_type=${pickerFilters.screen_type}${cp}`)||[];
+    }
+    pickerScreens=screens;
+    if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
+    body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
+      const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
+      const isSel=pickerSelected.has(s.id);
+      return `<div class="picker-item ${isSel?'selected':''}" id="picker-item-${s.id}" onclick="togglePickerItem('${s.id}')">
+        <div class="picker-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
+        <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">없음</div>'}</div>
+        <div class="picker-item-info">
+          <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}</div>
+          <div class="picker-item-name">${stName}</div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    updatePickerCount();
+  } catch(e){body.innerHTML=`<div class="picker-empty"><span>오류: ${e.message}</span></div>`;}
+}
+
+function togglePickerItem(id){
+  if(pickerSelected.has(id))pickerSelected.delete(id);else pickerSelected.add(id);
+  document.getElementById(`picker-item-${id}`)?.classList.toggle('selected',pickerSelected.has(id));
+  updatePickerCount();
+}
+function pickerSelectAll(){pickerScreens.forEach(s=>pickerSelected.add(s.id));document.querySelectorAll('.picker-item').forEach(el=>el.classList.add('selected'));updatePickerCount();}
+function pickerDeselectAll(){pickerSelected.clear();document.querySelectorAll('.picker-item').forEach(el=>el.classList.remove('selected'));updatePickerCount();}
+function updatePickerCount(){const el=document.getElementById('picker-count');if(el)el.textContent=`${pickerSelected.size}개 선택됨`;}
+
+function applyPickerSelection(){
+  let selected=pickerScreens.filter(s=>pickerSelected.has(s.id));
+  if(!selected.length&&pickerScreens.length>0)selected=[...pickerScreens];
+  if(pickerOrderKeep)selected=selected.sort((a,b)=>a.order_no-b.order_no);
+  const setData={company_code:pickerFilters.company,type_code:pickerFilters.type,subtype_code:pickerFilters.subtype,version:pickerFilters.version,selectedScreens:selected};
+  if(pickerSlot==='A')state.compareA=setData;else state.compareB=setData;
+  document.getElementById('picker-overlay')?.remove();
+  renderCompareCols();
 }
 
 // ===================== UPLOAD VIEW =====================
-function renderUploadView() {
-  const el = document.getElementById('upload-view');
-  state.uploadFiles = [];
-  let uploadStep = 1;
-  let uploadMeta = {};
-
-  el.innerHTML = `
+function renderUploadView(){
+  const el=document.getElementById('upload-view');
+  state.uploadFiles=[];
+  el.innerHTML=`
     <div class="page-header"><div><div class="page-title">화면 업로드</div><div class="page-desc">새로운 화면 세트를 등록합니다</div></div></div>
     <div class="steps">
       <div class="step active" id="step-1"><div class="step-num">1</div>세트 정보</div>
@@ -1626,80 +895,43 @@ function renderUploadView() {
       <div class="step-divider"></div>
       <div class="step" id="step-3"><div class="step-num">3</div>완료</div>
     </div>
-
     <div id="upload-step-1">
       <div class="card" style="max-width:480px">
         <div class="card-header"><div class="card-title">세트 정보 입력</div></div>
         <div class="card-body">
-          <div class="form-group">
-            <label class="form-label">기업</label>
-            <select class="select" id="up-company" style="width:100%">
-              <option value="">선택</option>
-              ${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">유형</label>
-            <select class="select" id="up-type" style="width:100%">
-              <option value="">선택</option>
-              ${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">유형상세</label>
-            <select class="select" id="up-subtype" style="width:100%">
-              <option value="">선택</option>
-              ${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">버전</label>
-            <input class="input" id="up-version" placeholder="예) V1, V2" value="V1">
-            <div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">업로드 일자</label>
-            <input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}">
-          </div>
-          <div style="display:flex;justify-content:flex-end;margin-top:4px">
-            <button class="btn btn-primary" onclick="goUploadStep2()">다음</button>
-          </div>
+          <div class="form-group"><label class="form-label">기업</label><select class="select" id="up-company" style="width:100%"><option value="">선택</option>${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">유형</label><select class="select" id="up-type" style="width:100%"><option value="">선택</option>${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">유형상세</label><select class="select" id="up-subtype" style="width:100%"><option value="">선택</option>${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
+          <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
+          <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="goUploadStep2()">다음</button></div>
         </div>
       </div>
     </div>
-
     <div id="upload-step-2" style="display:none">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">이미지 업로드</div>
-          <div style="font-size:12px;color:var(--text-tertiary)">순서대로 드래그해서 업로드 순서를 변경할 수 있습니다</div>
-        </div>
+        <div class="card-header"><div class="card-title">이미지 업로드</div></div>
         <div class="card-body">
-          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('drag')">
-            <div class="upload-zone-icon">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8M10 14l6-6 6 6M6 24h20"/></svg>
-            </div>
-            <div class="upload-zone-text">클릭하거나 드래그하여 이미지 업로드</div>
-            <div class="upload-zone-sub">PNG, JPG, WebP 지원 · 여러 파일 한번에 가능</div>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event)" ondragleave="this.classList.remove('drag')">
+            <div style="margin-bottom:12px;color:var(--text-tertiary)"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8M10 14l6-6 6 6M6 24h20"/></svg></div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:4px">클릭하거나 드래그하여 이미지 업로드</div>
+            <div style="font-size:12px;color:var(--text-tertiary)">PNG, JPG, WebP 지원</div>
           </div>
           <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFileSelect(event)">
           <div class="upload-preview-grid" id="upload-preview"></div>
-          <div style="margin-top:16px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+          <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">
             <button class="btn btn-ghost btn-sm" onclick="goUploadStep1()">← 이전</button>
-            <div style="display:flex;gap:8px">
-              <span id="upload-count" style="font-size:12px;color:var(--text-tertiary);align-self:center">0개 선택됨</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="upload-count" style="font-size:12px;color:var(--text-tertiary)">0개 선택됨</span>
               <button class="btn btn-primary" id="start-upload-btn" onclick="startUpload()" disabled>업로드 시작</button>
             </div>
           </div>
         </div>
       </div>
     </div>
-
     <div id="upload-step-3" style="display:none">
       <div class="empty-state">
-        <div class="empty-icon" style="background:var(--primary-light)">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M4 10l5 5 7-8"/></svg>
-        </div>
+        <div class="empty-icon" style="background:var(--primary-light)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M4 10l5 5 7-8"/></svg></div>
         <div class="empty-title">업로드 완료</div>
         <div class="empty-desc" id="upload-done-desc">화면이 등록되었습니다</div>
         <div style="margin-top:16px;display:flex;gap:8px">
@@ -1707,134 +939,80 @@ function renderUploadView() {
           <button class="btn btn-primary" onclick="navigate('company')">기업별 조회로 이동</button>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-function goUploadStep1() {
-  document.getElementById('upload-step-2').style.display = 'none';
-  document.getElementById('upload-step-1').style.display = 'block';
-  document.getElementById('step-1').classList.add('active');
-  document.getElementById('step-2').classList.remove('active');
-}
-
-function goUploadStep2() {
-  const company = document.getElementById('up-company').value;
-  const type = document.getElementById('up-type').value;
-  const subtype = document.getElementById('up-subtype').value;
-  const version = document.getElementById('up-version').value.trim();
-  const date = document.getElementById('up-date').value;
-  if (!company || !type || !subtype || !version || !date) return toast('모든 항목을 입력해주세요', 'error');
-  state.uploadMeta = { company, type, subtype, version, date };
-  document.getElementById('upload-step-1').style.display = 'none';
-  document.getElementById('upload-step-2').style.display = 'block';
-  document.getElementById('step-1').classList.remove('active');
-  document.getElementById('step-1').classList.add('done');
+function goUploadStep1(){document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-1').style.display='block';document.getElementById('step-1').classList.add('active');document.getElementById('step-2').classList.remove('active');}
+function goUploadStep2(){
+  const company=document.getElementById('up-company').value,type=document.getElementById('up-type').value,subtype=document.getElementById('up-subtype').value;
+  const version=document.getElementById('up-version').value.trim(),date=document.getElementById('up-date').value;
+  if(!company||!type||!subtype||!version||!date)return toast('모든 항목을 입력해주세요','error');
+  state.uploadMeta={company,type,subtype,version,date};
+  document.getElementById('upload-step-1').style.display='none';document.getElementById('upload-step-2').style.display='block';
+  document.getElementById('step-1').classList.remove('active');document.getElementById('step-1').classList.add('done');
   document.getElementById('step-2').classList.add('active');
 }
-
-function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag'); }
-function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag'); addFiles(e.dataTransfer.files); }
-function handleFileSelect(e) { addFiles(e.target.files); }
-
-function addFiles(files) {
-  Array.from(files).forEach(f => {
-    if (!f.type.startsWith('image/')) return;
-    state.uploadFiles.push({ file: f, status: 'pending', screenTypeCode: '' });
-  });
-  renderUploadPreviews();
-}
-
-function renderUploadPreviews() {
-  const el = document.getElementById('upload-preview');
-  const countEl = document.getElementById('upload-count');
-  const btnEl = document.getElementById('start-upload-btn');
-  countEl.textContent = `${state.uploadFiles.length}개 선택됨`;
-  btnEl.disabled = state.uploadFiles.length === 0;
-
-  el.innerHTML = state.uploadFiles.map((item, i) => {
-    const url = URL.createObjectURL(item.file);
-    const stOptions = state.screenTypes.map(s => `<option value="${s.code}" ${item.screenTypeCode===s.code?'selected':''}>${s.name}</option>`).join('');
+function handleDrop(e){addFiles(e.dataTransfer.files);}
+function handleFileSelect(e){addFiles(e.target.files);}
+function addFiles(files){Array.from(files).forEach(f=>{if(f.type.startsWith('image/'))state.uploadFiles.push({file:f,status:'pending',screenTypeCode:''});});renderUploadPreviews();}
+function renderUploadPreviews(){
+  const el=document.getElementById('upload-preview');
+  document.getElementById('upload-count').textContent=`${state.uploadFiles.length}개 선택됨`;
+  document.getElementById('start-upload-btn').disabled=state.uploadFiles.length===0;
+  const stOpts=state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+  el.innerHTML=state.uploadFiles.map((item,i)=>{
+    const url=URL.createObjectURL(item.file);
     return `<div class="upload-preview-item">
-      <div class="upload-preview-thumb"><img src="${url}" onload="URL.revokeObjectURL('${url}')"></div>
+      <div class="upload-preview-thumb"><img src="${url}"></div>
       <div class="upload-preview-info">
         <div class="upload-preview-name">${i+1}. ${item.file.name}</div>
-        <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="setScreenType(${i},this.value)">
-          <option value="">화면유형 선택</option>
-          ${stOptions}
-        </select>
-        <div class="upload-preview-status ${item.status==='done'?'done':item.status==='error'?'error':item.status==='uploading'?'uploading':''}">${item.status==='done'?'완료':item.status==='error'?'실패':item.status==='uploading'?'업로드 중...':''}</div>
+        <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value"><option value="">화면유형 선택</option>${stOpts}</select>
+        ${item.status==='done'?'<span style="font-size:10px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size:10px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size:10px;color:var(--primary)">업로드 중...</span>':''}
       </div>
-      <button class="upload-preview-remove" onclick="removeUploadFile(${i})">×</button>
+      <button class="upload-preview-remove" onclick="state.uploadFiles.splice(${i},1);renderUploadPreviews()">×</button>
     </div>`;
   }).join('');
 }
 
-function setScreenType(i, code) { state.uploadFiles[i].screenTypeCode = code; }
-function removeUploadFile(i) { state.uploadFiles.splice(i, 1); renderUploadPreviews(); }
-
-async function startUpload() {
-  const meta = state.uploadMeta;
-  if (!meta) return;
-
-  const untyped = state.uploadFiles.filter(f => !f.screenTypeCode);
-  if (untyped.length) return toast('모든 화면의 화면유형을 선택해주세요', 'error');
-
-  // 세트 먼저 생성
+async function startUpload(){
+  const meta=state.uploadMeta;
+  const untyped=state.uploadFiles.filter(f=>!f.screenTypeCode);
+  if(untyped.length)return toast('모든 화면의 화면유형을 선택해주세요','error');
   let setId;
-  try {
-    const screenList = state.uploadFiles.map((f, i) => ({ screen_type_code: f.screenTypeCode, order_no: i + 1 }));
-    const newSet = await api('POST', '/screen-sets', {
-      company_code: meta.company, type_code: meta.type, subtype_code: meta.subtype,
-      version: meta.version, uploaded_at: meta.date, screens: screenList
-    });
-    setId = newSet.id;
-  } catch(e) { return toast('세트 생성 실패: ' + e.message, 'error'); }
-
-  // 이미지 업로드
-  for (let i = 0; i < state.uploadFiles.length; i++) {
-    const item = state.uploadFiles[i];
-    item.status = 'uploading';
-    renderUploadPreviews();
-    try {
-      const ext = item.file.name.split('.').pop() || 'png';
-      const urlRes = await api('POST', '/storage/upload-url', {
-        company_code: meta.company, type_code: meta.type, subtype_code: meta.subtype,
-        screen_type_code: item.screenTypeCode, version: meta.version, order_no: i + 1, ext
-      });
-      await fetch(urlRes.upload_url, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
-      await api('POST', '/screens', { set_id: setId, screen_type_code: item.screenTypeCode, order_no: i + 1, imgsrc: urlRes.file_path });
-      item.status = 'done';
-    } catch(e) {
-      item.status = 'error';
-      console.error(e);
-    }
+  try{
+    const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
+    const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
+    setId=newSet.id;
+  }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
+  for(let i=0;i<state.uploadFiles.length;i++){
+    const item=state.uploadFiles[i];item.status='uploading';renderUploadPreviews();
+    try{
+      const ext=item.file.name.split('.').pop()||'png';
+      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:i+1,ext});
+      await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
+      await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:i+1,imgsrc:urlRes.file_path});
+      item.status='done';
+    }catch(e){item.status='error';}
     renderUploadPreviews();
   }
-
-  const doneCount = state.uploadFiles.filter(f => f.status === 'done').length;
-  document.getElementById('upload-step-2').style.display = 'none';
-  document.getElementById('upload-step-3').style.display = 'block';
-  document.getElementById('step-2').classList.remove('active');
-  document.getElementById('step-2').classList.add('done');
+  const doneCount=state.uploadFiles.filter(f=>f.status==='done').length;
+  document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-3').style.display='block';
+  document.getElementById('step-2').classList.remove('active');document.getElementById('step-2').classList.add('done');
   document.getElementById('step-3').classList.add('active');
-  document.getElementById('upload-done-desc').textContent = `${doneCount}개 화면이 등록되었습니다`;
-  toast('업로드 완료!', 'success');
+  document.getElementById('upload-done-desc').textContent=`${doneCount}개 화면이 등록되었습니다`;
+  toast('업로드 완료!','success');
 }
 
 // ===================== MASTER VIEW =====================
-let masterActiveTab = 'companies';
-
-function renderMasterView() {
-  const el = document.getElementById('master-view');
-  el.innerHTML = `
+let masterActiveTab='companies';
+function renderMasterView(){
+  const el=document.getElementById('master-view');
+  el.innerHTML=`
     <div class="page-header"><div><div class="page-title">마스터 관리</div><div class="page-desc">기업, 유형, 화면유형 등 기초 데이터를 관리합니다</div></div></div>
-
     <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius-md);margin-bottom:20px">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#B45309" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M8 2l6 12H2L8 2z"/><path d="M8 7v3M8 11v.5"/></svg>
-      <div style="font-size:13px;color:#92400E;line-height:1.6"><strong>주의</strong> — 마스터 데이터 변경은 기존 화면 분류 전체에 영향을 줍니다. 반드시 신중하게 검토 후 수정해주세요. 코드(CODE) 변경 시 기존 이미지 경로가 깨질 수 있습니다.</div>
+      <div style="font-size:13px;color:#92400E;line-height:1.6"><strong>주의</strong> — 마스터 데이터 변경은 기존 화면 분류 전체에 영향을 줍니다. 코드(CODE) 변경 시 기존 이미지 경로가 깨질 수 있습니다.</div>
     </div>
-
     <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--gray-100);padding:3px;border-radius:var(--radius-md);width:fit-content">
       <button class="version-tab master-tab active" data-tab="companies" onclick="switchMasterTab('companies')">기업</button>
       <button class="version-tab master-tab" data-tab="types" onclick="switchMasterTab('types')">유형</button>
@@ -1842,251 +1020,145 @@ function renderMasterView() {
       <button class="version-tab master-tab" data-tab="screen_types" onclick="switchMasterTab('screen_types')">화면유형</button>
     </div>
     <div class="card">
-      <div class="card-header" style="justify-content:space-between">
-        <div class="card-title" id="master-tab-title">기업 목록</div>
-        <button class="btn btn-primary btn-sm" onclick="openMasterAddModal()">+ 추가</button>
-      </div>
+      <div class="card-header"><div class="card-title" id="master-tab-title">기업 목록</div><button class="btn btn-primary btn-sm" onclick="openMasterAddModal()">+ 추가</button></div>
       <div id="master-table-wrap"></div>
-    </div>
-  `;
+    </div>`;
   switchMasterTab('companies');
 }
 
-function switchMasterTab(tab) {
-  masterActiveTab = tab;
-  const labels = { companies: '기업 목록', types: '유형 목록', subtypes: '유형상세 목록', screen_types: '화면유형 목록' };
-  document.querySelectorAll('.master-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('master-tab-title').textContent = labels[tab];
+function switchMasterTab(tab){
+  masterActiveTab=tab;
+  document.querySelectorAll('.master-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  const labels={companies:'기업 목록',types:'유형 목록',subtypes:'유형상세 목록',screen_types:'화면유형 목록'};
+  document.getElementById('master-tab-title').textContent=labels[tab];
   renderMasterTable(tab);
 }
 
-function renderMasterTable(tab) {
-  const data = { companies: state.companies, types: state.types, subtypes: state.subtypes, screen_types: state.screenTypes }[tab] || [];
-  const isScreenType = tab === 'screen_types';
-  const isCompany = tab === 'companies';
-
-  const colHeaders = isScreenType
-    ? ['코드','이름','카테고리','순서','']
-    : isCompany
-    ? ['코드','이름','URL','순서','활성','']
-    : ['코드','이름','순서',''];
-
-  const rows = data.map(row => {
-    const cells = isScreenType
-      ? `<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
-      : isCompany
-      ? `<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url ? `<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>` : '<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active ? '<span class="badge badge-green">활성</span>' : '<span class="badge badge-gray">비활성</span>'}</td>`
-      : `<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
-    return `<tr>
-      ${cells}
-      <td style="text-align:right;width:160px;display:flex;gap:4px;justify-content:flex-end;border-bottom:none">
-        <button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button>
-        <button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button>
-      </td>
-    </tr>`;
+function renderMasterTable(tab){
+  const data={companies:state.companies,types:state.types,subtypes:state.subtypes,screen_types:state.screenTypes}[tab]||[];
+  const isScreenType=tab==='screen_types', isCompany=tab==='companies';
+  const colHeaders=isScreenType?['코드','이름','카테고리','순서','']:isCompany?['코드','이름','URL','순서','활성','']:['코드','이름','순서',''];
+  const rows=data.map(row=>{
+    const cells=isScreenType
+      ?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
+      :isCompany
+      ?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
+      :`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
+    return `<tr>${cells}<td style="text-align:right;width:160px">
+      <button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button>
+      <button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button>
+    </td></tr>`;
   }).join('');
-
-  document.getElementById('master-table-wrap').innerHTML = `
-    <table class="table">
-      <thead><tr>${colHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-      <tbody>${rows || `<tr><td colspan="${colHeaders.length}" style="text-align:center;padding:24px;color:var(--text-tertiary)">데이터가 없습니다</td></tr>`}</tbody>
-    </table>
-  `;
+  document.getElementById('master-table-wrap').innerHTML=`<table class="table"><thead><tr>${colHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${colHeaders.length}" style="text-align:center;padding:24px;color:var(--text-tertiary)">데이터가 없습니다</td></tr>`}</tbody></table>`;
 }
 
-function openMasterAddModal() {
-  const tab = masterActiveTab;
-  const isScreenType = tab === 'screen_types';
-  const isCompany = tab === 'companies';
-
-  const fields = isScreenType
-    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) CERT_INPUT"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 본인인증 입력"></div>
-       <div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" placeholder="예) 신규가입"></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 30"></div>`
-    : isCompany
-    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) HWS"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 한화손해보험"></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 4"></div>`
-    : `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" placeholder="예) NEW_JOIN"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="예) 신규가입"></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" placeholder="예) 7"></div>`;
-
-  showModal('추가', fields, async () => {
-    const code = document.getElementById('mf-code').value.trim().toUpperCase();
-    const name = document.getElementById('mf-name').value.trim();
-    const order_no = parseInt(document.getElementById('mf-order').value) || 0;
-    const category = document.getElementById('mf-category')?.value.trim();
-    if (!code || !name) return toast('코드와 이름을 입력해주세요', 'error');
-
-    const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
-    const body = isScreenType ? { code, name, category, order_no } : isCompany ? { code, name, order_no, is_active: true } : { code, name, order_no };
-    try {
-      await api('POST', pathMap[tab], body);
-      await reloadMasterData(tab);
-      renderMasterTable(tab);
-      toast('추가되었습니다', 'success');
-      closeModal();
-    } catch(e) { toast(e.message, 'error'); }
-  });
+function openMasterAddModal(){
+  const tab=masterActiveTab,isScreenType=tab==='screen_types',isCompany=tab==='companies';
+  const tabLabels={companies:'기업',types:'유형',subtypes:'유형상세',screen_types:'화면유형'};
+  showModal(`${tabLabels[tab]} 추가`,
+    `<div class="form-group"><label class="form-label">CODE</label><input class="input" id="mf-code" placeholder="영문 대문자, 숫자, _" style="font-family:var(--font-mono)"><div class="form-hint">변경 불가 · 신중하게 입력해주세요</div></div>
+     <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="표시될 이름"></div>
+     ${isCompany?`<div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" placeholder="https://..."></div>`:''}
+     ${isScreenType?`<div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" placeholder="예) 공통, 신규가입"></div>`:''}
+     <div class="form-group"><label class="form-label">순서</label><input class="input" type="number" id="mf-order" value="99"></div>`,
+    async()=>{
+      const code=document.getElementById('mf-code').value.trim().toUpperCase();
+      const name=document.getElementById('mf-name').value.trim();
+      const order_no=parseInt(document.getElementById('mf-order').value)||0;
+      if(!code||!name)return toast('코드와 이름을 입력해주세요','error');
+      const body={code,name,order_no};
+      if(isCompany)body.url=document.getElementById('mf-url')?.value.trim();
+      if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
+      const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
+      try{
+        const newItem=await api('POST',pathMap[tab],body);
+        const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];
+        state[stateKey].push(newItem);state[stateKey].sort((a,b)=>a.order_no-b.order_no);
+        closeModal();toast('추가되었습니다','success');renderMasterTable(tab);
+      }catch(e){toast(e.message,'error');}
+    }
+  );
 }
 
-function openMasterEditModal(row) {
-  const tab = masterActiveTab;
-  const isScreenType = tab === 'screen_types';
-  const isCompany = tab === 'companies';
-
-  const fields = isScreenType
-    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
-       <div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" value="${row.category||''}"></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>`
-    : isCompany
-    ? `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
-       <div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" value="${row.url||''}" placeholder="https://..."></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>
-       <div class="form-group"><label class="form-label">활성 여부</label><select class="select" id="mf-active" style="width:100%"><option value="true" ${row.is_active?'selected':''}>활성</option><option value="false" ${!row.is_active?'selected':''}>비활성</option></select></div>`
-    : `<div class="form-group"><label class="form-label">코드</label><input class="input" id="mf-code" value="${row.code}" readonly style="background:var(--gray-100);color:var(--text-tertiary)"></div>
-       <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
-       <div class="form-group"><label class="form-label">순서</label><input class="input" id="mf-order" type="number" value="${row.order_no}"></div>`;
-
-  showModal('수정', fields, async () => {
-    const name = document.getElementById('mf-name').value.trim();
-    const order_no = parseInt(document.getElementById('mf-order').value) || 0;
-    const category = document.getElementById('mf-category')?.value.trim();
-    const is_active = document.getElementById('mf-active')?.value === 'true';
-    const url = document.getElementById('mf-url')?.value.trim();
-    if (!name) return toast('이름을 입력해주세요', 'error');
-
-    const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
-    const body = isScreenType ? { name, category, order_no } : isCompany ? { name, order_no, is_active, url } : { name, order_no };
-    try {
-      await api('PATCH', `${pathMap[tab]}/${row.code}`, body);
-      await reloadMasterData(tab);
-      renderMasterTable(tab);
-      toast('수정되었습니다', 'success');
-      closeModal();
-    } catch(e) { toast(e.message, 'error'); }
-  });
+function openMasterEditModal(row){
+  const tab=masterActiveTab,isScreenType=tab==='screen_types',isCompany=tab==='companies';
+  const tabLabels={companies:'기업',types:'유형',subtypes:'유형상세',screen_types:'화면유형'};
+  showModal(`${tabLabels[tab]} 수정`,
+    `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="6"/><path d="M7 4v3M7 9v.5"/></svg>코드 변경 시 기존 이미지 경로가 깨질 수 있습니다</div>
+     <div class="form-group"><label class="form-label">CODE</label><input class="input" id="mf-code" value="${row.code}" style="font-family:var(--font-mono)"></div>
+     <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
+     ${isCompany?`<div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" value="${row.url||''}" placeholder="https://..."></div><div class="form-group"><label class="form-label">활성 여부</label><select class="select" id="mf-active" style="width:100%"><option value="true" ${row.is_active?'selected':''}>활성</option><option value="false" ${!row.is_active?'selected':''}>비활성</option></select></div>`:''}
+     ${isScreenType?`<div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" value="${row.category||''}"></div>`:''}
+     <div class="form-group"><label class="form-label">순서</label><input class="input" type="number" id="mf-order" value="${row.order_no}"></div>`,
+    async()=>{
+      const name=document.getElementById('mf-name').value.trim();
+      const order_no=parseInt(document.getElementById('mf-order').value)||0;
+      if(!name)return toast('이름을 입력해주세요','error');
+      const body={name,order_no};
+      if(isCompany){body.url=document.getElementById('mf-url')?.value.trim();body.is_active=document.getElementById('mf-active')?.value==='true';}
+      if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
+      const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
+      try{
+        await api('PATCH',`${pathMap[tab]}/${row.code}`,body);
+        await reloadMasterData(tab);renderMasterTable(tab);
+        closeModal();toast('수정되었습니다','success');
+      }catch(e){toast(e.message,'error');}
+    }
+  );
 }
 
-async function reloadMasterData(tab) {
-  if (tab === 'companies') { const d = await api('GET', '/companies'); if(d) state.companies = d; }
-  else if (tab === 'types') { const d = await api('GET', '/types'); if(d) state.types = d; }
-  else if (tab === 'subtypes') { const d = await api('GET', '/subtypes'); if(d) state.subtypes = d; }
-  else if (tab === 'screen_types') { const d = await api('GET', '/screen-types'); if(d) state.screenTypes = d; }
+async function reloadMasterData(tab){
+  if(tab==='companies'){const d=await api('GET','/companies');if(d)state.companies=d;}
+  else if(tab==='types'){const d=await api('GET','/types');if(d)state.types=d;}
+  else if(tab==='subtypes'){const d=await api('GET','/subtypes');if(d)state.subtypes=d;}
+  else if(tab==='screen_types'){const d=await api('GET','/screen-types');if(d)state.screenTypes=d;}
 }
 
-function confirmMasterDelete(tab, code, name) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'master-delete-overlay';
-  overlay.innerHTML = `
-    <div class="modal" style="max-width:400px">
-      <div class="modal-header">
-        <div class="modal-title">삭제 확인</div>
-        <button class="modal-close" onclick="document.getElementById('master-delete-overlay').remove()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C0392B" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>
-          <div style="font-size:13px;color:#C0392B">이 항목을 삭제하면 복구할 수 없습니다. 해당 코드를 사용하는 기존 화면 데이터에 영향이 생길 수 있습니다.</div>
-        </div>
-        <div style="font-size:14px;color:var(--text-primary)">
-          <strong>${name}</strong> (${code}) 을 삭제하시겠습니까?
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="document.getElementById('master-delete-overlay').remove()">취소</button>
-        <button class="btn btn-danger" onclick="executeMasterDelete('${tab}','${code}')">삭제</button>
-      </div>
-    </div>
-  `;
+function confirmMasterDelete(tab,code,name){
+  showModal('삭제 확인',
+    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>삭제하면 복구할 수 없습니다.</div><div style="font-size:14px"><strong>${name}</strong> (${code})을 삭제하시겠습니까?</div>`,
+    async()=>{
+      const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
+      try{
+        await api('DELETE',`${pathMap[tab]}/${code}`);
+        const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];
+        state[stateKey]=state[stateKey].filter(r=>r.code!==code);
+        closeModal();toast('삭제되었습니다','success');renderMasterTable(tab);
+      }catch(e){toast(e.message,'error');}
+    }, true
+  );
+}
+
+function showModal(title,fieldsHtml,onConfirm,danger=false){
+  document.getElementById('generic-modal')?.remove();
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';overlay.id='generic-modal';
+  overlay.innerHTML=`<div class="modal"><div class="modal-header"><div class="modal-title">${title}</div><button class="modal-close" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div class="modal-body">${fieldsHtml}</div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">취소</button><button class="btn ${danger?'btn-danger':'btn-primary'}" id="modal-confirm-btn">확인</button></div></div>`;
   document.body.appendChild(overlay);
+  document.getElementById('modal-confirm-btn').onclick=onConfirm;
 }
+function closeModal(){document.getElementById('generic-modal')?.remove();}
 
-async function executeMasterDelete(tab, code) {
-  const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
-  try {
-    await api('DELETE', `${pathMap[tab]}/${code}`);
-    const stateKey = { companies: 'companies', types: 'types', subtypes: 'subtypes', screen_types: 'screenTypes' }[tab];
-    state[stateKey] = state[stateKey].filter(r => r.code !== code);
-    document.getElementById('master-delete-overlay').remove();
-    toast('삭제되었습니다', 'success');
-    renderMasterTable(tab);
-  } catch(e) { toast(e.message, 'error'); }
+function selectOrderType(type){
+  state.orderModalType=type;
+  document.getElementById('radio-fix').classList.toggle('selected',type==='fix');
+  document.getElementById('radio-version').classList.toggle('selected',type==='version');
 }
+function confirmOrderChange(){document.getElementById('order-modal').style.display='none';toast('순서가 변경되었습니다','success');}
 
-// 공용 모달
-function showModal(title, fieldsHtml, onConfirm) {
-  const existing = document.getElementById('generic-modal');
-  if (existing) existing.remove();
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'generic-modal';
-  overlay.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">${title}</div>
-        <button class="modal-close" onclick="closeModal()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-        </button>
-      </div>
-      <div class="modal-body">${fieldsHtml}</div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-        <button class="btn btn-primary" id="modal-confirm-btn">확인</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  document.getElementById('modal-confirm-btn').onclick = onConfirm;
-}
+function openLightbox(url){if(!url)return;document.getElementById('lightbox-img').src=url;document.getElementById('lightbox').style.display='flex';}
+function closeLightbox(){document.getElementById('lightbox').style.display='none';}
 
-function closeModal() {
-  const el = document.getElementById('generic-modal');
-  if (el) el.remove();
-}
-
-// ===================== ORDER MODAL =====================
-function openReorderMode() { toast('순서 편집 기능은 다음 업데이트에 포함됩니다', 'default'); }
-function closeOrderModal() { document.getElementById('order-modal').style.display = 'none'; }
-function selectOrderType(type) {
-  state.orderModalType = type;
-  document.getElementById('radio-fix').classList.toggle('selected', type === 'fix');
-  document.getElementById('radio-version').classList.toggle('selected', type === 'version');
-}
-function confirmOrderChange() { closeOrderModal(); toast('순서가 변경되었습니다', 'success'); }
-
-// ===================== LIGHTBOX =====================
-function openLightbox(url) {
-  if (!url) return;
-  const lb = document.getElementById('lightbox');
-  document.getElementById('lightbox-img').src = url;
-  lb.style.display = 'flex';
-}
-function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
-document.getElementById('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
-
-// ===================== KEYBOARD =====================
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeLightbox();
-  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeLightbox();closeModal();document.getElementById('picker-overlay')?.remove();}
+  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();
 });
-document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-// ===================== AUTO LOGIN =====================
-(function() {
-  const token = localStorage.getItem('ux_token');
-  const user = localStorage.getItem('ux_user');
-  if (token && user) {
-    state.token = token;
-    state.user = JSON.parse(user);
-    initApp();
-  }
+(function(){
+  const token=localStorage.getItem('ux_token');
+  const user=localStorage.getItem('ux_user');
+  if(token&&user){state.token=token;state.user=JSON.parse(user);initApp();}
 })();
 </script>
 </body>
