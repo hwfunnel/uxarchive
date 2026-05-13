@@ -1879,8 +1879,9 @@ function renderMasterTable(tab) {
       : `<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
     return `<tr>
       ${cells}
-      <td style="text-align:right;width:120px">
+      <td style="text-align:right;width:160px;display:flex;gap:4px;justify-content:flex-end;border-bottom:none">
         <button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button>
+        <button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button>
       </td>
     </tr>`;
   }).join('');
@@ -1975,6 +1976,48 @@ async function reloadMasterData(tab) {
   else if (tab === 'types') { const d = await api('GET', '/types'); if(d) state.types = d; }
   else if (tab === 'subtypes') { const d = await api('GET', '/subtypes'); if(d) state.subtypes = d; }
   else if (tab === 'screen_types') { const d = await api('GET', '/screen-types'); if(d) state.screenTypes = d; }
+}
+
+function confirmMasterDelete(tab, code, name) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'master-delete-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title">삭제 확인</div>
+        <button class="modal-close" onclick="document.getElementById('master-delete-overlay').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C0392B" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>
+          <div style="font-size:13px;color:#C0392B">이 항목을 삭제하면 복구할 수 없습니다. 해당 코드를 사용하는 기존 화면 데이터에 영향이 생길 수 있습니다.</div>
+        </div>
+        <div style="font-size:14px;color:var(--text-primary)">
+          <strong>${name}</strong> (${code}) 을 삭제하시겠습니까?
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('master-delete-overlay').remove()">취소</button>
+        <button class="btn btn-danger" onclick="executeMasterDelete('${tab}','${code}')">삭제</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function executeMasterDelete(tab, code) {
+  const pathMap = { companies: '/companies', types: '/types', subtypes: '/subtypes', screen_types: '/screen-types' };
+  try {
+    await api('DELETE', `${pathMap[tab]}/${code}`);
+    const stateKey = { companies: 'companies', types: 'types', subtypes: 'subtypes', screen_types: 'screenTypes' }[tab];
+    state[stateKey] = state[stateKey].filter(r => r.code !== code);
+    document.getElementById('master-delete-overlay').remove();
+    toast('삭제되었습니다', 'success');
+    renderMasterTable(tab);
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 // 공용 모달
