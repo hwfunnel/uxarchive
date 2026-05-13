@@ -823,39 +823,92 @@ function updatePickerFilterStyles(){
 async function loadPickerScreens(){
   const body=document.getElementById('picker-body');
   if(!body)return;
-  if(!pickerFilters.company&&!pickerFilters.screen_type){body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';return;}
+  const {company,type,subtype,screen_type,version}=pickerFilters;
+  // 아무 필터도 없으면 안내
+  if(!company&&!screen_type){
+    body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';
+    return;
+  }
   body.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
     let screens=[];
-    if(pickerFilters.company&&pickerFilters.type&&pickerFilters.subtype){
-      const sets=await api('GET',`/screen-sets?company=${pickerFilters.company}&type=${pickerFilters.type}&subtype=${pickerFilters.subtype}&latest_only=false`);
-      let targetSet=pickerFilters.version?sets?.find(s=>s.version===pickerFilters.version):sets?.find(s=>s.is_latest)||sets?.[0];
-      if(targetSet&&!pickerFilters.version){
-        pickerFilters.version=targetSet.version;
-        const vSel=document.getElementById('pf-version');
-        if(vSel&&sets) vSel.innerHTML=`<option value="">버전</option>`+sets.map(s=>`<option value="${s.version}" ${s.version===pickerFilters.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
-        updatePickerFilterStyles();
+
+    if(company&&type&&subtype){
+      // ── 세트 특정 (기업+유형+유형상세) ─────────────────────────
+      const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&subtype=${subtype}&latest_only=false`);
+      // 버전 셀렉트 채우기
+      const vSel=document.getElementById('pf-version');
+      if(vSel&&sets) vSel.innerHTML=`<option value="">버전 전체</option>`+sets.map(s=>`<option value="${s.version}" ${version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
+
+      let targetSets=sets||[];
+      if(version) targetSets=targetSets.filter(s=>s.version===version);
+      else {
+        // latest만 (버전 미선택 시 최신 1개)
+        const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
+        targetSets=latest?[latest]:[];
+        if(latest&&!version){
+          pickerFilters.version=latest.version;
+          if(vSel) Array.from(vSel.options).forEach(o=>{o.selected=o.value===latest.version;});
+          updatePickerFilterStyles();
+        }
       }
-      if(targetSet?.id){
-        const setDetail=await api('GET',`/screen-sets/${targetSet.id}`);
-        screens=setDetail?.screens||[];
-        if(pickerFilters.screen_type)screens=screens.filter(s=>s.screen_type_code===pickerFilters.screen_type);
+      for(const s of targetSets){
+        const detail=await api('GET',`/screen-sets/${s.id}`);
+        screens.push(...(detail?.screens||[]));
       }
-    } else if(pickerFilters.screen_type){
-      const cp=pickerFilters.company?`&company=${pickerFilters.company}`:'';
-      screens=await api('GET',`/screens?screen_type=${pickerFilters.screen_type}${cp}`)||[];
+      if(screen_type) screens=screens.filter(s=>s.screen_type_code===screen_type);
+
+    } else if(company&&type){
+      // ── 기업+유형 (유형상세 미선택) ──────────────────────────────
+      const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&latest_only=true`)||[];
+      for(const s of sets){
+        const detail=await api('GET',`/screen-sets/${s.id}`);
+        screens.push(...(detail?.screens||[]));
+      }
+      if(screen_type) screens=screens.filter(s=>s.screen_type_code===screen_type);
+
+    } else if(company){
+      // ── 기업만 ─────────────────────────────────────────────────
+      // /screens 엔드포인트에 company 파라미터 사용
+      const cp=`&company=${company}`;
+      if(screen_type){
+        screens=await api('GET',`/screens?screen_type=${screen_type}${cp}`)||[];
+      } else {
+        // 기업의 최신 세트 전체
+        const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];
+        for(const s of sets){
+          const detail=await api('GET',`/screen-sets/${s.id}`);
+          screens.push(...(detail?.screens||[]));
+        }
+      }
+
+    } else if(screen_type){
+      // ── 화면유형만 ──────────────────────────────────────────────
+      screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];
     }
+
+    // 중복 제거 (set 여러 개 로드 시)
+    const seen=new Set();
+    screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
+    // 순서 정렬
+    screens.sort((a,b)=>a.order_no-b.order_no);
+
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
     body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
       const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
+      const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';
+      const subtypeName=state.subtypes.find(st=>st.code===s.set?.subtype_code)?.name||'';
       const isSel=pickerSelected.has(s.id);
+      // 기업·유형상세 여러 개 섞인 경우 라벨 표시
+      const showMeta=!company||(company&&!subtype);
       return `<div class="picker-item ${isSel?'selected':''}" id="picker-item-${s.id}" onclick="togglePickerItem('${s.id}')">
         <div class="picker-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
         <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">없음</div>'}</div>
         <div class="picker-item-info">
-          <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}</div>
+          <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}${showMeta&&companyName?` · ${companyName}`:''}</div>
           <div class="picker-item-name">${stName}</div>
+          ${showMeta&&subtypeName?`<div style="font-size:9px;color:var(--text-tertiary)">${subtypeName}</div>`:''}
         </div>
       </div>`;
     }).join('')}</div>`;
