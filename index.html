@@ -288,6 +288,21 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .tag-select-dropdown { position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; max-height: 200px; overflow-y: auto; }
 .tag-select-option { padding: 8px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
 .tag-select-option:hover { background: var(--gray-50); }
+
+/* LOGIN */
+#login-screen { position: fixed; inset: 0; background: var(--gray-50); display: flex; align-items: center; justify-content: center; z-index: 500; }
+.login-box { width: 360px; background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+.login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+.login-logo-mark { width: 28px; height: 28px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
+#change-pw-screen { position: fixed; inset: 0; background: var(--gray-50); display: flex; align-items: center; justify-content: center; z-index: 400; }
+
+/* RADIO */
+.radio-option { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition); margin-bottom: 10px; }
+.radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
+.radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
+.radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
+.radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
 </style>
 <body>
 <div id="toast-container"></div>
