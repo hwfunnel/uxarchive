@@ -352,7 +352,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
   <div id="sidebar">
     <div class="sidebar-logo">
       <div class="logo-mark"><svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="white"/><rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.6"/><rect x="8" y="8" width="5" height="5" rx="1" fill="white" opacity="0.3"/></svg></div>
-      <span class="logo-text">UX Archive</span>
+      <span class="logo-text" onclick="navigate('company')" style="cursor:pointer">UX Archive</span>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">
@@ -443,7 +443,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 const API = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
 let state = {
   token:null, user:null, companies:[], types:[], subtypes:[], screenTypes:[],
-  sets:[], currentSet:null, compareA:null, compareB:null,
+  sets:[], currentSet:null, currentSetVersions:[], compareA:null, compareB:null,
   uploadFiles:[], uploadMeta:{}, orderModalType:'fix',
   compareAOrder:null, compareBOrder:null, // 비교 섹션 임시 순서
 };
@@ -598,7 +598,8 @@ async function openSetDetail(setId) {
     const set=await api('GET',`/screen-sets/${setId}`);
     state.currentSet=set;
     const allVersions=await api('GET',`/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
-    renderSetDetail(set,allVersions||[]);
+    state.currentSetVersions=allVersions||[];
+    renderSetDetail(set,state.currentSetVersions);
   } catch(e) { toast(e.message,'error'); renderCompanyView(); }
 }
 
@@ -748,7 +749,7 @@ function showOrderSaveModal(){
     const cancelBtn=document.querySelector('#generic-modal .btn-secondary');
     if(cancelBtn){
       const orig=cancelBtn.onclick;
-      cancelBtn.onclick=()=>{setDragOrder=null;closeModal();renderSetDetail(state.currentSet,[]);};
+      cancelBtn.onclick=()=>{setDragOrder=null;closeModal();renderSetDetail(state.currentSet,state.currentSetVersions);};
     }
   },50);
 }
@@ -773,7 +774,7 @@ function openScreenDetail(screenId, setId) {
   }).join('');
 
   el.innerHTML=`
-    <button class="back-btn" onclick="renderSetDetail(state.currentSet,[])">
+    <button class="back-btn" onclick="renderSetDetail(state.currentSet,state.currentSetVersions)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
     </button>
     <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
@@ -1983,7 +1984,7 @@ async function confirmDeleteScreen(screenId, screenName) {
         }
         closeModal();
         toast('화면이 삭제되었습니다', 'success');
-        renderSetDetail(state.currentSet, []);
+        renderSetDetail(state.currentSet, state.currentSetVersions);
       } catch(e) { toast(e.message, 'error'); }
     }, true
   );
