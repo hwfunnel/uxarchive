@@ -87,7 +87,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-card { background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: border-color var(--transition), box-shadow var(--transition); }
 .screen-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .screen-card-thumb { width: 100%; position: relative; padding-top: calc(844 / 390 * 100%); background: var(--gray-100); overflow: hidden; }
-.screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .screen-card-thumb .no-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-tertiary); }
 .screen-card-info { padding: 6px 8px; }
 .screen-card-order { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); margin-bottom: 2px; }
@@ -139,7 +139,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .flow-item:hover { border-color: var(--gray-300); }
 .flow-item.current { border-color: var(--primary); }
 .flow-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
-.flow-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.flow-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .flow-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
 .flow-item.current .flow-item-num { color: var(--primary); }
 
@@ -167,7 +167,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .picker-item:hover { border-color: var(--gray-300); }
 .picker-item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
 .picker-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
-.picker-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.picker-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .picker-item-info { padding: 4px 6px; background: var(--gray-0); }
 .picker-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); }
 .picker-item-name { font-size: 10px; font-weight: 500; line-height: 1.3; }
@@ -194,7 +194,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .upload-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 16px; }
 .upload-preview-item { position: relative; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
 .upload-preview-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
-.upload-preview-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.upload-preview-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .upload-preview-info { padding: 6px 8px; }
 .upload-preview-name { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
 .upload-preview-remove { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(0,0,0,0.5); border-radius: 50%; border: none; cursor: pointer; color: white; font-size: 10px; display: flex; align-items: center; justify-content: center; }
@@ -1640,14 +1640,10 @@ function renderUploadView(){
           <div class="form-group"><label class="form-label">유형</label><select class="select" id="up-type" style="width:100%"><option value="">선택</option>${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}</select></div>
           <div class="form-group">
             <label class="form-label">유형상세</label>
-            <div id="up-subtype-tags" class="tag-select-box">
-              <div class="tag-select-input-wrap">
-                <div id="up-subtype-tags-list" class="tag-select-tags"></div>
-                <input type="text" id="up-subtype-input" class="tag-select-input" placeholder="검색 또는 선택..." autocomplete="off" oninput="filterSubtypeDropdown(this.value)" onfocus="showSubtypeDropdown()" onblur="setTimeout(hideSubtypeDropdown,200)">
-              </div>
-              <div id="up-subtype-dropdown" class="tag-select-dropdown" style="display:none"></div>
-            </div>
-            <input type="hidden" id="up-subtype" value="">
+            <select class="select" id="up-subtype" style="width:100%" onchange="onSubtypeChange(this.value)">
+              <option value="">선택</option>
+              ${buildSubtypeOptions()}
+            </select>
           </div>
           <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
@@ -1694,62 +1690,44 @@ function renderUploadView(){
   initSubtypeTagSelect();
 }
 
-// ===================== 유형상세 태그 셀렉트 (5번) =====================
-let subtypeTagSelected=[];
+// ===================== 유형상세 + 화면유형 셀렉트 헬퍼 =====================
+function buildSubtypeOptions() {
+  // order_no 앞자리 기준으로 그룹핑 (없으면 단순 목록)
+  // type 이름을 prefix로 활용
+  const typeMap = {};
+  state.types.forEach(t => { typeMap[t.code] = t.name; });
+
+  // subtype code에서 type code 추출 시도 (예: HWS_NEW → HWS)
+  // 안되면 단순 목록으로
+  const grouped = {};
+  state.subtypes.forEach(s => {
+    // order_no 기준 그룹 (10단위)
+    const groupKey = Math.floor((s.order_no||99) / 10) * 10;
+    const groupLabel = Object.values(typeMap)[Math.floor(groupKey/10)] || '기타';
+    if (!grouped[groupLabel]) grouped[groupLabel] = [];
+    grouped[groupLabel].push(s);
+  });
+
+  const groups = Object.entries(grouped);
+  if (groups.length <= 1) {
+    // 그룹 의미없으면 그냥 목록
+    return state.subtypes.map(s =>
+      `<option value="${s.code}">${s.name}</option>`
+    ).join('');
+  }
+  return groups.map(([label, items]) =>
+    `<optgroup label="${label}">${items.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function onSubtypeChange(val) {
+  // 단순 select이므로 별도 처리 없음 - value가 바로 up-subtype에 반영됨
+}
 
 function initSubtypeTagSelect(){
-  subtypeTagSelected=[];
-  filterSubtypeDropdown('');
-}
-
-function filterSubtypeDropdown(q){
-  const dd=document.getElementById('up-subtype-dropdown');
-  if(!dd)return;
-  const filtered=state.subtypes.filter(s=>
-    !subtypeTagSelected.includes(s.code)&&
-    (s.name.toLowerCase().includes(q.toLowerCase())||s.code.toLowerCase().includes(q.toLowerCase()))
-  );
-  dd.innerHTML=filtered.length
-    ?filtered.map(s=>`<div class="tag-select-option" onmousedown="selectSubtypeTag('${s.code}','${s.name}')">${s.name} <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.code}</span></div>`).join('')
-    :`<div style="padding:10px 12px;font-size:12px;color:var(--text-tertiary)">검색 결과 없음</div>`;
-}
-
-function showSubtypeDropdown(){
-  const dd=document.getElementById('up-subtype-dropdown');
-  if(dd)dd.style.display='block';
-  filterSubtypeDropdown(document.getElementById('up-subtype-input')?.value||'');
-}
-function hideSubtypeDropdown(){
-  const dd=document.getElementById('up-subtype-dropdown');
-  if(dd)dd.style.display='none';
-}
-
-function selectSubtypeTag(code,name){
-  if(!subtypeTagSelected.includes(code)){
-    subtypeTagSelected.push(code);
-    renderSubtypeTags();
-    // hidden input에 첫번째(또는 단일) 값 세팅
-    const hi=document.getElementById('up-subtype');
-    if(hi)hi.value=subtypeTagSelected[subtypeTagSelected.length-1];
-  }
-  const inp=document.getElementById('up-subtype-input');
-  if(inp){inp.value='';inp.focus();}
-}
-
-function removeSubtypeTag(code){
-  subtypeTagSelected=subtypeTagSelected.filter(c=>c!==code);
-  renderSubtypeTags();
-  const hi=document.getElementById('up-subtype');
-  if(hi)hi.value=subtypeTagSelected[0]||'';
-}
-
-function renderSubtypeTags(){
-  const list=document.getElementById('up-subtype-tags-list');
-  if(!list)return;
-  list.innerHTML=subtypeTagSelected.map(code=>{
-    const name=state.subtypes.find(s=>s.code===code)?.name||code;
-    return `<span class="tag-select-tag">${name}<button onclick="removeSubtypeTag('${code}')" type="button">×</button></span>`;
-  }).join('');
+  // 더 이상 태그셀렉트 없음 - 일반 select 초기화
+  const sel = document.getElementById('up-subtype');
+  if(sel) sel.value = '';
 }
 
 function goUploadStep1(){document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-1').style.display='block';document.getElementById('step-1').classList.add('active');document.getElementById('step-2').classList.remove('active');}
@@ -1779,7 +1757,15 @@ function renderUploadPreviews(){
   const el=document.getElementById('upload-preview');
   document.getElementById('upload-count').textContent=`${state.uploadFiles.length}개 선택됨`;
   document.getElementById('start-upload-btn').disabled=state.uploadFiles.length===0;
-  const stOpts=state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('');
+  const stOptsByGroup = {};
+  state.screenTypes.forEach(s=>{
+    const cat = s.category||'기타';
+    if(!stOptsByGroup[cat]) stOptsByGroup[cat]=[];
+    stOptsByGroup[cat].push(s);
+  });
+  const stOpts = Object.entries(stOptsByGroup).map(([cat,items])=>
+    `<optgroup label="${cat}">${items.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}</optgroup>`
+  ).join('');
   el.innerHTML=state.uploadFiles.map((item,i)=>{
     const url=URL.createObjectURL(item.file);
     const autoMatched=!!item.screenTypeCode;
