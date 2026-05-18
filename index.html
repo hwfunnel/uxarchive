@@ -836,14 +836,15 @@ function filterFunctionCompany(code,el){
 function renderCompareView() {
   const el=document.getElementById('compare-view');
   el.innerHTML=`
-    <div class="page-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px">
       <div>
         <div class="page-title">화면 비교</div>
-        <div class="page-desc">두 세트의 화면을 나란히 비교합니다</div>
+        <div class="page-desc">A·B 섹션에 화면을 추가하고 AI로 분석합니다</div>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="toast('AI 화면 분석 기능은 준비 중입니다')">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4.5 8.5l4-4M4.5 4.5h4v4"/></svg>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="analysis-mode-badge" style="display:none"></div>
+        <button class="btn btn-secondary btn-sm" id="btn-ai-screen" onclick="startAIScreenAnalysis()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4 6.5h5M6.5 4v5"/></svg>
           AI 화면 분석
         </button>
         <button class="btn btn-secondary btn-sm" onclick="toast('AI 플로우 분석 기능은 준비 중입니다')">
@@ -852,101 +853,271 @@ function renderCompareView() {
         </button>
       </div>
     </div>
-    <div class="compare-layout" id="compare-cols"></div>`;
+
+    <!-- 예상 비용 + 분석 목적 -->
+    <div id="compare-meta-bar" style="display:none;align-items:center;gap:12px;padding:10px 14px;background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>
+        <span style="color:var(--text-tertiary)">예상 비용</span>
+        <span id="cost-estimate" style="font-weight:600;color:var(--primary);font-family:var(--font-mono)">₩0</span>
+        <span style="color:var(--text-tertiary)">(Sonnet 4.6 기준)</span>
+      </div>
+      <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap">분석 목적</span>
+        <select class="select" id="analysis-purpose" style="height:28px;font-size:12px;flex:1" onchange="onAnalysisPurposeChange(this.value)">
+          <option value="">선택하세요</option>
+          <optgroup label="상품 전략">
+            <option value="특약·보장 경쟁력 비교">특약·보장 경쟁력 비교</option>
+            <option value="상품 카피라이팅 전략 분석">상품 카피라이팅 전략 분석</option>
+            <option value="강조 특약·혜택 포지셔닝 비교">강조 특약·혜택 포지셔닝 비교</option>
+          </optgroup>
+          <optgroup label="이탈 방지">
+            <option value="전환 퍼널 이탈 요인 분석">전환 퍼널 이탈 요인 분석</option>
+            <option value="CTA 노출·강조 방식 비교">CTA 노출·강조 방식 비교</option>
+            <option value="신뢰 요소 구성 비교">신뢰 요소(후기·인증 등) 구성 비교</option>
+          </optgroup>
+          <optgroup label="UX 사용성">
+            <option value="정보 가시성·계층 구조 분석">정보 가시성·계층 구조 분석</option>
+            <option value="다크패턴 가이드라인 준수 검토">다크패턴 가이드라인 준수 검토 (금감위)</option>
+            <option value="클릭 유도 요소 노출 적절성 분석">클릭 유도 요소 노출 적절성 분석</option>
+          </optgroup>
+          <optgroup label="화면 구조">
+            <option value="페이지 레이아웃·섹션 구성 비교">페이지 레이아웃·섹션 구성 비교</option>
+            <option value="정보 밀도·스크롤 구조 분석">정보 밀도·스크롤 구조 분석</option>
+          </optgroup>
+          <optgroup label="정보 변경">
+            <option value="할인율·보장 수치 변경 추적">할인율·보장 수치 변경 추적</option>
+            <option value="책임개시일·조건 변경 감지">책임개시일·조건 변경 감지</option>
+          </optgroup>
+          <option value="__custom__">기타 (직접 입력)</option>
+        </select>
+        <input type="text" class="input" id="analysis-purpose-custom" placeholder="분석 목적 입력" style="display:none;height:28px;font-size:12px;flex:1">
+      </div>
+    </div>
+
+    <!-- 매칭 현황 바 -->
+    <div id="matching-bar" style="display:none;padding:10px 14px;background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;font-size:12px"></div>
+
+    <!-- A/B 섹션 -->
+    <div class="compare-layout" id="compare-cols"></div>
+
+    <!-- 분석 결과 -->
+    <div id="analysis-result-wrap" style="display:none;margin-top:28px"></div>
+  `;
   renderCompareCols();
+  updateCompareMetaBar();
 }
 
-// 비교 섹션 체크/삭제 상태
+// 분석 목적 기타 입력 토글
+function onAnalysisPurposeChange(val) {
+  const customInput = document.getElementById('analysis-purpose-custom');
+  if (!customInput) return;
+  customInput.style.display = val === '__custom__' ? 'block' : 'none';
+  if (val !== '__custom__') customInput.value = '';
+}
+
+function getAnalysisPurpose() {
+  const sel = document.getElementById('analysis-purpose');
+  if (!sel) return '';
+  if (sel.value === '__custom__') {
+    return document.getElementById('analysis-purpose-custom')?.value?.trim() || '';
+  }
+  return sel.value;
+}
+
+// ── 비교 섹션 상태 ──────────────────────────────────────────
 let compareChecked={A:new Set(),B:new Set()};
-// 비교 섹션 임시 순서 (slot -> screens[])
 let compareOrder={A:null,B:null};
 let compareDragSrc={slot:null,idx:null};
 
+// 섹션별 회사 코드 (이미지 추가 시 고정)
+let compareCompany={A:null,B:null};
+
+// 섹션 화면 목록 (screen_type_code + url + id 포함)
+let compareSections={A:[],B:[]};
+
+// 예상 비용 계산 (Sonnet 4.6 기준)
+function calcCostEstimate() {
+  const totalImgs = compareSections.A.length + compareSections.B.length;
+  if (totalImgs === 0) return 0;
+  const imgTok = totalImgs * 1600;
+  const sysTok = 500;
+  const outTok = 2000;
+  const totalTok = imgTok + sysTok + outTok;
+  const inputCost = (imgTok + sysTok) / 1e6 * 3;
+  const outputCost = outTok / 1e6 * 15;
+  const usd = inputCost + outputCost;
+  return Math.round(usd * 1330);
+}
+
+function updateCostDisplay() {
+  const el = document.getElementById('cost-estimate');
+  if (el) el.textContent = `₩${calcCostEstimate().toLocaleString()}`;
+}
+
+function updateCompareMetaBar() {
+  const hasAny = compareSections.A.length > 0 || compareSections.B.length > 0;
+  const metaBar = document.getElementById('compare-meta-bar');
+  if (metaBar) metaBar.style.display = hasAny ? 'flex' : 'none';
+  updateCostDisplay();
+  updateAnalysisModeDisplay();
+  updateMatchingBar();
+}
+
+// 분석 모드 뱃지
+function updateAnalysisModeDisplay() {
+  const badge = document.getElementById('analysis-mode-badge');
+  if (!badge) return;
+  const cA = compareCompany.A;
+  const cB = compareCompany.B;
+  if (!cA || !cB) { badge.style.display='none'; return; }
+
+  badge.style.display = 'flex';
+  badge.style.alignItems = 'center';
+  badge.style.gap = '6px';
+
+  if (cA === cB) {
+    badge.innerHTML = `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;background:var(--primary-light);color:var(--primary)">같은 회사 버전별 분석</span>`;
+  } else {
+    badge.innerHTML = `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;background:#EDF4FE;color:#1A56DB">경쟁사 화면 분석</span>`;
+  }
+}
+
+// 매칭 현황 바
+function updateMatchingBar() {
+  const bar = document.getElementById('matching-bar');
+  if (!bar) return;
+  const sA = compareSections.A;
+  const sB = compareSections.B;
+  if (!sA.length || !sB.length) { bar.style.display='none'; return; }
+
+  const codesA = new Set(sA.map(s=>s.screen_type_code).filter(Boolean));
+  const codesB = new Set(sB.map(s=>s.screen_type_code).filter(Boolean));
+  const matched = [...codesA].filter(c=>codesB.has(c));
+  const onlyA = [...codesA].filter(c=>!codesB.has(c));
+  const onlyB = [...codesB].filter(c=>!codesA.has(c));
+
+  const getName = code => state.screenTypes.find(s=>s.code===code)?.name || code;
+
+  let html = `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">`;
+  html += `<span style="color:var(--text-secondary)">매칭 현황</span>`;
+  if (matched.length) html += `<span style="color:#1A7F3C;font-weight:500">✓ 매칭 ${matched.length}개</span>`;
+  if (onlyA.length) html += `<span style="color:#A8A49E">A만: ${onlyA.map(getName).join(', ')}</span>`;
+  if (onlyB.length) html += `<span style="color:#A8A49E">B만: ${onlyB.map(getName).join(', ')}</span>`;
+  html += `</div>`;
+
+  bar.style.display = 'block';
+  bar.innerHTML = html;
+}
+
+// ── 섹션 렌더 ─────────────────────────────────────────────
 function renderCompareCols() {
   const el=document.getElementById('compare-cols');
   if(!el)return;
-
-  const renderCol=(slot,data)=>{
-    if(!data){
-      return `<div><div style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">${slot} 영역</div>
-        <div class="compare-col-empty" onclick="openScreenPicker('${slot}')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
-          <div style="font-size:13px;color:var(--text-tertiary)">화면 선택</div>
-        </div></div>`;
-    }
-    const companyName=state.companies.find(c=>c.code===data.company_code)?.name||data.company_code||'';
-    const subtypeName=state.subtypes.find(s=>s.code===data.subtype_code)?.name||data.subtype_code||'';
-    const typeName=state.types.find(t=>t.code===data.type_code)?.name||data.type_code||'';
-    const screens=compareOrder[slot]||(data.selectedScreens||data.screens||[]);
-    const checked=compareChecked[slot];
-
-    return `<div id="compare-col-${slot}">
-      <div class="compare-col-header" onclick="openScreenPicker('${slot}')">
-        <span class="compare-col-label">${slot}</span>
-        <div style="flex:1">
-          <div style="font-size:12px;font-weight:500">${companyName}${subtypeName?' · '+subtypeName:''}</div>
-          <div style="font-size:11px;color:var(--text-tertiary)">${typeName}${data.version?' · ':''}<span class="badge badge-orange" style="font-size:10px">${data.version||''}</span> · ${screens.length}화면</div>
-        </div>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M2 5l5 5 5-5"/></svg>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--text-tertiary)">드래그로 순서 변경 · 체크 후 삭제 가능</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:11px;color:var(--text-tertiary)">${checked.size>0?checked.size+'개 선택':''}</span>
-          ${checked.size>0?`<button class="btn btn-danger btn-sm" onclick="deleteCompareChecked('${slot}')">삭제</button>`:''}
-        </div>
-      </div>
-      <div class="compare-grid-3" id="compare-grid-${slot}">
-        ${screens.map((s,i)=>{
-          const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
-          const isChk=checked.has(s.id||i);
-          return `<div class="screen-card compare-item ${isChk?'compare-checked':''}"
-            data-slot="${slot}" data-idx="${i}" data-sid="${s.id||''}"
-            draggable="true"
-            ondragstart="onCompareDragStart(event,'${slot}',${i})"
-            ondragover="onCompareDragOver(event,'${slot}',${i})"
-            ondrop="onCompareDrop(event,'${slot}',${i})"
-            ondragend="onCompareDragEnd(event)"
-            onclick="toggleCompareCheck('${slot}','${s.id||i}',event)">
-            <div style="position:absolute;top:6px;left:6px;z-index:2">
-              <div class="compare-check-box ${isChk?'checked':''}">
-                ${isChk?`<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg>`:''}
-              </div>
-            </div>
-            <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
-            <div class="screen-card-info">
-              <div class="screen-card-order">${String(i+1).padStart(3,'0')}</div>
-              <div class="screen-card-name">${stName}</div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  };
-
-  el.innerHTML=renderCol('A',state.compareA)+renderCol('B',state.compareB);
+  el.innerHTML = renderCompareCol('A') + renderCompareCol('B');
 }
 
-function toggleCompareCheck(slot,sid,e){
-  // 드래그 중에는 체크 무시
-  if(e.target.closest('.screen-card-thumb'))return openLightbox(e.currentTarget.querySelector('img')?.src||'');
+function renderCompareCol(slot) {
+  const screens = compareSections[slot];
+  const company = compareCompany[slot];
+  const companyName = company ? (state.companies.find(c=>c.code===company)?.name||company) : null;
+  const checked = compareChecked[slot];
+
+  const codesOther = slot==='A' ? new Set(compareSections.B.map(s=>s.screen_type_code)) : new Set(compareSections.A.map(s=>s.screen_type_code));
+
+  const headerHtml = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.06em">${slot}</span>
+        ${companyName ? `<span style="font-size:13px;font-weight:600">${companyName}</span>` : ''}
+        ${screens.length ? `<span style="font-size:11px;color:var(--text-tertiary)">${screens.length}장</span>` : ''}
+        ${screens.length>=50 ? `<span class="badge badge-new">최대 50장</span>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${checked.size>0 ? `<button class="btn btn-danger btn-sm" onclick="deleteCompareChecked('${slot}')">선택 삭제 (${checked.size})</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('${slot}')">+ 화면 추가</button>
+        ${companyName ? `<button class="btn btn-ghost btn-sm" onclick="clearCompareSlot('${slot}')">초기화</button>` : ''}
+      </div>
+    </div>`;
+
+  if (!screens.length) {
+    return `<div id="compare-col-wrap-${slot}">
+      ${headerHtml}
+      <div class="compare-col-empty" onclick="openCompareImagePicker('${slot}')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+        <div style="font-size:13px;color:var(--text-tertiary)">클릭하여 화면 추가</div>
+        <div style="font-size:11px;color:var(--text-tertiary)">최대 50장 · 같은 회사 화면만 추가 가능</div>
+      </div>
+    </div>`;
+  }
+
+  const cards = screens.map((s,i) => {
+    const stName = state.screenTypes.find(st=>st.code===s.screen_type_code)?.name || s.screen_type_code || '—';
+    const isChk = checked.has(s.id||i);
+    const isMatched = s.screen_type_code && codesOther.has(s.screen_type_code);
+    const matchBadge = screens.length>0 && codesOther.size>0
+      ? (isMatched
+          ? `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:#EDFCF2;color:#1A7F3C">매칭</div>`
+          : `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:#F4F3F1;color:#A8A49E">미매칭</div>`)
+      : '';
+    return `<div class="screen-card compare-item ${isChk?'compare-checked':''}"
+      data-slot="${slot}" data-idx="${i}" data-sid="${s.id||''}"
+      draggable="true"
+      ondragstart="onCompareDragStart(event,'${slot}',${i})"
+      ondragover="onCompareDragOver(event,'${slot}',${i})"
+      ondrop="onCompareDrop(event,'${slot}',${i})"
+      ondragend="onCompareDragEnd(event)"
+      onclick="toggleCompareCheck('${slot}','${s.id||i}',event)">
+      <div style="position:absolute;top:6px;left:6px;z-index:2">
+        <div class="compare-check-box ${isChk?'checked':''}">
+          ${isChk?`<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg>`:''}
+        </div>
+      </div>
+      ${matchBadge}
+      <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy" onclick="event.stopPropagation();openLightbox('${s.signed_url}')">`:'<span class="no-img">없음</span>'}</div>
+      <div class="screen-card-info">
+        <div class="screen-card-order">${String(i+1).padStart(3,'0')}</div>
+        <div class="screen-card-name">${stName}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div id="compare-col-wrap-${slot}">
+    ${headerHtml}
+    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px">드래그로 순서 변경 가능</div>
+    <div class="compare-grid-3" id="compare-grid-${slot}">${cards}</div>
+  </div>`;
+}
+
+// 슬롯 초기화
+function clearCompareSlot(slot) {
+  compareSections[slot] = [];
+  compareCompany[slot] = null;
+  compareChecked[slot] = new Set();
+  compareOrder[slot] = null;
+  renderCompareCols();
+  updateCompareMetaBar();
+}
+
+// 체크 토글
+function toggleCompareCheck(slot,sid,e) {
+  if(e.target.closest('.screen-card-thumb img')) return;
   const s=compareChecked[slot];
   if(s.has(sid))s.delete(sid);else s.add(sid);
   renderCompareCols();
 }
 
-function deleteCompareChecked(slot){
-  const data=slot==='A'?state.compareA:state.compareB;
-  if(!data)return;
-  const screens=compareOrder[slot]||(data.selectedScreens||[]);
-  const checked=compareChecked[slot];
-  const filtered=screens.filter(s=>!checked.has(s.id));
-  compareOrder[slot]=filtered;
-  compareChecked[slot]=new Set();
+// 체크 삭제
+function deleteCompareChecked(slot) {
+  const checked = compareChecked[slot];
+  compareSections[slot] = compareSections[slot].filter((s,i) => !checked.has(s.id||i));
+  compareChecked[slot] = new Set();
+  if (!compareSections[slot].length) compareCompany[slot] = null;
   renderCompareCols();
+  updateCompareMetaBar();
 }
 
-// 비교 섹션 드래그앤드랍
+// ── 드래그앤드랍 ────────────────────────────────────────────
 function onCompareDragStart(e,slot,idx){
   compareDragSrc={slot,idx};
   e.currentTarget.style.opacity='0.4';
@@ -961,47 +1132,38 @@ function onCompareDragOver(e,slot,idx){
 function onCompareDrop(e,slot,idx){
   e.preventDefault();
   if(compareDragSrc.slot!==slot||compareDragSrc.idx===idx)return;
-  const data=slot==='A'?state.compareA:state.compareB;
-  const arr=[...(compareOrder[slot]||(data.selectedScreens||[]))];
+  const arr=[...compareSections[slot]];
   const [moved]=arr.splice(compareDragSrc.idx,1);
   arr.splice(idx,0,moved);
-  compareOrder[slot]=arr;
+  compareSections[slot]=arr;
 }
 function onCompareDragEnd(e){
   e.currentTarget.style.opacity='';
   document.querySelectorAll('.compare-item').forEach(c=>{c.classList.remove('drag-over');c.style.opacity='';});
   compareDragSrc={slot:null,idx:null};
   renderCompareCols();
+  updateCompareMetaBar();
 }
 
-// ===================== SCREEN PICKER =====================
-let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
-let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
-
-async function openScreenPicker(slot) {
-  pickerSlot=slot;
-  pickerSelected=new Set();
-  const existing=slot==='A'?state.compareA:state.compareB;
-  pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
-  if(existing){
-    pickerFilters.company=existing.company_code||'';
-    pickerFilters.type=existing.type_code||'';
-    pickerFilters.subtype=existing.subtype_code||'';
-    pickerFilters.version=existing.version||'';
-  }
+// ── 화면 추가 (기존 picker 재사용) ─────────────────────────
+async function openCompareImagePicker(slot) {
+  // 기존 openScreenPicker 활용
+  pickerSlot = slot;
+  pickerSelected = new Set();
+  pickerFilters = {company: compareCompany[slot]||'', type:'', subtype:'', screen_type:'', version:''};
 
   const overlay=document.createElement('div');
   overlay.className='modal-overlay'; overlay.id='picker-overlay';
   overlay.innerHTML=`
     <div class="picker-modal">
       <div class="picker-header">
-        <div class="picker-title">화면 선택 — ${slot} 영역</div>
+        <div class="picker-title">화면 추가 — ${slot} 섹션${compareCompany[slot]?' ('+( state.companies.find(c=>c.code===compareCompany[slot])?.name||compareCompany[slot])+'만 선택 가능)':''}</div>
         <button class="modal-close" onclick="document.getElementById('picker-overlay').remove()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
       <div class="picker-filters">
         <select class="filter-pill" id="pf-company" onchange="onPickerFilter('company',this.value)">
           <option value="">기업명</option>
-          ${state.companies.map(c=>`<option value="${c.code}" ${pickerFilters.company===c.code?'selected':''}>${c.name}</option>`).join('')}
+          ${state.companies.map(c=>`<option value="${c.code}" ${(compareCompany[slot]||pickerFilters.company)===c.code?'selected':''}>${c.name}</option>`).join('')}
         </select>
         <select class="filter-pill" id="pf-type" onchange="onPickerFilter('type',this.value)">
           <option value="">유형</option>
@@ -1029,11 +1191,318 @@ async function openScreenPicker(slot) {
           <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
           <span style="font-size:12px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
         </div>
-        <button class="btn btn-primary" onclick="applyPickerSelection()">적용하기</button>
+        <button class="btn btn-primary" onclick="applyComparePickerSelection('${slot}')">추가하기</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
   if(pickerFilters.company){updatePickerFilterStyles();await loadPickerScreens();}
+}
+
+// 비교 화면 추가 적용
+function applyComparePickerSelection(slot) {
+  let selected = pickerScreens.filter(s=>pickerSelected.has(s.id));
+  if (!selected.length && pickerScreens.length>0) selected=[...pickerScreens];
+  if (pickerOrderKeep) selected=selected.sort((a,b)=>a.order_no-b.order_no);
+
+  // 회사 일치 검사
+  const firstCompany = selected[0]?.set?.company_code || pickerFilters.company;
+  if (compareCompany[slot] && compareCompany[slot] !== firstCompany) {
+    toast(`이미 다른 회사 화면이 있습니다. 같은 회사 화면만 추가할 수 있습니다.`, 'error');
+    return;
+  }
+
+  // 다른 슬롯 회사와 같은지 확인해서 분석모드 결정 (강제하지 않음)
+  const otherSlot = slot==='A'?'B':'A';
+
+  // 50장 제한
+  const current = compareSections[slot];
+  const remaining = 50 - current.length;
+  if (remaining <= 0) {
+    toast('섹션당 최대 50장까지 추가할 수 있습니다', 'error');
+    document.getElementById('picker-overlay')?.remove();
+    return;
+  }
+  const toAdd = selected.slice(0, remaining);
+  if (toAdd.length < selected.length) toast(`50장 제한으로 ${toAdd.length}장만 추가됩니다`, 'default');
+
+  compareSections[slot] = [...current, ...toAdd];
+  if (!compareCompany[slot]) compareCompany[slot] = firstCompany;
+
+  document.getElementById('picker-overlay')?.remove();
+  renderCompareCols();
+  updateCompareMetaBar();
+}
+
+// ── AI 화면 분석 실행 ────────────────────────────────────────
+async function startAIScreenAnalysis() {
+  const sA = compareSections.A;
+  const sB = compareSections.B;
+
+  if (!sA.length || !sB.length) {
+    toast('A·B 섹션 모두 화면을 추가해주세요', 'error');
+    return;
+  }
+
+  // 매칭 계산
+  const codesA = new Map();
+  sA.forEach(s => {
+    if (!s.screen_type_code) return;
+    if (!codesA.has(s.screen_type_code)) codesA.set(s.screen_type_code, []);
+    codesA.get(s.screen_type_code).push(s);
+  });
+  const codesB = new Map();
+  sB.forEach(s => {
+    if (!s.screen_type_code) return;
+    if (!codesB.has(s.screen_type_code)) codesB.set(s.screen_type_code, []);
+    codesB.get(s.screen_type_code).push(s);
+  });
+
+  const matchedCodes = [...codesA.keys()].filter(c=>codesB.has(c));
+  const unmatchedA = [...codesA.keys()].filter(c=>!codesB.has(c));
+  const unmatchedB = [...codesB.keys()].filter(c=>!codesA.has(c));
+
+  const getName = code => state.screenTypes.find(s=>s.code===code)?.name || code;
+
+  // 매칭 0개 → 분석 불가
+  if (!matchedCodes.length) {
+    showModal('분석 불가',
+      `<p style="font-size:13px;color:var(--text-secondary);line-height:1.7">A·B 섹션에 매칭되는 화면 유형이 없습니다.<br>같은 화면 유형 코드의 화면을 양쪽에 추가해주세요.</p>`,
+      ()=>closeModal()
+    );
+    return;
+  }
+
+  // 일부 미매칭 → 다이얼로그
+  if (unmatchedA.length || unmatchedB.length) {
+    const unmatchedList = [
+      ...unmatchedA.map(c=>`A의 '${getName(c)}'`),
+      ...unmatchedB.map(c=>`B의 '${getName(c)}'`)
+    ].join(', ');
+
+    showModal('일부 화면 미매칭',
+      `<div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+        <p style="margin-bottom:12px">매칭되지 않은 화면이 있습니다:</p>
+        <div style="background:var(--gray-50);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary)">${unmatchedList}</div>
+        <p style="color:var(--text-tertiary);font-size:12px">매칭되지 않은 화면은 직접 비교되지 않으며, 전체 플로우 흐름 파악을 위한 참고 자료로만 활용됩니다.<br>매칭된 <strong style="color:var(--text-primary)">${matchedCodes.length}개</strong> 화면을 기준으로 분석을 진행합니다.</p>
+      </div>`,
+      ()=>{ closeModal(); runAIAnalysis(matchedCodes, codesA, codesB, sA, sB); }
+    );
+    // 취소 버튼 텍스트 변경
+    setTimeout(()=>{
+      const footer = document.querySelector('#generic-modal .modal-footer');
+      if(footer){ const cancel=footer.querySelector('.btn-secondary'); if(cancel)cancel.textContent='취소'; }
+      const confirm = document.querySelector('#generic-modal #modal-confirm-btn');
+      if(confirm) confirm.textContent='그래도 분석하기';
+    },50);
+    return;
+  }
+
+  // 전부 매칭 → 바로 실행
+  runAIAnalysis(matchedCodes, codesA, codesB, sA, sB);
+}
+
+// 실제 AI 분석 실행
+async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB) {
+  const resultWrap = document.getElementById('analysis-result-wrap');
+  if (!resultWrap) return;
+
+  const purpose = getAnalysisPurpose();
+  const cA = compareCompany.A;
+  const cB = compareCompany.B;
+  const companyNameA = state.companies.find(c=>c.code===cA)?.name||cA||'A';
+  const companyNameB = state.companies.find(c=>c.code===cB)?.name||cB||'B';
+  const isSameCompany = cA && cB && cA===cB;
+  const getName = code => state.screenTypes.find(s=>s.code===code)?.name || code;
+
+  resultWrap.style.display = 'block';
+  resultWrap.innerHTML = `
+    <div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div class="spinner"></div>
+        <span style="font-size:14px;font-weight:500">AI 분석 중...</span>
+        <span style="font-size:12px;color:var(--text-tertiary)">Sonnet 4.6 · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
+      </div>
+    </div>`;
+
+  // 스크롤
+  resultWrap.scrollIntoView({behavior:'smooth',block:'start'});
+
+  try {
+    // 매칭된 화면들 쌍으로 구성
+    const matchedPairs = matchedCodes.map(code => ({
+      code,
+      name: getName(code),
+      screensA: codesA.get(code)||[],
+      screensB: codesB.get(code)||[],
+    }));
+
+    // 미매칭 화면 (참고용)
+    const refA = sA.filter(s=>!matchedCodes.includes(s.screen_type_code));
+    const refB = sB.filter(s=>!matchedCodes.includes(s.screen_type_code));
+
+    // 메시지 구성
+    const userContent = [];
+
+    // 시스템 컨텍스트 텍스트
+    let contextText = isSameCompany
+      ? `[분석 모드: 같은 회사(${companyNameA}) 버전별 비교]\n이전 버전 대비 변경사항 중심으로 분석해주세요.`
+      : `[분석 모드: 경쟁사 비교 (${companyNameA} vs ${companyNameB})]\n각 화면의 강점과 단점을 중심으로 분석해주세요.`;
+
+    if (purpose) contextText += `\n[분석 목적: ${purpose}]`;
+
+    contextText += `\n\n[매칭 화면 쌍: ${matchedCodes.length}개]\n`;
+    matchedPairs.forEach(p=>{
+      contextText += `- ${p.name}(${p.code}): A ${p.screensA.length}장 / B ${p.screensB.length}장${p.screensB.length>1?' (묶음 처리)':''}\n`;
+    });
+    if(refA.length||refB.length) contextText+=`\n[참고용 미매칭 화면: A ${refA.length}장, B ${refB.length}장 — 플로우 흐름 파악 참고용]`;
+
+    userContent.push({type:'text', text: contextText});
+
+    // 매칭 쌍 이미지 추가
+    for (const pair of matchedPairs) {
+      userContent.push({type:'text', text:`\n=== ${pair.name}(${pair.code}) ===`});
+      userContent.push({type:'text', text:`[${companyNameA} - ${pair.screensA.length}장]`});
+      for (const s of pair.screensA) {
+        if (s.signed_url) {
+          userContent.push({type:'image', source:{type:'url', url:s.signed_url}});
+        }
+      }
+      userContent.push({type:'text', text:`[${companyNameB} - ${pair.screensB.length}장 ${pair.screensB.length>1?'(묶음)':''}]`});
+      for (const s of pair.screensB) {
+        if (s.signed_url) {
+          userContent.push({type:'image', source:{type:'url', url:s.signed_url}});
+        }
+      }
+    }
+
+    // 시스템 프롬프트
+    const systemPrompt = isSameCompany
+      ? `당신은 보험업 UX 전문가입니다. 같은 회사의 화면 버전 변경사항을 분석합니다.
+
+분석 우선순위:
+1순위) 화면 내 정보 — 특약 수치, 할인율, 보장 내용, 책임개시일, 강조 문구 등 수치 변경 사항
+2순위) UX 관점 — 시각 요소, 레이아웃, CTA 위치, 정보 계층, 클릭 유도 요소, 정보 가시성
+3순위) 플로우 — 전체 흐름에서의 위치와 맥락 (참고 수준)
+
+응답 형식 (반드시 아래 구조로):
+## 1. 정보 변경 사항
+특약·수치·조건 변경을 표 형태로 정리 (항목 | 이전 버전 | 신규 버전 | 변화 방향)
+
+## 2. 디자인·UX 구조 변경
+레이아웃, 시각 요소, CTA, 정보 구조 변경 사항을 표 형태로 정리 (위치/항목 | 이전 | 신규 | 유형)
+
+## 3. 보험 UX 전문가 평가
+◆ 긍정적 변경 / ◆ 리스크 포인트 / ◆ 종합 의견 형태로 작성
+
+한국어로 작성. 간결하고 실무적으로.`
+      : `당신은 보험업 UX 전문가입니다. 두 보험사의 동일 화면을 비교 분석합니다.
+
+분석 우선순위:
+1순위) 화면 내 정보 — 특약 수치, 할인율, 보장 내용, 강조 문구, 카피라이팅
+2순위) UX 관점 — 시각 요소, 레이아웃, CTA 방식, 정보 계층, 클릭 유도, 신뢰 요소
+3순위) 플로우 — 전체 흐름에서의 위치와 맥락 (참고 수준)
+
+응답 형식 (반드시 아래 구조로):
+## 1. 정보 구성 비교
+핵심 정보(특약·수치·카피) 비교를 표 형태로 정리 (항목 | A사 | B사 | 비고)
+
+## 2. 디자인·UX 구조 비교
+레이아웃, CTA, 정보 구조 비교를 표 형태로 정리 (항목 | A사 | B사 | 비고)
+
+## 3. 보험 UX 전문가 평가
+◆ A사 강점 / ◆ B사 강점 / ◆ 개선 제안 형태로 작성
+
+한국어로 작성. 간결하고 실무적으로.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        system: systemPrompt,
+        messages:[{role:'user', content: userContent}]
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'API 오류');
+
+    const text = data.content?.find(b=>b.type==='text')?.text || '';
+    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, purpose);
+
+  } catch(e) {
+    resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
+      <div style="color:#C0392B;font-size:13px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}</div>
+    </div>`;
+  }
+}
+
+// 결과 렌더
+function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose) {
+  // 마크다운 → HTML 간단 변환
+  const md2html = t => t
+    .replace(/^## (.+)$/gm,'<h3 style="font-size:14px;font-weight:600;margin:20px 0 10px;color:var(--text-primary);padding-bottom:6px;border-bottom:1px solid var(--border)">$1</h3>')
+    .replace(/^◆ (.+)$/gm,'<div style="margin-bottom:8px"><span style="font-weight:600;color:var(--primary)">◆</span> <span style="font-size:13px">$1</span></div>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\|(.+)\|/g, (m,p) => {
+      const cells = p.split('|').map(c=>c.trim());
+      return '<tr>' + cells.map(c=>`<td style="padding:7px 10px;border-bottom:0.5px solid var(--border);font-size:12px">${c}</td>`).join('') + '</tr>';
+    })
+    .replace(/(<tr>.+<\/tr>\n?)+/gs, m=>`<div style="overflow-x:auto;margin:8px 0"><table style="width:100%;border-collapse:collapse;background:var(--gray-0);border:0.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">${m}</table></div>`)
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+
+  wrap.innerHTML = `
+    <div id="analysis-report" style="border-top:1px solid var(--border);padding-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:600">AI 화면 분석 결과</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">
+            ${isSame?nameA+' 버전 비교':nameA+' vs '+nameB}
+            ${purpose?` · ${purpose}`:''}
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="downloadAnalysisReport()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 2v7M3.5 6.5l3 3 3-3M2 11h9"/></svg>
+          이미지 저장
+        </button>
+      </div>
+      <div id="analysis-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;line-height:1.8">
+        ${md2html(text)}
+      </div>
+    </div>`;
+}
+
+// 이미지 다운로드 (html2canvas)
+async function downloadAnalysisReport() {
+  const el = document.getElementById('analysis-report');
+  if (!el) return;
+  toast('이미지 저장 중...');
+  try {
+    if (!window.html2canvas) {
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const canvas = await html2canvas(el, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `AI분석_${new Date().toISOString().slice(0,10)}.png`;
+    a.click();
+    toast('저장 완료!', 'success');
+  } catch(e) { toast('저장 실패: '+e.message, 'error'); }
+}
+
+// ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
+let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
+let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
+
+async function openScreenPicker(slot) {
+  openCompareImagePicker(slot);
 }
 
 async function onPickerFilter(key,value) {
@@ -1091,7 +1560,7 @@ async function loadPickerScreens(){
       const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';
       const subtypeName2=state.subtypes.find(st=>st.code===s.set?.subtype_code)?.name||'';
       const isSel=pickerSelected.has(s.id);
-      const showMeta=!company||(company&&!subtype);
+      const showMeta=!company||(company&&!pickerFilters.subtype);
       return `<div class="picker-item ${isSel?'selected':''}" id="picker-item-${s.id}" onclick="togglePickerItem('${s.id}')">
         <div class="picker-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
         <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">없음</div>'}</div>
@@ -1112,15 +1581,9 @@ function pickerDeselectAll(){pickerSelected.clear();document.querySelectorAll('.
 function updatePickerCount(){const el=document.getElementById('picker-count');if(el)el.textContent=`${pickerSelected.size}개 선택됨`;}
 
 function applyPickerSelection(){
-  let selected=pickerScreens.filter(s=>pickerSelected.has(s.id));
-  if(!selected.length&&pickerScreens.length>0)selected=[...pickerScreens];
-  if(pickerOrderKeep)selected=selected.sort((a,b)=>a.order_no-b.order_no);
-  const setData={company_code:pickerFilters.company,type_code:pickerFilters.type,subtype_code:pickerFilters.subtype,version:pickerFilters.version,selectedScreens:selected};
-  if(pickerSlot==='A'){state.compareA=setData;compareOrder.A=null;compareChecked.A=new Set();}
-  else{state.compareB=setData;compareOrder.B=null;compareChecked.B=new Set();}
-  document.getElementById('picker-overlay')?.remove();
-  renderCompareCols();
+  applyComparePickerSelection(pickerSlot||'A');
 }
+
 
 // ===================== UPLOAD VIEW =====================
 // 4번: 파일명에서 화면유형 코드 자동 매칭
