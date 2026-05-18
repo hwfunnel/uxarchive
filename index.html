@@ -126,8 +126,11 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* DETAIL */
 .detail-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
-.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 400px; }
-.detail-img-wrap img { max-width: 390px; max-height: 80vh; object-fit: contain; }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; }
+.detail-img-viewport { width: 390px; height: 844px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; }
+.detail-img-viewport::-webkit-scrollbar { width: 4px; }
+.detail-img-viewport::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+.detail-img-wrap img { width: 390px; height: auto; object-fit: contain; object-position: top; display: block; }
 .detail-meta-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .detail-meta-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
 .detail-meta-value { font-size: 13px; font-weight: 500; }
@@ -775,8 +778,14 @@ function openScreenDetail(screenId, setId) {
     </button>
     <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
       <div>
-        <div class="detail-img-wrap" onclick="openLightbox('${screen.signed_url||''}')">
-          ${screen.signed_url?`<img src="${screen.signed_url}" style="cursor:zoom-in;max-width:390px">`:'<span style="color:var(--text-tertiary)">이미지 없음</span>'}
+        <div class="detail-img-wrap">
+          <div class="detail-img-viewport">
+            ${screen.signed_url
+              ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
+              : '<div style="width:390px;height:844px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
+            }
+          </div>
+          ${screen.signed_url?`<div style="margin-left:12px;font-size:11px;color:var(--text-tertiary);writing-mode:vertical-rl;text-orientation:mixed;padding:8px 0">스크롤하여 전체 보기 ↕</div>`:''}
         </div>
         <div class="flow-strip">
           <div class="flow-strip-title">플로우 순서</div>
@@ -1790,8 +1799,23 @@ async function startUpload(){
   const meta=state.uploadMeta;
   const untyped=state.uploadFiles.filter(f=>!f.screenTypeCode);
   if(untyped.length)return toast('모든 화면의 화면유형을 선택해주세요','error');
+
+  // 같은 조합 기존 세트 체크 → 있으면 덮어쓸지 확인
   let setId;
   try{
+    const existing=await api('GET',`/screen-sets?company=${meta.company}&type=${meta.type}&subtype=${meta.subtype}&latest_only=false`);
+    const sameVersion=existing?.find(s=>s.version===meta.version);
+    if(sameVersion){
+      const ok=confirm(`이미 ${meta.version} 세트가 존재합니다.\n기존 세트를 삭제하고 새로 업로드하시겠습니까?`);
+      if(!ok)return;
+      // 기존 세트 삭제 (화면 + 세트)
+      const detail=await api('GET',`/screen-sets/${sameVersion.id}`);
+      if(detail?.screens?.length){
+        await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
+      }
+      await api('DELETE',`/screen-sets/${sameVersion.id}`);
+      toast('기존 세트를 삭제했습니다');
+    }
     const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
     const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
     setId=newSet.id;
