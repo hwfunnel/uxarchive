@@ -26,21 +26,21 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 #sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; background: var(--gray-0); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 .sidebar-logo { height: var(--header-h); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border); gap: 8px; flex-shrink: 0; }
 .logo-mark { width: 24px; height: 24px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
-.logo-text { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.logo-text { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
 .sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
 .nav-section { padding: 16px 12px 4px; }
-.nav-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); padding: 0 4px; margin-bottom: 2px; }
-.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-md); cursor: pointer; color: var(--text-secondary); font-size: 13px; font-weight: 400; transition: background var(--transition), color var(--transition); border: none; background: none; width: 100%; text-align: left; }
+.nav-section-label { font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); padding: 0 4px; margin-bottom: 2px; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-md); cursor: pointer; color: var(--text-secondary); font-size: 14px; font-weight: 400; transition: background var(--transition), color var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
 .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
 .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
 .nav-item.active .nav-icon { opacity: 1; }
 .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .user-chip { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius-md); background: var(--gray-50); }
-.user-avatar { width: 28px; height: 28px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+.user-avatar { width: 28px; height: 28px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
 .user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 12px; font-weight: 500; }
-.user-role { font-size: 11px; color: var(--text-tertiary); }
+.user-name { font-size: 14px; font-weight: 500; }
+.user-role { font-size: 14px; color: var(--text-tertiary); }
 .logout-btn { background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 4px; border-radius: var(--radius-sm); }
 .logout-btn:hover { color: var(--text-primary); }
 
@@ -51,7 +51,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 #content { flex: 1; overflow-y: auto; padding: 24px; }
 
 /* BUTTONS */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 32px; border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all var(--transition); white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; height: 32px; border-radius: var(--radius-md); font-family: var(--font); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all var(--transition); white-space: nowrap; }
 .btn-primary { background: var(--primary); color: white; }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-secondary { background: var(--gray-0); color: var(--text-primary); border-color: var(--border-strong); }
@@ -60,17 +60,17 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .btn-ghost:hover { background: var(--gray-100); }
 .btn-danger { background: transparent; color: #C0392B; border-color: #F5C6C2; }
 .btn-danger:hover { background: #FEF2F1; }
-.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 14px; }
 
 /* INPUTS */
-.input { height: 32px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; color: var(--text-primary); background: var(--gray-0); outline: none; transition: border-color var(--transition); width: 100%; }
+.input { height: 32px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 14px; color: var(--text-primary); background: var(--gray-0); outline: none; transition: border-color var(--transition); width: 100%; }
 .input:focus { border-color: var(--primary); }
 .input::placeholder { color: var(--text-tertiary); }
-.select { height: 32px; padding: 0 28px 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 13px; color: var(--text-primary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; }
+.select { height: 32px; padding: 0 28px 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); font-family: var(--font); font-size: 14px; color: var(--text-primary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; }
 .select:focus { border-color: var(--primary); }
 
 /* BADGES */
-.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 500; font-family: var(--font-mono); }
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 3px; font-size: 14px; font-weight: 500; font-family: var(--font-mono); }
 .badge-orange { background: var(--primary-light); color: var(--primary); }
 .badge-gray { background: var(--gray-100); color: var(--gray-600); }
 .badge-green { background: #EDFCF2; color: #1A7F3C; }
@@ -79,7 +79,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 /* CARD */
 .card { background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
 .card-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.card-title { font-size: 13px; font-weight: 600; }
+.card-title { font-size: 14px; font-weight: 600; }
 .card-body { padding: 16px; }
 
 /* SCREEN CARD - 390:844 비율 */
@@ -88,11 +88,11 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .screen-card-thumb { width: 100%; position: relative; padding-top: calc(844 / 390 * 100%); background: var(--gray-100); overflow: hidden; }
 .screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.screen-card-thumb .no-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-tertiary); }
+.screen-card-thumb .no-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-tertiary); }
 .screen-card-info { padding: 6px 8px; }
-.screen-card-order { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); margin-bottom: 2px; }
-.screen-card-name { font-size: 11px; font-weight: 500; line-height: 1.3; }
-.screen-card-sub { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+.screen-card-order { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); margin-bottom: 2px; }
+.screen-card-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
+.screen-card-sub { font-size: 14px; color: var(--text-tertiary); margin-top: 1px; }
 
 /* COMPARE - 1열 3개 */
 .compare-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -100,58 +100,63 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 /* PAGE HEADER */
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 16px; }
 .page-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
-.page-desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
-.back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-tertiary); cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; transition: color var(--transition); }
+.page-desc { font-size: 14px; color: var(--text-tertiary); margin-top: 2px; }
+.back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-tertiary); cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; transition: color var(--transition); }
 .back-btn:hover { color: var(--text-primary); }
 
 /* COMPANY SECTION */
 .company-section { margin-bottom: 36px; }
 .company-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-.company-name-label { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.company-idx { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); }
+.company-name-label { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.company-idx { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); }
 
 /* VERSION TABS */
 .version-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--gray-100); padding: 3px; border-radius: var(--radius-md); width: fit-content; }
-.version-tab { padding: 4px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-secondary); transition: all var(--transition); font-family: var(--font-mono); }
+.version-tab { padding: 4px 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-secondary); transition: all var(--transition); font-family: var(--font-mono); }
 .version-tab.active { background: var(--gray-0); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 
 /* CHANGE SUMMARY */
 .change-summary { background: var(--primary-subtle); border: 1px solid #FFD0C0; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; }
-.change-summary-title { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.change-row { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
-.change-tag { font-size: 10px; font-weight: 600; font-family: var(--font-mono); padding: 1px 5px; border-radius: 2px; }
+.change-summary-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.change-row { font-size: 14px; color: var(--text-secondary); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.change-tag { font-size: 14px; font-weight: 600; font-family: var(--font-mono); padding: 1px 5px; border-radius: 2px; }
 .change-tag.moved { background: #FFF3E0; color: #E65100; }
 .change-tag.added { background: #EDFCF2; color: #1A7F3C; }
 .change-tag.removed { background: #FEF2F1; color: #C0392B; }
 
 /* DETAIL */
-.detail-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
-.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; }
-.detail-img-viewport { width: 390px; height: 844px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; }
-.detail-img-viewport::-webkit-scrollbar { width: 4px; }
+.detail-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; padding: 12px; }
+.detail-img-viewport { width: 240px; height: 520px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+.detail-img-viewport::-webkit-scrollbar { width: 3px; }
 .detail-img-viewport::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
-.detail-img-wrap img { width: 390px; height: auto; object-fit: contain; object-position: top; display: block; }
+.detail-img-wrap img { width: 240px; height: auto; object-fit: contain; object-position: top; display: block; }
 .detail-meta-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-.detail-meta-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
-.detail-meta-value { font-size: 13px; font-weight: 500; }
+.detail-meta-label { font-size: 14px; color: var(--text-tertiary); margin-bottom: 3px; }
+.detail-meta-value { font-size: 14px; font-weight: 500; }
 .flow-strip { margin-top: 20px; }
-.flow-strip-title { font-size: 12px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
+.flow-strip-title { font-size: 14px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
 .flow-items { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; max-width: 100%; }
 .flow-items::-webkit-scrollbar { height: 4px; }
 .flow-items::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
 .flow-item { flex-shrink: 0; width: 60px; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
+.flow-item-vertical { flex-shrink: 0; width: 100%; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
+.flow-item-vertical:hover { border-color: var(--gray-300); }
+.flow-item-vertical.current { border-color: var(--primary); }
+.flow-item-vertical .flow-item-num { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
+.flow-item-vertical.current .flow-item-num { color: var(--primary); }
 .flow-item:hover { border-color: var(--gray-300); }
 .flow-item.current { border-color: var(--primary); }
 .flow-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
 .flow-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.flow-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
+.flow-item-num { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
 .flow-item.current .flow-item-num { color: var(--primary); }
 
 /* COMPARE PAGE */
 .compare-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .compare-col-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--gray-100); border-radius: var(--radius-md); margin-bottom: 12px; cursor: pointer; transition: background var(--transition); border: 1px solid transparent; }
 .compare-col-header:hover { background: var(--gray-200); }
-.compare-col-label { font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; flex-shrink: 0; }
+.compare-col-label { font-size: 14px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; flex-shrink: 0; }
 .compare-col-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); gap: 12px; cursor: pointer; transition: all var(--transition); }
 .compare-col-empty:hover { border-color: var(--primary); background: var(--primary-subtle); }
 
@@ -160,10 +165,10 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .picker-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .picker-title { font-size: 14px; font-weight: 600; }
 .picker-filters { display: flex; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; flex-shrink: 0; background: var(--gray-50); }
-.filter-pill { height: 30px; padding: 0 10px 0 10px; border: 1px solid var(--border-strong); border-radius: 20px; font-family: var(--font); font-size: 12px; color: var(--text-secondary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; padding-right: 24px; }
+.filter-pill { height: 30px; padding: 0 10px 0 10px; border: 1px solid var(--border-strong); border-radius: 20px; font-family: var(--font); font-size: 14px; color: var(--text-secondary); background: var(--gray-0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23A8A49E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center; -webkit-appearance: none; outline: none; cursor: pointer; padding-right: 24px; }
 .filter-pill:focus { border-color: var(--primary); }
 .filter-pill.active { border-color: var(--primary); background-color: var(--primary-light); color: var(--primary); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23FF4600' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
-.picker-order-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; margin-left: auto; white-space: nowrap; }
+.picker-order-toggle { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-secondary); cursor: pointer; margin-left: auto; white-space: nowrap; }
 .picker-order-toggle input { accent-color: var(--primary); }
 .picker-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
 .picker-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
@@ -173,23 +178,23 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .picker-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
 .picker-item-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .picker-item-info { padding: 4px 6px; background: var(--gray-0); }
-.picker-item-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); }
-.picker-item-name { font-size: 10px; font-weight: 500; line-height: 1.3; }
+.picker-item-num { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); }
+.picker-item-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
 .picker-check { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background: var(--primary); border-radius: 3px; display: none; align-items: center; justify-content: center; }
 .picker-item.selected .picker-check { display: flex; }
 .picker-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-.picker-empty { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-tertiary); font-size: 13px; flex-direction: column; gap: 8px; }
+.picker-empty { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-tertiary); font-size: 14px; flex-direction: column; gap: 8px; }
 
 /* FUNCTION VIEW */
 .function-layout { display: flex; gap: 16px; }
 .screen-type-nav { width: 180px; min-width: 180px; overflow-y: auto; }
-.screen-type-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
-.screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 12px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
+.screen-type-section-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
+.screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
 .screen-type-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
 .function-main { flex: 1; min-width: 0; }
 .company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-.chip { padding: 3px 10px; border-radius: 3px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); }
+.chip { padding: 3px 10px; border-radius: 3px; font-size: 14px; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); }
 .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
 
 /* UPLOAD */
@@ -200,11 +205,11 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .upload-preview-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
 .upload-preview-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .upload-preview-info { padding: 6px 8px; }
-.upload-preview-name { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
-.upload-preview-remove { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(0,0,0,0.5); border-radius: 50%; border: none; cursor: pointer; color: white; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.upload-preview-name { font-size: 14px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
+.upload-preview-remove { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(0,0,0,0.5); border-radius: 50%; border: none; cursor: pointer; color: white; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 .steps { display: flex; align-items: center; margin-bottom: 24px; }
-.step { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); }
-.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-100); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.step { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-tertiary); }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--gray-100); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
 .step.active .step-num { background: var(--primary); border-color: var(--primary); color: white; }
 .step.active { color: var(--text-primary); font-weight: 500; }
 .step.done .step-num { background: #1A7F3C; border-color: #1A7F3C; color: white; }
@@ -212,8 +217,8 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* FORM */
 .form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
-.form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+.form-label { display: block; font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+.form-hint { font-size: 14px; color: var(--text-tertiary); margin-top: 4px; }
 
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
@@ -227,14 +232,14 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* TABLE */
 .table { width: 100%; border-collapse: collapse; }
-.table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--gray-50); }
-.table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.table th { text-align: left; padding: 8px 12px; font-size: 14px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--gray-50); }
+.table td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid var(--border); }
 .table tr:last-child td { border-bottom: none; }
 .table tr:hover td { background: var(--gray-50); }
 
 /* TOAST */
 #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
-.toast { display: flex; align-items: center; padding: 10px 14px; background: var(--gray-800); color: white; border-radius: var(--radius-md); font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.2s ease; pointer-events: all; max-width: 320px; }
+.toast { display: flex; align-items: center; padding: 10px 14px; background: var(--gray-800); color: white; border-radius: var(--radius-md); font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.2s ease; pointer-events: all; max-width: 320px; }
 .toast.success { background: #1A7F3C; }
 .toast.error { background: #C0392B; }
 @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -244,7 +249,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
 .empty-icon { width: 40px; height: 40px; background: var(--gray-100); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
 .empty-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.empty-desc { font-size: 13px; color: var(--text-tertiary); }
+.empty-desc { font-size: 14px; color: var(--text-tertiary); }
 
 /* LOGIN */
 #login-screen { position: fixed; inset: 0; background: var(--gray-50); display: flex; align-items: center; justify-content: center; z-index: 500; }
@@ -258,8 +263,8 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
 .radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
 .radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
-.radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-.radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
+.radio-option-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.radio-option-desc { font-size: 14px; color: var(--text-tertiary); }
 
 #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
 .page { display: none; }
@@ -284,13 +289,13 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .tag-select-box:focus-within { border-color: var(--primary); }
 .tag-select-input-wrap { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px; min-height: 32px; align-items: center; cursor: text; }
 .tag-select-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-select-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--primary-light); color: var(--primary); border-radius: 3px; padding: 2px 6px 2px 8px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tag-select-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--primary-light); color: var(--primary); border-radius: 3px; padding: 2px 6px 2px 8px; font-size: 14px; font-weight: 500; white-space: nowrap; }
 .tag-select-tag button { background: none; border: none; cursor: pointer; color: var(--primary); opacity: 0.6; font-size: 14px; padding: 0 0 0 2px; line-height: 1; }
 .tag-select-tag button:hover { opacity: 1; }
-.tag-select-input { border: none; outline: none; font-family: var(--font); font-size: 13px; background: transparent; min-width: 80px; flex: 1; padding: 2px 0; color: var(--text-primary); }
+.tag-select-input { border: none; outline: none; font-family: var(--font); font-size: 14px; background: transparent; min-width: 80px; flex: 1; padding: 2px 0; color: var(--text-primary); }
 .tag-select-input::placeholder { color: var(--text-tertiary); }
 .tag-select-dropdown { position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 200; max-height: 200px; overflow-y: auto; }
-.tag-select-option { padding: 8px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+.tag-select-option { padding: 8px 12px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
 .tag-select-option:hover { background: var(--gray-50); }
 
 /* LOGIN */
@@ -305,8 +310,8 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .radio-option:hover { border-color: var(--gray-300); background: var(--gray-50); }
 .radio-option.selected { border-color: var(--primary); background: var(--primary-subtle); }
 .radio-option input { accent-color: var(--primary); margin-top: 2px; flex-shrink: 0; }
-.radio-option-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-.radio-option-desc { font-size: 12px; color: var(--text-tertiary); }
+.radio-option-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.radio-option-desc { font-size: 14px; color: var(--text-tertiary); }
 
 /* 화면 삭제 버튼 */
 .screen-delete-btn { position: absolute; top: 6px; right: 6px; z-index: 3; width: 24px; height: 24px; background: rgba(192,57,43,0.85); border: none; border-radius: var(--radius-sm); cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity var(--transition); }
@@ -324,10 +329,10 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em">UX Archive</span>
     </div>
     <div style="font-size:18px;font-weight:600;margin-bottom:4px">로그인</div>
-    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:24px">사번과 비밀번호를 입력해주세요</div>
+    <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:24px">사번과 비밀번호를 입력해주세요</div>
     <div class="form-group"><label class="form-label">사번</label><input class="input" type="text" id="login-id" placeholder="사번 입력" style="height:36px"></div>
     <div class="form-group"><label class="form-label">비밀번호</label><input class="input" type="password" id="login-pw" placeholder="비밀번호 입력" style="height:36px"></div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);margin:12px 0;cursor:pointer"><input type="checkbox" id="login-remember" style="accent-color:var(--primary)"> 24시간 로그인 유지</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size: 14px;color:var(--text-secondary);margin:12px 0;cursor:pointer"><input type="checkbox" id="login-remember" style="accent-color:var(--primary)"> 24시간 로그인 유지</label>
     <button class="btn btn-primary" style="width:100%;height:36px" onclick="doLogin()">로그인</button>
   </div>
 </div>
@@ -340,7 +345,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <span style="font-size:15px;font-weight:600">UX Archive</span>
     </div>
     <div style="font-size:18px;font-weight:600;margin-bottom:4px">비밀번호 변경</div>
-    <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:20px">최초 로그인입니다. 비밀번호를 변경해주세요.</div>
+    <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:20px">최초 로그인입니다. 비밀번호를 변경해주세요.</div>
     <div class="form-group"><label class="form-label">현재 비밀번호</label><input class="input" type="password" id="cpw-current"></div>
     <div class="form-group"><label class="form-label">새 비밀번호</label><input class="input" type="password" id="cpw-new" placeholder="8자 이상"></div>
     <div class="form-group"><label class="form-label">새 비밀번호 확인</label><input class="input" type="password" id="cpw-confirm"></div>
@@ -427,7 +432,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <button class="modal-close" onclick="document.getElementById('order-modal').style.display='none'"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">순서 변경 유형을 선택해주세요.</p>
+      <p style="font-size: 14px;color:var(--text-secondary);margin-bottom:16px">순서 변경 유형을 선택해주세요.</p>
       <label class="radio-option selected" id="radio-fix"><input type="radio" name="order-type" value="fix" checked onchange="selectOrderType('fix')"><div><div class="radio-option-title">단순 오류 수정</div><div class="radio-option-desc">기존 버전에서 순서만 수정합니다.</div></div></label>
       <label class="radio-option" id="radio-version"><input type="radio" name="order-type" value="version" onchange="selectOrderType('version')"><div><div class="radio-option-title">실제 플로우 변경</div><div class="radio-option-desc">새 버전으로 업그레이드됩니다.</div></div></label>
     </div>
@@ -564,9 +569,9 @@ async function renderCompanyView() {
       html+=`<div class="company-section">
         <div class="company-section-header">
           <div style="display:flex;align-items:baseline;gap:10px">
-            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-tertiary)">${String(ci).padStart(2,'0')}</span>
+            <span style="font-size: 14px;font-family:var(--font-mono);color:var(--text-tertiary)">${String(ci).padStart(2,'0')}</span>
             <span style="font-size:22px;font-weight:700;letter-spacing:-0.03em">${c.name}</span>
-            ${c.url?`<a href="${c.url}" target="_blank" style="font-size:11px;color:var(--primary);text-decoration:none;opacity:0.8">↗ 사이트</a>`:''}
+            ${c.url?`<a href="${c.url}" target="_blank" style="font-size: 14px;color:var(--primary);text-decoration:none;opacity:0.8">↗ 사이트</a>`:''}
           </div>
           <span class="badge badge-gray">${cSets.length}개 유형상세</span>
         </div>
@@ -580,10 +585,10 @@ async function renderCompanyView() {
         html+=`<div class="screen-card" onclick="openSetDetail('${s.id}')">
           <div class="screen-card-thumb">${thumbHtml}</div>
           <div class="screen-card-info">
-            <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:3px">${typeName}</div>
-            <div style="font-size:13px;font-weight:600;letter-spacing:-0.01em;line-height:1.3">${subtypeName}</div>
+            <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:3px">${typeName}</div>
+            <div style="font-size: 14px;font-weight:600;letter-spacing:-0.01em;line-height:1.3">${subtypeName}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
-              <span style="font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
+              <span style="font-size: 14px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
               <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
             </div>
           </div>
@@ -673,7 +678,7 @@ function renderSetDetail(set, allVersions) {
     </div>
     <div class="version-tabs">${versionTabs}</div>
     ${changeSummaryHtml}
-    ${isAdmin?`<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+    ${isAdmin?`<div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>드래그로 순서 변경 · 화면 우상단 🗑️ 클릭으로 개별 삭제</div>
     </div>`:''}
     <div class="screen-grid-5" id="set-detail-grid">${screensHtml}</div>`;
@@ -733,7 +738,7 @@ function rerenderSetGrid(screens){
 
 function showOrderSaveModal(){
   showModal('순서를 변경하시겠어요?',
-    `<p style="font-size:13px;color:var(--text-secondary);line-height:1.6">드래그한 순서로 변경합니다.<br>이 작업은 실제 DB에 저장됩니다.</p>`,
+    `<p style="font-size: 14px;color:var(--text-secondary);line-height:1.6">드래그한 순서로 변경합니다.<br>이 작업은 실제 DB에 저장됩니다.</p>`,
     async()=>{
       try{
         // 각 화면의 order_no를 새 순서대로 PATCH
@@ -773,9 +778,10 @@ function openScreenDetail(screenId, setId) {
 
   const flowHtml=(set.screens||[]).map(s=>{
     const thumb=s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'';
-    return `<div class="flow-item ${s.id===screenId?'current':''}" onclick="openScreenDetail('${s.id}','${setId}')">
+    const stNameF=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||'';
+    return `<div class="flow-item-vertical ${s.id===screenId?'current':''}" onclick="openScreenDetail('${s.id}','${setId}')">
       <div class="flow-item-thumb">${thumb}</div>
-      <div class="flow-item-num">${String(s.order_no).padStart(3,'0')}</div>
+      <div class="flow-item-num">${String(s.order_no).padStart(2,'0')} ${stNameF}</div>
     </div>`;
   }).join('');
 
@@ -785,28 +791,36 @@ function openScreenDetail(screenId, setId) {
     <button class="back-btn" onclick="renderSetDetail(state.currentSet,state.currentSetVersions)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
     </button>
-    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+    <div style="display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:start">
       <div>
-        <div class="detail-img-wrap">
-          <div class="detail-img-viewport">
-            ${screen.signed_url
-              ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
-              : '<div style="width:390px;height:844px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
-            }
+        <!-- 이미지 + 플로우 가로 배치 -->
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div>
+            <div class="detail-img-wrap" style="width:fit-content">
+              <div class="detail-img-viewport">
+                ${screen.signed_url
+                  ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
+                  : '<div style="width:240px;height:520px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
+                }
+              </div>
+            </div>
+            ${screen.signed_url?`<div style="margin-top:6px;font-size: 14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 보기 · 스크롤로 전체 확인</div>`:''}
           </div>
-          ${screen.signed_url?`<div style="margin-left:12px;font-size:11px;color:var(--text-tertiary);writing-mode:vertical-rl;text-orientation:mixed;padding:8px 0">스크롤하여 전체 보기 ↕</div>`:''}
+          <!-- 플로우 썸네일 세로 배치 -->
+          <div style="flex:1;min-width:0">
+            <div style="font-size: 14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">플로우 순서</div>
+            <div style="display:flex;flex-direction:column;gap:4px;max-height:520px;overflow-y:auto;scrollbar-width:thin;padding-right:4px">
+              ${flowHtml}
+            </div>
+          </div>
         </div>
-        <div class="flow-strip">
-          <div class="flow-strip-title">플로우 순서</div>
-          <div class="flow-items">${flowHtml}</div>
-        </div>
-        <div id="related-screens-section" style="margin-top:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:12px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
+        <div id="related-screens-section" style="margin-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size: 14px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
             ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
           </div>
-          <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">
-            <div style="font-size:12px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
+          <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:5px">
+            <div style="font-size: 14px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
           </div>
         </div>
       </div>
@@ -863,7 +877,7 @@ async function loadFunctionScreens(typeCode) {
     const screens=await api('GET',`/screens?screen_type=${typeCode}${companyParam}`);
     if(!screens?.length){gridEl.innerHTML='<div class="empty-state"><div class="empty-title">화면 없음</div><div class="empty-desc">해당 화면 유형의 이미지가 없습니다</div></div>';return;}
     const stName=state.screenTypes.find(s=>s.code===typeCode)?.name||typeCode;
-    gridEl.innerHTML=`<div style="margin-bottom:12px;font-size:13px;font-weight:500">${stName} <span style="color:var(--text-tertiary);font-weight:400">${screens.length}개</span></div>
+    gridEl.innerHTML=`<div style="margin-bottom:12px;font-size: 14px;font-weight:500">${stName} <span style="color:var(--text-tertiary);font-weight:400">${screens.length}개</span></div>
       <div class="screen-grid-5">${screens.map(s=>{
         const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||s.set?.company_code;
         return `<div class="screen-card" onclick="openFunctionScreenDetail('${s.id}')">
@@ -916,15 +930,15 @@ async function openFunctionScreenDetail(screenId) {
                 : '<div style="width:390px;height:844px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
               }
             </div>
-            ${screen.signed_url?`<div style="margin-left:12px;font-size:11px;color:var(--text-tertiary);writing-mode:vertical-rl;text-orientation:mixed;padding:8px 0">스크롤하여 전체 보기 ↕</div>`:''}
+            ${screen.signed_url?`<div style="margin-left:12px;font-size: 14px;color:var(--text-tertiary);writing-mode:vertical-rl;text-orientation:mixed;padding:8px 0">스크롤하여 전체 보기 ↕</div>`:''}
           </div>
           <div id="related-screens-section" style="margin-top:20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="font-size:12px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
+              <div style="font-size: 14px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
               ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
             </div>
             <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">
-              <div style="font-size:12px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
+              <div style="font-size: 14px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
             </div>
           </div>
         </div>
@@ -997,17 +1011,17 @@ function renderCompareView() {
     <div id="compare-meta-bar" style="display:none;flex-direction:column;gap:10px;padding:12px 16px;background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <div style="display:flex;align-items:center;gap:6px;font-size: 14px">
             <span style="color:var(--text-tertiary)">예상 비용</span>
             <span id="cost-estimate" style="font-weight:600;color:var(--primary);font-family:var(--font-mono)">₩0</span>
             <span style="color:var(--text-tertiary)">(Sonnet 4.6 · 3관점 통합)</span>
           </div>
           <!-- 분석 기준 툴팁 -->
           <div style="position:relative" id="analysis-info-wrap">
-            <span style="font-size:11px;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:2px" 
+            <span style="font-size: 14px;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:2px" 
               onmouseenter="document.getElementById('analysis-tooltip').style.display='block'"
               onmouseleave="document.getElementById('analysis-tooltip').style.display='none'">AI 분석 기준 보기</span>
-            <div id="analysis-tooltip" style="display:none;position:absolute;top:20px;left:0;width:300px;background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.1);font-size:12px;line-height:1.8">
+            <div id="analysis-tooltip" style="display:none;position:absolute;top:20px;left:0;width:300px;background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.1);font-size: 14px;line-height:1.8">
               <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px">3가지 관점 통합 분석</div>
               <div style="margin-bottom:10px">
                 <div style="font-weight:500;color:var(--primary);margin-bottom:4px">① 정보 전략 분석</div>
@@ -1029,17 +1043,17 @@ function renderCompareView() {
       <!-- 추가 분석 요청 -->
       <div style="display:flex;align-items:flex-start;gap:8px">
         <div style="flex-shrink:0;padding-top:8px">
-          <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap">추가 분석 요청</span>
-          <div style="font-size:10px;color:var(--text-tertiary)">선택사항</div>
+          <span style="font-size: 14px;color:var(--text-secondary);white-space:nowrap">추가 분석 요청</span>
+          <div style="font-size: 14px;color:var(--text-tertiary)">선택사항</div>
         </div>
         <textarea id="analysis-extra" placeholder="기본 3관점 외에 추가로 집중하고 싶은 분석 요소를 입력하세요.&#10;예) 특약 조건 강화 여부를 중점적으로 봐줘 / 하단 CTA가 잘 보이는지 확인해줘"
-          style="flex:1;height:60px;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-md);font-family:var(--font);font-size:12px;color:var(--text-primary);background:var(--gray-0);resize:none;outline:none;line-height:1.6"
+          style="flex:1;height:60px;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-md);font-family:var(--font);font-size: 14px;color:var(--text-primary);background:var(--gray-0);resize:none;outline:none;line-height:1.6"
           onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-strong)'"></textarea>
       </div>
     </div>
 
     <!-- 매칭 현황 바 -->
-    <div id="matching-bar" style="display:none;padding:10px 14px;background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;font-size:12px"></div>
+    <div id="matching-bar" style="display:none;padding:10px 14px;background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;font-size: 14px"></div>
 
     <!-- A/B 섹션 -->
     <div class="compare-layout" id="compare-cols"></div>
@@ -1115,9 +1129,9 @@ function updateAnalysisModeDisplay() {
   badge.style.gap = '6px';
 
   if (cA === cB) {
-    badge.innerHTML = `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;background:var(--primary-light);color:var(--primary)">같은 회사 버전별 분석</span>`;
+    badge.innerHTML = `<span style="font-size: 14px;font-weight:600;padding:3px 10px;border-radius:3px;background:var(--primary-light);color:var(--primary)">같은 회사 버전별 분석</span>`;
   } else {
-    badge.innerHTML = `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;background:#EDF4FE;color:#1A56DB">경쟁사 화면 분석</span>`;
+    badge.innerHTML = `<span style="font-size: 14px;font-weight:600;padding:3px 10px;border-radius:3px;background:#EDF4FE;color:#1A56DB">경쟁사 화면 분석</span>`;
   }
 }
 
@@ -1166,9 +1180,9 @@ function renderCompareCol(slot) {
   const headerHtml = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.06em">${slot}</span>
-        ${companyName ? `<span style="font-size:13px;font-weight:600">${companyName}</span>` : ''}
-        ${screens.length ? `<span style="font-size:11px;color:var(--text-tertiary)">${screens.length}장</span>` : ''}
+        <span style="font-size: 14px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.06em">${slot}</span>
+        ${companyName ? `<span style="font-size: 14px;font-weight:600">${companyName}</span>` : ''}
+        ${screens.length ? `<span style="font-size: 14px;color:var(--text-tertiary)">${screens.length}장</span>` : ''}
         ${screens.length>=50 ? `<span class="badge badge-new">최대 50장</span>` : ''}
       </div>
       <div style="display:flex;gap:6px;align-items:center">
@@ -1183,8 +1197,8 @@ function renderCompareCol(slot) {
       ${headerHtml}
       <div class="compare-col-empty" onclick="openCompareImagePicker('${slot}')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
-        <div style="font-size:13px;color:var(--text-tertiary)">클릭하여 화면 추가</div>
-        <div style="font-size:11px;color:var(--text-tertiary)">최대 50장 · 같은 회사 화면만 추가 가능</div>
+        <div style="font-size: 14px;color:var(--text-tertiary)">클릭하여 화면 추가</div>
+        <div style="font-size: 14px;color:var(--text-tertiary)">최대 50장 · 같은 회사 화면만 추가 가능</div>
       </div>
     </div>`;
   }
@@ -1195,8 +1209,8 @@ function renderCompareCol(slot) {
     const isMatched = s.screen_type_code && codesOther.has(s.screen_type_code);
     const matchBadge = screens.length>0 && codesOther.size>0
       ? (isMatched
-          ? `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:#EDFCF2;color:#1A7F3C">매칭</div>`
-          : `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px;background:#F4F3F1;color:#A8A49E">미매칭</div>`)
+          ? `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size: 14px;font-weight:600;padding:1px 5px;border-radius:2px;background:#EDFCF2;color:#1A7F3C">매칭</div>`
+          : `<div style="position:absolute;top:5px;right:5px;z-index:2;font-size: 14px;font-weight:600;padding:1px 5px;border-radius:2px;background:#F4F3F1;color:#A8A49E">미매칭</div>`)
       : '';
     return `<div class="screen-card compare-item ${isChk?'compare-checked':''}"
       data-slot="${slot}" data-idx="${i}" data-sid="${s.id||''}"
@@ -1222,7 +1236,7 @@ function renderCompareCol(slot) {
 
   return `<div id="compare-col-wrap-${slot}">
     ${headerHtml}
-    <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px">드래그로 순서 변경 가능</div>
+    <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:8px">드래그로 순서 변경 가능</div>
     <div class="compare-grid-3" id="compare-grid-${slot}">${cards}</div>
   </div>`;
 }
@@ -1327,7 +1341,7 @@ async function openCompareImagePicker(slot) {
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="pickerSelectAll()">전체선택</button>
           <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
-          <span style="font-size:12px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
+          <span style="font-size: 14px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
         </div>
         <button class="btn btn-primary" onclick="applyComparePickerSelection('${slot}')">추가하기</button>
       </div>
@@ -1404,7 +1418,7 @@ async function startAIScreenAnalysis(maxTokens=3000) {
   // 매칭 0개 → 분석 불가
   if (!matchedCodes.length) {
     showModal('분석 불가',
-      `<p style="font-size:13px;color:var(--text-secondary);line-height:1.7">A·B 섹션에 매칭되는 화면 유형이 없습니다.<br>같은 화면 유형 코드의 화면을 양쪽에 추가해주세요.</p>`,
+      `<p style="font-size: 14px;color:var(--text-secondary);line-height:1.7">A·B 섹션에 매칭되는 화면 유형이 없습니다.<br>같은 화면 유형 코드의 화면을 양쪽에 추가해주세요.</p>`,
       ()=>closeModal()
     );
     return;
@@ -1418,10 +1432,10 @@ async function startAIScreenAnalysis(maxTokens=3000) {
     ].join(', ');
 
     showModal('일부 화면 미매칭',
-      `<div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+      `<div style="font-size: 14px;color:var(--text-secondary);line-height:1.8">
         <p style="margin-bottom:12px">매칭되지 않은 화면이 있습니다:</p>
-        <div style="background:var(--gray-50);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary)">${unmatchedList}</div>
-        <p style="color:var(--text-tertiary);font-size:12px">매칭되지 않은 화면은 직접 비교되지 않으며, 전체 플로우 흐름 파악을 위한 참고 자료로만 활용됩니다.<br>매칭된 <strong style="color:var(--text-primary)">${matchedCodes.length}개</strong> 화면을 기준으로 분석을 진행합니다.</p>
+        <div style="background:var(--gray-50);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;font-size: 14px;color:var(--text-secondary)">${unmatchedList}</div>
+        <p style="color:var(--text-tertiary);font-size: 14px">매칭되지 않은 화면은 직접 비교되지 않으며, 전체 플로우 흐름 파악을 위한 참고 자료로만 활용됩니다.<br>매칭된 <strong style="color:var(--text-primary)">${matchedCodes.length}개</strong> 화면을 기준으로 분석을 진행합니다.</p>
       </div>`,
       ()=>{ closeModal(); runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens); }
     );
@@ -1458,7 +1472,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
         <div class="spinner"></div>
         <span style="font-size:14px;font-weight:500">AI 분석 중... ${maxTokens>=3000?'(상세)':('(요약)')}</span>
-        <span style="font-size:12px;color:var(--text-tertiary)">Sonnet 4.6 · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
+        <span style="font-size: 14px;color:var(--text-tertiary)">Sonnet 4.6 · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
       </div>
     </div>`;
 
@@ -1633,7 +1647,7 @@ ${commonAnalysisFramework}
 
   } catch(e) {
     resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
-      <div style="color:#C0392B;font-size:13px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}</div>
+      <div style="color:#C0392B;font-size: 14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}</div>
     </div>`;
   }
 }
@@ -1644,13 +1658,13 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
   // 변화 방향 뱃지 변환
   function changeBadge(val) {
     const v = val.trim();
-    if (v.includes('↑') || v.includes('상향') || v.includes('강화') || v.includes('추가')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#EAF3DE;color:#3B6D11">${v}</span>`;
-    if (v.includes('↓') || v.includes('하향') || v.includes('축소') || v.includes('감소')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FCEBEB;color:#A32D2D">${v}</span>`;
-    if (v.includes('신규') || v.includes('추가') || v.includes('NEW')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#E6F1FB;color:#185FA5">${v}</span>`;
-    if (v.includes('제거') || v.includes('삭제') || v.includes('없음')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#5F5E5A">${v}</span>`;
-    if (v.includes('⚠') || v.includes('주의') || v.includes('조건')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FAEEDA;color:#854F0B">${v}</span>`;
-    if (v.includes('유지') || v.includes('동일')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#888780">${v}</span>`;
-    return `<span style="font-size:12px;color:var(--text-secondary)">${v}</span>`;
+    if (v.includes('↑') || v.includes('상향') || v.includes('강화') || v.includes('추가')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#EAF3DE;color:#3B6D11">${v}</span>`;
+    if (v.includes('↓') || v.includes('하향') || v.includes('축소') || v.includes('감소')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FCEBEB;color:#A32D2D">${v}</span>`;
+    if (v.includes('신규') || v.includes('추가') || v.includes('NEW')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#E6F1FB;color:#185FA5">${v}</span>`;
+    if (v.includes('제거') || v.includes('삭제') || v.includes('없음')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#5F5E5A">${v}</span>`;
+    if (v.includes('⚠') || v.includes('주의') || v.includes('조건')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FAEEDA;color:#854F0B">${v}</span>`;
+    if (v.includes('유지') || v.includes('동일')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#888780">${v}</span>`;
+    return `<span style="font-size: 14px;color:var(--text-secondary)">${v}</span>`;
   }
 
   // 마크다운 → 보고서 HTML 변환
@@ -1672,10 +1686,10 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       if (!tableRows.length) return;
       const isChangeTable = tableHeaders.some(h => h.includes('변화') || h.includes('유형'));
       let thtml = `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">
+        <table style="width:100%;border-collapse:collapse;font-size: 14px;table-layout:auto">
           <thead><tr style="background:var(--gray-50)">`;
       tableHeaders.forEach(h => {
-        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
+        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size: 14px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
       });
       thtml += `</tr></thead><tbody>`;
       tableRows.forEach(row => {
@@ -1702,7 +1716,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
         const sc = sectionColors[sectionIdx % sectionColors.length];
         sectionIdx++;
         html += `<div style="display:flex;align-items:center;gap:8px;margin:${sectionIdx>1?'24px':'0'} 0 12px">
-          <div style="width:22px;height:22px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
+          <div style="width:22px;height:22px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size: 14px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
           <div style="font-size:14px;font-weight:500">${title}</div>
         </div>`;
         continue;
@@ -1711,7 +1725,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       // 소제목 (### )
       if (line.startsWith('### ')) {
         flushTable();
-        html += `<div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
+        html += `<div style="font-size: 14px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
         continue;
       }
 
@@ -1742,14 +1756,14 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
         const dotColor = isGood ? '#639922' : isRisk ? '#E24B4A' : isInsight ? '#378ADD' : '#888780';
         html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">
           <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
-          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${rest}</div>
+          <div style="font-size: 14px;font-weight:500;color:var(--text-primary)">${rest}</div>
         </div>`;
         continue;
       }
 
       // - 항목 (리스트)
       if (line.match(/^[-•·] /)) {
-        html += `<div style="display:flex;gap:8px;font-size:13px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
+        html += `<div style="display:flex;gap:8px;font-size: 14px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
           <span style="color:var(--text-tertiary);flex-shrink:0">→</span>
           <span>${line.replace(/^[-•·] /,'')}</span>
         </div>`;
@@ -1759,7 +1773,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       // 인사이트 박스 (→ 로 시작하는 항목들 포함 처리됨)
       // 일반 텍스트
       if (line.trim()) {
-        html += `<div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
+        html += `<div style="font-size: 14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
       } else {
         html += `<div style="height:8px"></div>`;
       }
@@ -1775,7 +1789,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">AI 화면 분석 결과</div>
-          <div style="font-size:12px;color:var(--text-tertiary)">
+          <div style="font-size: 14px;color:var(--text-tertiary)">
             ${isSame ? nameA+' 버전 비교' : nameA+' vs '+nameB} · 정보전략 · 화면구성 · 전환전략 통합분석 · ${maxTokens>=3000?'상세':'요약'}
             ${purpose ? ' · 추가요청: '+purpose : ''}
           </div>
@@ -1880,11 +1894,11 @@ async function loadPickerScreens(){
       const showMeta=!company||(company&&!pickerFilters.subtype);
       return `<div class="picker-item ${isSel?'selected':''}" id="picker-item-${s.id}" onclick="togglePickerItem('${s.id}')">
         <div class="picker-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
-        <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">없음</div>'}</div>
+        <div class="picker-item-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size: 14px;color:var(--text-tertiary)">없음</div>'}</div>
         <div class="picker-item-info">
           <div class="picker-item-num">${String(s.order_no).padStart(3,'0')}${showMeta&&companyName?' · '+companyName:''}</div>
           <div class="picker-item-name">${stName}</div>
-          ${showMeta&&subtypeName2?`<div style="font-size:9px;color:var(--text-tertiary)">${subtypeName2}</div>`:''}
+          ${showMeta&&subtypeName2?`<div style="font-size: 14px;color:var(--text-tertiary)">${subtypeName2}</div>`:''}
         </div>
       </div>`;
     }).join('')}</div>`;
@@ -2017,11 +2031,11 @@ function renderUploadView(){
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
           <!-- 파일 미리 선택으로 자동 감지 -->
           <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px">
-            <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>
               파일명 규칙에 맞는 이미지를 여기 끌어다 놓으면 기본 정보가 자동으로 채워집니다
             </div>
-            <div style="border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);padding:14px;text-align:center;cursor:pointer;font-size:12px;color:var(--text-tertiary);transition:all 0.15s"
+            <div style="border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);padding:14px;text-align:center;cursor:pointer;font-size: 14px;color:var(--text-tertiary);transition:all 0.15s"
               id="step1-drop"
               onclick="document.getElementById('step1-file-input').click()"
               ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--primary-subtle)'"
@@ -2030,7 +2044,7 @@ function renderUploadView(){
               파일 드롭 또는 클릭해서 자동 감지
             </div>
             <input type="file" id="step1-file-input" accept="image/*" multiple style="display:none" onchange="autoDetectFromFiles(event.target.files)">
-            <div id="step1-detect-result" style="display:none;margin-top:8px;padding:8px 10px;background:var(--primary-subtle);border-radius:var(--radius-md);font-size:12px;color:var(--primary)"></div>
+            <div id="step1-detect-result" style="display:none;margin-top:8px;padding:8px 10px;background:var(--primary-subtle);border-radius:var(--radius-md);font-size: 14px;color:var(--primary)"></div>
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn btn-primary" onclick="goUploadStep2()">다음</button></div>
         </div>
@@ -2040,20 +2054,20 @@ function renderUploadView(){
       <div class="card">
         <div class="card-header">
           <div class="card-title">이미지 업로드</div>
-          <div style="font-size:12px;color:var(--text-tertiary)">파일명에 화면유형 코드가 포함되면 자동 적용됩니다</div>
+          <div style="font-size: 14px;color:var(--text-tertiary)">파일명에 화면유형 코드가 포함되면 자동 적용됩니다</div>
         </div>
         <div class="card-body">
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event)" ondragleave="this.classList.remove('drag')">
             <div style="margin-bottom:12px;color:var(--text-tertiary)"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 20V8M10 14l6-6 6 6M6 24h20"/></svg></div>
             <div style="font-size:14px;font-weight:500;margin-bottom:4px">클릭하거나 드래그하여 이미지 업로드</div>
-            <div style="font-size:12px;color:var(--text-tertiary)">PNG, JPG, WebP 지원</div>
+            <div style="font-size: 14px;color:var(--text-tertiary)">PNG, JPG, WebP 지원</div>
           </div>
           <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFileSelect(event)">
           <div class="upload-preview-grid" id="upload-preview"></div>
           <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">
             <button class="btn btn-ghost btn-sm" onclick="goUploadStep1()">← 이전</button>
             <div style="display:flex;gap:8px;align-items:center">
-              <span id="upload-count" style="font-size:12px;color:var(--text-tertiary)">0개 선택됨</span>
+              <span id="upload-count" style="font-size: 14px;color:var(--text-tertiary)">0개 선택됨</span>
               <button class="btn btn-primary" id="start-upload-btn" onclick="startUpload()" disabled>업로드 시작</button>
             </div>
           </div>
@@ -2217,12 +2231,12 @@ function renderUploadPreviews(){
       <div class="upload-preview-info">
         <div class="upload-preview-name">${i+1}. ${item.file.name}</div>
         <div style="position:relative">
-          <select class="select" style="width:100%;height:26px;font-size:11px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value">
+          <select class="select" style="width:100%;height:26px;font-size: 14px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value">
             <option value="">화면유형 선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`,`value="${item.screenTypeCode}" selected`)}
           </select>
-          ${autoMatched?`<span style="position:absolute;top:-14px;right:0;font-size:9px;color:var(--primary);font-weight:600">자동 매칭</span>`:''}
+          ${autoMatched?`<span style="position:absolute;top:-14px;right:0;font-size: 14px;color:var(--primary);font-weight:600">자동 매칭</span>`:''}
         </div>
-        ${item.status==='done'?'<span style="font-size:10px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size:10px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size:10px;color:var(--primary)">업로드 중...</span>':''}
+        ${item.status==='done'?'<span style="font-size: 14px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size: 14px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size: 14px;color:var(--primary)">업로드 중...</span>':''}
       </div>
       <button class="upload-preview-remove" onclick="state.uploadFiles.splice(${i},1);renderUploadPreviews()">×</button>
     </div>`;
@@ -2302,18 +2316,18 @@ function showUploadChoiceModal(version, existingCount) {
           <button class="modal-close" onclick="document.getElementById('generic-modal').remove();"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
         </div>
         <div class="modal-body">
-          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">현재 <strong>${existingCount}장</strong>이 등록되어 있습니다. 어떻게 하시겠습니까?</p>
+          <p style="font-size: 14px;color:var(--text-secondary);margin-bottom:16px">현재 <strong>${existingCount}장</strong>이 등록되어 있습니다. 어떻게 하시겠습니까?</p>
           <div style="display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='append';">
               <div>
                 <div style="font-weight:500;margin-bottom:2px">기존 세트에 추가</div>
-                <div style="font-size:12px;color:var(--text-tertiary)">기존 ${existingCount}장 유지 · 새 이미지를 ${existingCount+1}번부터 추가</div>
+                <div style="font-size: 14px;color:var(--text-tertiary)">기존 ${existingCount}장 유지 · 새 이미지를 ${existingCount+1}번부터 추가</div>
               </div>
             </button>
             <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='replace';">
               <div>
                 <div style="font-weight:500;margin-bottom:2px;color:#C0392B">전체 교체</div>
-                <div style="font-size:12px;color:var(--text-tertiary)">기존 ${existingCount}장 삭제 후 새로 업로드</div>
+                <div style="font-size: 14px;color:var(--text-tertiary)">기존 ${existingCount}장 삭제 후 새로 업로드</div>
               </div>
             </button>
           </div>
@@ -2344,7 +2358,7 @@ function renderMasterView(){
     <div class="page-header"><div><div class="page-title">마스터 관리</div><div class="page-desc">기업, 유형, 화면유형 등 기초 데이터를 관리합니다</div></div></div>
     <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius-md);margin-bottom:20px">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#B45309" stroke-width="1.5" style="flex-shrink:0;margin-top:1px"><path d="M8 2l6 12H2L8 2z"/><path d="M8 7v3M8 11v.5"/></svg>
-      <div style="font-size:13px;color:#92400E;line-height:1.6"><strong>주의</strong> — 마스터 데이터 변경은 기존 화면 분류 전체에 영향을 줍니다. 코드(CODE) 변경 시 기존 이미지 경로가 깨질 수 있습니다.</div>
+      <div style="font-size: 14px;color:#92400E;line-height:1.6"><strong>주의</strong> — 마스터 데이터 변경은 기존 화면 분류 전체에 영향을 줍니다. 코드(CODE) 변경 시 기존 이미지 경로가 깨질 수 있습니다.</div>
     </div>
     <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--gray-100);padding:3px;border-radius:var(--radius-md);width:fit-content">
       <button class="version-tab master-tab active" data-tab="companies" onclick="switchMasterTab('companies')">기업</button>
@@ -2366,9 +2380,9 @@ function renderMasterTable(tab){
   const isScreenType=tab==='screen_types',isCompany=tab==='companies';
   const colHeaders=isScreenType?['코드','이름','카테고리','순서','']:isCompany?['코드','이름','URL','순서','활성','']:['코드','이름','순서',''];
   const rows=data.map(row=>{
-    const cells=isScreenType?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size:11px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`
-      :isCompany?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size:12px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
-      :`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size:12px">${row.order_no}</td>`;
+    const cells=isScreenType?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size: 14px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td>`
+      :isCompany?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size: 14px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
+      :`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td>`;
     return `<tr>${cells}<td style="text-align:right;width:160px"><button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button><button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button></td></tr>`;
   }).join('');
   document.getElementById('master-table-wrap').innerHTML=`<table class="table"><thead><tr>${colHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${colHeaders.length}" style="text-align:center;padding:24px;color:var(--text-tertiary)">데이터가 없습니다</td></tr>`}</tbody></table>`;
@@ -2401,7 +2415,7 @@ function openMasterEditModal(row){
   const tab=masterActiveTab,isScreenType=tab==='screen_types',isCompany=tab==='companies';
   const tabLabels={companies:'기업',types:'유형',subtypes:'유형상세',screen_types:'화면유형'};
   showModal(`${tabLabels[tab]} 수정`,
-    `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="6"/><path d="M7 4v3M7 9v.5"/></svg>코드 변경 시 기존 이미지 경로가 깨질 수 있습니다</div>
+    `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size: 14px;color:#C0392B"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="6"/><path d="M7 4v3M7 9v.5"/></svg>코드 변경 시 기존 이미지 경로가 깨질 수 있습니다</div>
      <div class="form-group"><label class="form-label">CODE</label><input class="input" id="mf-code" value="${row.code}" style="font-family:var(--font-mono)"></div>
      <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
      ${isCompany?`<div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" value="${row.url||''}" placeholder="https://..."></div><div class="form-group"><label class="form-label">활성 여부</label><select class="select" id="mf-active" style="width:100%"><option value="true" ${row.is_active?'selected':''}>활성</option><option value="false" ${!row.is_active?'selected':''}>비활성</option></select></div>`:''}
@@ -2427,7 +2441,7 @@ async function reloadMasterData(tab){
 }
 
 function confirmMasterDelete(tab,code,name){
-  showModal('삭제 확인',`<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>삭제하면 복구할 수 없습니다.</div><div style="font-size:14px"><strong>${name}</strong> (${code})을 삭제하시겠습니까?</div>`,
+  showModal('삭제 확인',`<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size: 14px;color:#C0392B"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>삭제하면 복구할 수 없습니다.</div><div style="font-size:14px"><strong>${name}</strong> (${code})을 삭제하시겠습니까?</div>`,
     async()=>{
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
       try{await api('DELETE',`${pathMap[tab]}/${code}`);const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];state[stateKey]=state[stateKey].filter(r=>r.code!==code);closeModal();toast('삭제되었습니다','success');renderMasterTable(tab);}catch(e){toast(e.message,'error');}
@@ -2439,7 +2453,7 @@ function confirmMasterDelete(tab,code,name){
 // ── 세트 삭제 ────────────────────────────────────────────────
 async function confirmDeleteSet(setId, label) {
   showModal('세트 삭제',
-    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B">
+    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size: 14px;color:#C0392B">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>
       삭제하면 복구할 수 없습니다. Storage의 이미지 파일도 모두 삭제됩니다.
     </div>
@@ -2466,7 +2480,7 @@ async function confirmDeleteSet(setId, label) {
 // ── 화면 단건 삭제 ───────────────────────────────────────────
 async function confirmDeleteScreen(screenId, screenName) {
   showModal('화면 삭제',
-    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size:12px;color:#C0392B">
+    `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#FEF2F1;border:1px solid #FECACA;border-radius:var(--radius-md);margin-bottom:16px;font-size: 14px;color:#C0392B">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>
       삭제하면 복구할 수 없습니다.
     </div>
@@ -2532,15 +2546,15 @@ function renderRenameView() {
     <!-- 스텝 바 -->
     <div style="display:flex;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
       ${['기본 정보','이미지 업로드','화면유형 지정','결과 확인'].map((t,i)=>`
-        <div id="rename-step-${i+1}" onclick="renameGoStep(${i+1})" style="flex:1;padding:10px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;border-right:${i<3?'1px solid var(--border)':'none'};background:${i===0?'var(--gray-0)':'var(--gray-50)'};color:${i===0?'var(--text-primary)':'var(--text-tertiary)'}">
-          <span style="width:18px;height:18px;border-radius:50%;background:${i===0?'var(--primary)':'var(--gray-200)'};color:${i===0?'white':'var(--text-tertiary)'};font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>${t}
+        <div id="rename-step-${i+1}" onclick="renameGoStep(${i+1})" style="flex:1;padding:10px 12px;font-size: 14px;cursor:pointer;display:flex;align-items:center;gap:6px;border-right:${i<3?'1px solid var(--border)':'none'};background:${i===0?'var(--gray-0)':'var(--gray-50)'};color:${i===0?'var(--text-primary)':'var(--text-tertiary)'}">
+          <span style="width:18px;height:18px;border-radius:50%;background:${i===0?'var(--primary)':'var(--gray-200)'};color:${i===0?'white':'var(--text-tertiary)'};font-size: 14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>${t}
         </div>`).join('')}
     </div>
 
     <!-- STEP 1 -->
     <div id="rename-sec-1">
       <div class="card" style="max-width:520px">
-        <div class="card-header"><div class="card-title">기본 정보 입력</div><div style="font-size:12px;color:var(--text-tertiary)">모든 이미지에 일괄 적용됩니다</div></div>
+        <div class="card-header"><div class="card-title">기본 정보 입력</div><div style="font-size: 14px;color:var(--text-tertiary)">모든 이미지에 일괄 적용됩니다</div></div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
             <div class="form-group">
@@ -2569,7 +2583,7 @@ function renderRenameView() {
               <input class="input" id="rn-version" value="V1" style="font-family:var(--font-mono)" oninput="renameMeta.version=this.value;renameUpdatePreview()">
             </div>
           </div>
-          <div id="rn-preview" style="display:none;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--primary);margin-bottom:16px;word-break:break-all"></div>
+          <div id="rn-preview" style="display:none;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-family:var(--font-mono);font-size: 14px;color:var(--primary);margin-bottom:16px;word-break:break-all"></div>
           <div style="display:flex;justify-content:flex-end">
             <button class="btn btn-primary" onclick="renameGoStep(2)">다음 →</button>
           </div>
@@ -2580,15 +2594,15 @@ function renderRenameView() {
     <!-- STEP 2 -->
     <div id="rename-sec-2" style="display:none">
       <div class="card">
-        <div class="card-header"><div class="card-title">이미지 업로드</div><div style="font-size:12px;color:var(--text-tertiary)">파일명 숫자 순으로 자동 정렬됩니다</div></div>
+        <div class="card-header"><div class="card-title">이미지 업로드</div><div style="font-size: 14px;color:var(--text-tertiary)">파일명 숫자 순으로 자동 정렬됩니다</div></div>
         <div class="card-body">
           <div class="upload-zone" onclick="document.getElementById('rn-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="event.preventDefault();this.classList.remove('drag');renameHandleDrop(event)" ondragleave="this.classList.remove('drag')">
             <div style="margin-bottom:8px;color:var(--text-tertiary)"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 18V6M9 11l5-5 5 5M4 22h20"/></svg></div>
-            <div style="font-size:13px;font-weight:500;margin-bottom:3px">클릭하거나 드래그해서 이미지 업로드</div>
-            <div style="font-size:12px;color:var(--text-tertiary)">최대 100장 · PNG, JPG, WebP</div>
+            <div style="font-size: 14px;font-weight:500;margin-bottom:3px">클릭하거나 드래그해서 이미지 업로드</div>
+            <div style="font-size: 14px;color:var(--text-tertiary)">최대 100장 · PNG, JPG, WebP</div>
           </div>
           <input type="file" id="rn-file-input" accept="image/*" multiple style="display:none" onchange="renameHandleFiles(event.target.files)">
-          <div id="rn-file-count" style="font-size:12px;color:var(--text-tertiary);margin:10px 0"></div>
+          <div id="rn-file-count" style="font-size: 14px;color:var(--text-tertiary);margin:10px 0"></div>
           <div class="screen-grid-5" id="rn-file-grid"></div>
           <div style="display:flex;justify-content:space-between;margin-top:12px">
             <button class="btn" onclick="renameGoStep(1)">← 이전</button>
@@ -2761,7 +2775,7 @@ function renameRenderFileGrid() {
     <div class="screen-card">
       <div class="screen-card-thumb">
         <img src="${item.url}" loading="lazy">
-        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
+        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size: 14px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
       </div>
       <div class="screen-card-info">
         <div class="screen-card-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.file.name}</div>
@@ -2779,14 +2793,14 @@ function renameRenderAssignGrid() {
     return `<div class="screen-card">
       <div class="screen-card-thumb" style="position:relative">
         <img src="${item.url}" loading="lazy">
-        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
-        <div style="position:absolute;top:5px;right:5px;font-size:9px;font-weight:600;padding:2px 5px;border-radius:2px;${isMatched?'background:#EDFCF2;color:#1A7F3C':'background:#FFF3E0;color:#E65100'}">${isMatched?'자동':'미지정'}</div>
+        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size: 14px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
+        <div style="position:absolute;top:5px;right:5px;font-size: 14px;font-weight:600;padding:2px 5px;border-radius:2px;${isMatched?'background:#EDFCF2;color:#1A7F3C':'background:#FFF3E0;color:#E65100'}">${isMatched?'자동':'미지정'}</div>
       </div>
       <div class="screen-card-info">
-        <select style="width:100%;height:24px;font-size:10px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary);margin-bottom:3px" onchange="renameFiles[${i}].screenTypeCode=this.value;renameUpdateAssignCard(${i})" id="rn-sel-${i}">
+        <select style="width:100%;height:24px;font-size: 14px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary);margin-bottom:3px" onchange="renameFiles[${i}].screenTypeCode=this.value;renameUpdateAssignCard(${i})" id="rn-sel-${i}">
           <option value="">화면유형 선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`, `value="${item.screenTypeCode}" selected`)}
         </select>
-        <div id="rn-newname-${i}" style="font-size:9px;color:var(--primary);font-family:var(--font-mono);line-height:1.4;word-break:break-all">${newName}</div>
+        <div id="rn-newname-${i}" style="font-size: 14px;color:var(--primary);font-family:var(--font-mono);line-height:1.4;word-break:break-all">${newName}</div>
       </div>
     </div>`;
   }).join('');
@@ -2851,11 +2865,11 @@ function renameRenderResult() {
     const stName = state.screenTypes.find(s => s.code === item.screenTypeCode)?.name || (item.screenTypeCode || '미지정');
     return `<tr>
       <td style="font-family:var(--font-mono);color:var(--text-tertiary)">${item.order}</td>
-      <td style="font-size:12px;color:var(--text-secondary);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.file.name}</td>
-      <td style="font-family:var(--font-mono);font-size:11px;color:var(--primary)">${newName}</td>
-      <td style="font-size:12px">${stName}</td>
+      <td style="font-size: 14px;color:var(--text-secondary);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.file.name}</td>
+      <td style="font-family:var(--font-mono);font-size: 14px;color:var(--primary)">${newName}</td>
+      <td style="font-size: 14px">${stName}</td>
       <td>
-        <select style="height:24px;font-size:10px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary)" onchange="renameFiles[${i}].screenTypeCode=this.value;renameRenderResult()">
+        <select style="height:24px;font-size: 14px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary)" onchange="renameFiles[${i}].screenTypeCode=this.value;renameRenderResult()">
           <option value="">선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`, `value="${item.screenTypeCode}" selected`)}
         </select>
       </td>
@@ -2899,7 +2913,7 @@ async function loadRelatedScreens(screenId) {
   try {
     const relations = await api('GET', `/screen-relations?screen_id=${screenId}`);
     if (!relations?.length) {
-      grid.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary);padding:8px 0;grid-column:1/-1">연관 화면이 없습니다${state.user?.role==='admin'?' · 위 + 연결 버튼으로 추가하세요':''}</div>`;
+      grid.innerHTML = `<div style="font-size: 14px;color:var(--text-tertiary);padding:8px 0;grid-column:1/-1">연관 화면이 없습니다${state.user?.role==='admin'?' · 위 + 연결 버튼으로 추가하세요':''}</div>`;
       return;
     }
     grid.innerHTML = relations.map(r => {
@@ -2910,16 +2924,16 @@ async function loadRelatedScreens(screenId) {
         <div class="screen-card" onclick="openRelatedScreenDetail('${s.id}')">
           <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
           <div class="screen-card-info">
-            <div class="screen-card-name" style="font-size:10px">${stName}</div>
+            <div class="screen-card-name" style="font-size: 14px">${stName}</div>
             <div class="screen-card-sub">${companyName}</div>
           </div>
         </div>
-        ${state.user?.role==='admin'?`<button onclick="removeRelation('${r.id}','${screenId}')" style="position:absolute;top:4px;right:4px;width:18px;height:18px;background:rgba(192,57,43,0.85);border:none;border-radius:50%;cursor:pointer;color:white;font-size:11px;display:flex;align-items:center;justify-content:center;z-index:2">×</button>`:''}
+        ${state.user?.role==='admin'?`<button onclick="removeRelation('${r.id}','${screenId}')" style="position:absolute;top:4px;right:4px;width:18px;height:18px;background:rgba(192,57,43,0.85);border:none;border-radius:50%;cursor:pointer;color:white;font-size: 14px;display:flex;align-items:center;justify-content:center;z-index:2">×</button>`:''}
       </div>`;
     }).join('');
   } catch(e) {
     const grid2 = document.getElementById('related-screens-grid');
-    if (grid2) grid2.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary)">불러오기 실패</div>`;
+    if (grid2) grid2.innerHTML = `<div style="font-size: 14px;color:var(--text-tertiary)">불러오기 실패</div>`;
   }
 }
 
@@ -2988,7 +3002,7 @@ async function openRelatedScreenPicker(screenId) {
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="pickerSelectAll()">전체선택</button>
           <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
-          <span style="font-size:12px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
+          <span style="font-size: 14px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
         </div>
         <button class="btn btn-primary" onclick="applyRelatedScreens('${screenId}')">연결하기</button>
       </div>
@@ -3035,11 +3049,11 @@ async function openScreenMetaEditor(screenId, setId) {
   ).join('');
 
   showModal('화면 정보 수정',
-    `<div style="margin-bottom:16px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-size:12px;color:var(--text-secondary)">
+    `<div style="margin-bottom:16px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-size: 14px;color:var(--text-secondary)">
       세트 정보 변경 시 같은 세트의 모든 화면에 적용됩니다
     </div>
 
-    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">세트 정보</div>
+    <div style="font-size: 14px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">세트 정보</div>
     <div class="form-group">
       <label class="form-label">유형상세</label>
       <select class="select" id="se-subtype" style="width:100%">
@@ -3057,7 +3071,7 @@ async function openScreenMetaEditor(screenId, setId) {
       </div>
     </div>
 
-    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;padding-top:12px;border-top:1px solid var(--border)">화면 정보</div>
+    <div style="font-size: 14px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;padding-top:12px;border-top:1px solid var(--border)">화면 정보</div>
     <div class="form-group">
       <label class="form-label">화면유형</label>
       <select class="select" id="se-screen-type" style="width:100%">
