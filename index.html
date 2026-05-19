@@ -811,12 +811,19 @@ function openScreenDetail(screenId, setId) {
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">화면 정보</div></div>
+        <div class="card-header">
+          <div class="card-title">화면 정보</div>
+          ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="openScreenMetaEditor('${screen.id}','${set.id}')">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.5 1.5l2 2-7 7H1.5v-2l7-7z"/></svg>
+            수정
+          </button>`:''}
+        </div>
         <div style="padding:0">
           <div class="detail-meta-row"><div class="detail-meta-label">기업</div><div class="detail-meta-value">${companyName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">유형</div><div class="detail-meta-value">${typeName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">유형상세</div><div class="detail-meta-value">${subtypeName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value" id="screen-order-display">${screen.order_no}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${set.version}</span></div></div>
           <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
@@ -922,12 +929,19 @@ async function openFunctionScreenDetail(screenId) {
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">화면 정보</div></div>
+          <div class="card-header">
+            <div class="card-title">화면 정보</div>
+            ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="openScreenMetaEditor('${screen.id}','${setDetail.id}')">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.5 1.5l2 2-7 7H1.5v-2l7-7z"/></svg>
+              수정
+            </button>`:''}
+          </div>
           <div style="padding:0">
             <div class="detail-meta-row"><div class="detail-meta-label">기업</div><div class="detail-meta-value">${companyName}</div></div>
             <div class="detail-meta-row"><div class="detail-meta-label">유형</div><div class="detail-meta-value">${typeName}</div></div>
             <div class="detail-meta-row"><div class="detail-meta-label">유형상세</div><div class="detail-meta-value">${subtypeName}</div></div>
             <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
+            <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value">${screen.order_no}</div></div>
             <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${setDetail.version}</span></div></div>
             <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${setDetail.uploaded_at}</div></div>
           </div>
@@ -2934,6 +2948,109 @@ async function applyRelatedScreens(screenId) {
   document.getElementById('picker-overlay')?.remove();
   toast(`${successCount}개 화면 연결됨`, 'success');
   loadRelatedScreens(screenId);
+}
+
+
+// ===================== 화면/세트 메타 수정 =====================
+async function openScreenMetaEditor(screenId, setId) {
+  // 현재 데이터 가져오기
+  const screen = state.currentSet?.screens?.find(s=>s.id===screenId);
+  const set = state.currentSet?.id === setId ? state.currentSet : null;
+
+  const stOptsByGroup = {};
+  state.screenTypes.forEach(s=>{
+    const cat=s.category||'기타';
+    if(!stOptsByGroup[cat])stOptsByGroup[cat]=[];
+    stOptsByGroup[cat].push(s);
+  });
+  const stOpts = Object.entries(stOptsByGroup).map(([cat,items])=>
+    `<optgroup label="${cat}">${items.map(s=>`<option value="${s.code}" ${screen?.screen_type_code===s.code?'selected':''}>${s.name}</option>`).join('')}</optgroup>`
+  ).join('');
+
+  const subtypeOpts = state.subtypes.map(s=>
+    `<option value="${s.code}" ${set?.subtype_code===s.code?'selected':''}>${s.name} (${s.code})</option>`
+  ).join('');
+
+  showModal('화면 정보 수정',
+    `<div style="margin-bottom:16px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-size:12px;color:var(--text-secondary)">
+      세트 정보 변경 시 같은 세트의 모든 화면에 적용됩니다
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">세트 정보</div>
+    <div class="form-group">
+      <label class="form-label">유형상세</label>
+      <select class="select" id="se-subtype" style="width:100%">
+        <option value="">선택</option>${subtypeOpts}
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">버전</label>
+        <input class="input" id="se-version" value="${set?.version||''}" style="font-family:var(--font-mono)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">업로드 일자</label>
+        <input class="input" type="date" id="se-date" value="${set?.uploaded_at||''}">
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;padding-top:12px;border-top:1px solid var(--border)">화면 정보</div>
+    <div class="form-group">
+      <label class="form-label">화면유형</label>
+      <select class="select" id="se-screen-type" style="width:100%">
+        <option value="">선택</option>${stOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">순서</label>
+      <input class="input" type="number" id="se-order" value="${screen?.order_no||1}" min="1">
+    </div>`,
+    async () => {
+      const newSubtype = document.getElementById('se-subtype').value;
+      const newVersion = document.getElementById('se-version').value.trim();
+      const newDate = document.getElementById('se-date').value;
+      const newScreenType = document.getElementById('se-screen-type').value;
+      const newOrder = parseInt(document.getElementById('se-order').value)||1;
+
+      try {
+        // 세트 정보 수정
+        const setChanges = {};
+        if (newSubtype && newSubtype !== set?.subtype_code) setChanges.subtype_code = newSubtype;
+        if (newVersion && newVersion !== set?.version) setChanges.version = newVersion;
+        if (newDate && newDate !== set?.uploaded_at) setChanges.uploaded_at = newDate;
+
+        if (Object.keys(setChanges).length > 0) {
+          await api('PATCH', `/screen-sets/${setId}`, setChanges);
+        }
+
+        // 화면 정보 수정
+        const screenChanges = {};
+        if (newScreenType && newScreenType !== screen?.screen_type_code) screenChanges.screen_type_code = newScreenType;
+        if (newOrder !== screen?.order_no) screenChanges.order_no = newOrder;
+
+        if (Object.keys(screenChanges).length > 0) {
+          await api('PATCH', `/screens/${screenId}`, screenChanges);
+        }
+
+        // state 업데이트
+        if (state.currentSet) {
+          if (setChanges.subtype_code) state.currentSet.subtype_code = setChanges.subtype_code;
+          if (setChanges.version) state.currentSet.version = setChanges.version;
+          if (setChanges.uploaded_at) state.currentSet.uploaded_at = setChanges.uploaded_at;
+          const s = state.currentSet.screens?.find(s=>s.id===screenId);
+          if (s) {
+            if (screenChanges.screen_type_code) s.screen_type_code = screenChanges.screen_type_code;
+            if (screenChanges.order_no) s.order_no = screenChanges.order_no;
+          }
+        }
+
+        closeModal();
+        toast('수정됐습니다', 'success');
+        // 현재 화면 다시 열기
+        openScreenDetail(screenId, setId);
+      } catch(e) { toast(e.message, 'error'); }
+    }
+  );
 }
 
 function showModal(title,fieldsHtml,onConfirm,danger=false){
