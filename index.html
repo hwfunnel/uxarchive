@@ -136,9 +136,10 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .detail-meta-value { font-size: 13px; font-weight: 500; }
 .flow-strip { margin-top: 20px; }
 .flow-strip-title { font-size: 12px; font-weight: 500; color: var(--text-tertiary); margin-bottom: 8px; }
-.flow-items { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-.flow-items::-webkit-scrollbar { display: none; }
-.flow-item { flex-shrink: 0; width: 64px; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
+.flow-items { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; max-width: 100%; }
+.flow-items::-webkit-scrollbar { height: 4px; }
+.flow-items::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+.flow-item { flex-shrink: 0; width: 60px; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
 .flow-item:hover { border-color: var(--gray-300); }
 .flow-item.current { border-color: var(--primary); }
 .flow-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
@@ -858,7 +859,7 @@ async function loadFunctionScreens(typeCode) {
     gridEl.innerHTML=`<div style="margin-bottom:12px;font-size:13px;font-weight:500">${stName} <span style="color:var(--text-tertiary);font-weight:400">${screens.length}개</span></div>
       <div class="screen-grid-5">${screens.map(s=>{
         const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||s.set?.company_code;
-        return `<div class="screen-card" onclick="openLightbox('${s.signed_url||''}')">
+        return `<div class="screen-card" onclick="openFunctionScreenDetail('${s.id}')">
           <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
           <div class="screen-card-info">
             <div class="screen-card-name">${companyName}</div>
@@ -867,6 +868,82 @@ async function loadFunctionScreens(typeCode) {
         </div>`;
       }).join('')}</div>`;
   } catch(e){gridEl.innerHTML=`<div class="empty-state"><div class="empty-title">오류</div><div class="empty-desc">${e.message}</div></div>`;}
+}
+
+
+// 기능별 조회에서 화면 상세 열기 (세트 상세와 동일한 UI)
+async function openFunctionScreenDetail(screenId) {
+  const el = document.getElementById('function-grid');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    // screens API에서 set 정보 포함해서 조회
+    const screens = await api('GET', `/screens?id=${screenId}`);
+    const screen = screens?.[0];
+    if (!screen) return toast('화면 정보를 불러올 수 없습니다', 'error');
+
+    // set 전체 로드
+    const setDetail = await api('GET', `/screen-sets/${screen.set_id}`);
+    if (!setDetail) return toast('세트 정보를 불러올 수 없습니다', 'error');
+
+    // 임시로 currentSet 세팅 (뒤로가기 시 기능별 조회로 복귀)
+    state._funcPrevSet = state.currentSet;
+    state.currentSet = setDetail;
+
+    const companyName = state.companies.find(c=>c.code===setDetail.company_code)?.name||setDetail.company_code;
+    const subtypeName = state.subtypes.find(s=>s.code===setDetail.subtype_code)?.name||setDetail.subtype_code;
+    const typeName = state.types.find(t=>t.code===setDetail.type_code)?.name||setDetail.type_code;
+    const stName = state.screenTypes.find(s=>s.code===screen.screen_type_code)?.name||screen.screen_type_code;
+    const isAdmin = state.user?.role === 'admin';
+
+    // 플로우는 표시 안 함 (기능별 조회는 단일 화면 맥락)
+    el.innerHTML = `
+      <button class="back-btn" onclick="restoreFunctionView()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>기능별 조회
+      </button>
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+        <div>
+          <div class="detail-img-wrap">
+            <div class="detail-img-viewport">
+              ${screen.signed_url
+                ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url}')" style="cursor:zoom-in">`
+                : '<div style="width:390px;height:844px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
+              }
+            </div>
+            ${screen.signed_url?`<div style="margin-left:12px;font-size:11px;color:var(--text-tertiary);writing-mode:vertical-rl;text-orientation:mixed;padding:8px 0">스크롤하여 전체 보기 ↕</div>`:''}
+          </div>
+          <div id="related-screens-section" style="margin-top:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:12px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
+              ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
+            </div>
+            <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">
+              <div style="font-size:12px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">화면 정보</div></div>
+          <div style="padding:0">
+            <div class="detail-meta-row"><div class="detail-meta-label">기업</div><div class="detail-meta-value">${companyName}</div></div>
+            <div class="detail-meta-row"><div class="detail-meta-label">유형</div><div class="detail-meta-value">${typeName}</div></div>
+            <div class="detail-meta-row"><div class="detail-meta-label">유형상세</div><div class="detail-meta-value">${subtypeName}</div></div>
+            <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
+            <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${setDetail.version}</span></div></div>
+            <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${setDetail.uploaded_at}</div></div>
+          </div>
+        </div>
+      </div>`;
+    setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
+  } catch(e) {
+    toast(e.message, 'error');
+    if (currentFunctionType) loadFunctionScreens(currentFunctionType);
+  }
+}
+
+
+function restoreFunctionView() {
+  state.currentSet = state._funcPrevSet || null;
+  if (currentFunctionType) loadFunctionScreens(currentFunctionType);
 }
 
 function filterFunctionCompany(code,el){
