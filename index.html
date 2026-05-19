@@ -126,11 +126,14 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* DETAIL */
 .detail-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
-.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; padding: 12px; }
-.detail-img-viewport { width: 240px; height: 520px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+.detail-img-viewport { width: 280px; height: 560px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
 .detail-img-viewport::-webkit-scrollbar { width: 3px; }
 .detail-img-viewport::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
-.detail-img-wrap img { width: 240px; height: auto; object-fit: contain; object-position: top; display: block; }
+.detail-img-wrap img { width: 280px; height: auto; object-fit: contain; object-position: top; display: block; }
+.flow-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; overflow-y: auto; max-height: 600px; scrollbar-width: thin; }
+.flow-grid::-webkit-scrollbar { width: 3px; }
+.flow-grid::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
 .detail-meta-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .detail-meta-label { font-size: 14px; color: var(--text-tertiary); margin-bottom: 3px; }
 .detail-meta-value { font-size: 14px; font-weight: 500; }
@@ -140,11 +143,9 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .flow-items::-webkit-scrollbar { height: 4px; }
 .flow-items::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
 .flow-item { flex-shrink: 0; width: 60px; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
-.flow-item-vertical { flex-shrink: 0; width: 100%; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); }
-.flow-item-vertical:hover { border-color: var(--gray-300); }
-.flow-item-vertical.current { border-color: var(--primary); }
-.flow-item-vertical .flow-item-num { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); text-align: center; padding: 3px; background: var(--gray-0); }
-.flow-item-vertical.current .flow-item-num { color: var(--primary); }
+.flow-item-vertical { width: 100%; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); transition: border-color var(--transition); position: relative; }
+.flow-item-vertical:hover { border-color: var(--gray-300); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.flow-item-vertical.current { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
 .flow-item:hover { border-color: var(--gray-300); }
 .flow-item.current { border-color: var(--primary); }
 .flow-item-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
@@ -778,10 +779,10 @@ function openScreenDetail(screenId, setId) {
 
   const flowHtml=(set.screens||[]).map(s=>{
     const thumb=s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'';
-    const stNameF=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||'';
     return `<div class="flow-item-vertical ${s.id===screenId?'current':''}" onclick="openScreenDetail('${s.id}','${setId}')">
-      <div class="flow-item-thumb">${thumb}</div>
-      <div class="flow-item-num">${String(s.order_no).padStart(2,'0')} ${stNameF}</div>
+      <div class="flow-item-thumb">${thumb}
+        <div style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.45);color:white;font-size:14px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${String(s.order_no).padStart(2,'0')}</div>
+      </div>
     </div>`;
   }).join('');
 
@@ -793,23 +794,23 @@ function openScreenDetail(screenId, setId) {
     </button>
     <div style="display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:start">
       <div>
-        <!-- 이미지 + 플로우 가로 배치 -->
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div>
-            <div class="detail-img-wrap" style="width:fit-content">
+        <!-- 이미지 + 플로우 2열 그리드 -->
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="flex-shrink:0">
+            <div class="detail-img-wrap">
               <div class="detail-img-viewport">
                 ${screen.signed_url
                   ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
-                  : '<div style="width:240px;height:520px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
+                  : '<div style="width:280px;height:560px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
                 }
               </div>
             </div>
-            ${screen.signed_url?`<div style="margin-top:6px;font-size: 14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 보기 · 스크롤로 전체 확인</div>`:''}
+            ${screen.signed_url?`<div style="margin-top:6px;font-size:14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 · 스크롤로 전체</div>`:''}
           </div>
-          <!-- 플로우 썸네일 세로 배치 -->
-          <div style="flex:1;min-width:0">
-            <div style="font-size: 14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">플로우 순서</div>
-            <div style="display:flex;flex-direction:column;gap:4px;max-height:520px;overflow-y:auto;scrollbar-width:thin;padding-right:4px">
+          <!-- 플로우 2열 그리드 -->
+          <div style="flex:1;min-width:0;max-width:280px">
+            <div style="font-size:14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">플로우 순서</div>
+            <div class="flow-grid">
               ${flowHtml}
             </div>
           </div>
