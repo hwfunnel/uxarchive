@@ -126,12 +126,12 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* DETAIL */
 .detail-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
-.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
-.detail-img-viewport { width: 280px; height: 560px; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 80vh; }
+.detail-img-viewport { width: 390px; height: 80vh; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 16px rgba(0,0,0,0.12); }
 .detail-img-viewport::-webkit-scrollbar { width: 3px; }
 .detail-img-viewport::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
-.detail-img-wrap img { width: 280px; height: auto; object-fit: contain; object-position: top; display: block; }
-.flow-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; overflow-y: auto; max-height: 600px; scrollbar-width: thin; }
+.detail-img-wrap img { width: 390px; height: auto; object-fit: contain; object-position: top; display: block; }
+.flow-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; overflow-y: auto; max-height: 80vh; scrollbar-width: thin; }
 .flow-grid::-webkit-scrollbar { width: 3px; }
 .flow-grid::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
 .detail-meta-row { padding: 12px 16px; border-bottom: 1px solid var(--border); }
@@ -792,40 +792,29 @@ function openScreenDetail(screenId, setId) {
     <button class="back-btn" onclick="renderSetDetail(state.currentSet,state.currentSetVersions)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
     </button>
-    <div style="display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:start">
-      <div>
-        <!-- 이미지 + 플로우 2열 그리드 -->
-        <div style="display:flex;gap:16px;align-items:flex-start">
-          <div style="flex-shrink:0">
-            <div class="detail-img-wrap">
-              <div class="detail-img-viewport">
-                ${screen.signed_url
-                  ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
-                  : '<div style="width:280px;height:560px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
-                }
-              </div>
-            </div>
-            ${screen.signed_url?`<div style="margin-top:6px;font-size:14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 · 스크롤로 전체</div>`:''}
-          </div>
-          <!-- 플로우 2열 그리드 -->
-          <div style="flex:1;min-width:0;max-width:280px">
-            <div style="font-size:14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">플로우 순서</div>
-            <div class="flow-grid">
-              ${flowHtml}
-            </div>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <!-- 이미지 박스: 남은 공간 전체 채움 -->
+      <div style="flex:1;min-width:0">
+        <div class="detail-img-wrap">
+          <div class="detail-img-viewport">
+            ${screen.signed_url
+              ? `<img src="${screen.signed_url}" onclick="openLightbox('${screen.signed_url||''}')" style="cursor:zoom-in">`
+              : '<div style="width:390px;height:80vh;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">이미지 없음</div>'
+            }
           </div>
         </div>
-        <div id="related-screens-section" style="margin-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <div style="font-size: 14px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
-            ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
-          </div>
-          <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:5px">
-            <div style="font-size: 14px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
-          </div>
+        ${screen.signed_url?`<div style="margin-top:6px;font-size:14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 · 스크롤로 전체 확인</div>`:''}
+      </div>
+      <!-- 플로우 2열 그리드: 고정 너비 -->
+      <div style="flex-shrink:0;width:240px">
+        <div style="font-size:14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">플로우 순서</div>
+        <div class="flow-grid">
+          ${flowHtml}
         </div>
       </div>
-      <div class="card">
+      <!-- 오른쪽: 화면정보 + 연관화면 -->
+      <div style="flex-shrink:0;width:240px;display:flex;flex-direction:column;gap:12px">
+        <div class="card">
         <div class="card-header">
           <div class="card-title">화면 정보</div>
           ${isAdmin?`<button class="btn btn-ghost btn-sm" onclick="openScreenMetaEditor('${screen.id}','${set.id}')">
@@ -843,6 +832,17 @@ function openScreenDetail(screenId, setId) {
           <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
       </div>
+      <!-- 연관 화면 -->
+      <div id="related-screens-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
+          ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
+        </div>
+        <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">
+          <div style="font-size:14px;color:var(--text-tertiary);padding:8px 0;grid-column:1/-1">불러오는 중...</div>
+        </div>
+      </div>
+    </div>
     </div>`;
   // 연관 화면 비동기 로드
   setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
@@ -2205,7 +2205,7 @@ function addFiles(files){
     if(state.uploadFiles.find(u=>u.file.name===f.name&&u.file.size===f.size))return;
     const parsed = parseFilename(f.name);
     const autoCode = parsed.screenType || guessScreenTypeFromFilename(f.name);
-    state.uploadFiles.push({file:f, status:'pending', screenTypeCode:autoCode, parsedOrder:parsed.order});
+    state.uploadFiles.push({file:f, status:'pending', screenTypeCode:autoCode, parsedOrder:parsed.order, isRelated:false});
   });
   // parsedOrder 기준 재정렬
   state.uploadFiles.sort((a,b)=>(a.parsedOrder||0)-(b.parsedOrder||0));
@@ -2231,13 +2231,19 @@ function renderUploadPreviews(){
       <div class="upload-preview-thumb"><img src="${url}"></div>
       <div class="upload-preview-info">
         <div class="upload-preview-name">${i+1}. ${item.file.name}</div>
+        <!-- 메인/연관 토글 -->
+        <div style="display:flex;gap:4px;margin-bottom:6px">
+          <button onclick="state.uploadFiles[${i}].isRelated=false;renderUploadPreviews()" style="flex:1;height:24px;font-size:14px;border-radius:var(--radius-sm);border:1px solid ${!item.isRelated?'var(--primary)':'var(--border)'};background:${!item.isRelated?'var(--primary-light)':'var(--gray-0)'};color:${!item.isRelated?'var(--primary)':'var(--text-secondary)'};cursor:pointer;font-weight:${!item.isRelated?'600':'400'}">메인 플로우</button>
+          <button onclick="state.uploadFiles[${i}].isRelated=true;renderUploadPreviews()" style="flex:1;height:24px;font-size:14px;border-radius:var(--radius-sm);border:1px solid ${item.isRelated?'var(--primary)':'var(--border)'};background:${item.isRelated?'var(--primary-light)':'var(--gray-0)'};color:${item.isRelated?'var(--primary)':'var(--text-secondary)'};cursor:pointer;font-weight:${item.isRelated?'600':'400'}">연관 화면</button>
+        </div>
         <div style="position:relative">
-          <select class="select" style="width:100%;height:26px;font-size: 14px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value">
+          <select class="select" style="width:100%;height:26px;font-size:14px;margin-bottom:4px" onchange="state.uploadFiles[${i}].screenTypeCode=this.value">
             <option value="">화면유형 선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`,`value="${item.screenTypeCode}" selected`)}
           </select>
-          ${autoMatched?`<span style="position:absolute;top:-14px;right:0;font-size: 14px;color:var(--primary);font-weight:600">자동 매칭</span>`:''}
+          ${autoMatched?`<span style="position:absolute;top:-14px;right:0;font-size:14px;color:var(--primary);font-weight:600">자동 매칭</span>`:''}
         </div>
-        ${item.status==='done'?'<span style="font-size: 14px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size: 14px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size: 14px;color:var(--primary)">업로드 중...</span>':''}
+        ${item.isRelated?`<div style="font-size:14px;color:#854F0B;background:#FAEEDA;padding:3px 7px;border-radius:3px;margin-bottom:2px">연관 화면 — 플로우 순서 제외</div>`:''}
+        ${item.status==='done'?'<span style="font-size:14px;color:#1A7F3C">✓ 완료</span>':item.status==='error'?'<span style="font-size:14px;color:#C0392B">✗ 실패</span>':item.status==='uploading'?'<span style="font-size:14px;color:var(--primary)">업로드 중...</span>':''}
       </div>
       <button class="upload-preview-remove" onclick="state.uploadFiles.splice(${i},1);renderUploadPreviews()">×</button>
     </div>`;
@@ -2283,10 +2289,16 @@ async function startUpload(){
     }
   }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
 
-  for(let i=0;i<state.uploadFiles.length;i++){
-    const item=state.uploadFiles[i];item.status='uploading';renderUploadPreviews();
+  // 메인 플로우 / 연관 화면 분리
+  const mainFiles = state.uploadFiles.filter(f => !f.isRelated);
+  const relatedFiles = state.uploadFiles.filter(f => f.isRelated);
+
+  // 메인 플로우 업로드
+  let mainOrder = appendMode ? appendStartOrder : 1;
+  for(let i=0;i<mainFiles.length;i++){
+    const item=mainFiles[i]; item.status='uploading'; renderUploadPreviews();
     try{
-      const orderNo=appendMode?(appendStartOrder+i):(i+1);
+      const orderNo = mainOrder + i;
       const ext=item.file.name.split('.').pop()||'png';
       const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:orderNo,ext});
       await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
@@ -2295,11 +2307,48 @@ async function startUpload(){
     }catch(e){item.status='error';}
     renderUploadPreviews();
   }
+
+  // 연관 화면 업로드 - 별도 세트 없이 같은 세트에 넣되 order_no를 9000번대로 분리
+  // 업로드 후 첫 번째 메인 화면과 자동 연결
+  const relatedScreenIds = [];
+  const relatedStartOrder = 9000;
+  for(let i=0;i<relatedFiles.length;i++){
+    const item=relatedFiles[i]; item.status='uploading'; renderUploadPreviews();
+    try{
+      const orderNo = relatedStartOrder + i;
+      const ext=item.file.name.split('.').pop()||'png';
+      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:orderNo,ext});
+      await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
+      const newScreen=await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path});
+      if(newScreen?.id) relatedScreenIds.push(newScreen.id);
+      item.status='done';
+    }catch(e){item.status='error';}
+    renderUploadPreviews();
+  }
+
+  // 연관 화면이 있으면 → 메인 플로우 첫 번째 화면과 자동 연결 (screen_relations)
+  if(relatedScreenIds.length > 0){
+    try{
+      // 세트에서 메인 화면 목록 조회 (order_no < 9000)
+      const setDetail = await api('GET', `/screen-sets/${setId}`);
+      const mainScreens = (setDetail?.screens||[]).filter(s=>s.order_no < 9000).sort((a,b)=>a.order_no-b.order_no);
+      if(mainScreens.length > 0){
+        // 마지막으로 업로드한 메인 화면과 연결
+        const targetScreenId = mainScreens[mainScreens.length - 1].id;
+        for(const relId of relatedScreenIds){
+          try{ await api('POST','/screen-relations',{screen_id:targetScreenId,related_screen_id:relId}); }catch(e){}
+        }
+        toast(`연관 화면 ${relatedScreenIds.length}개가 자동 연결됐습니다`, 'success');
+      }
+    }catch(e){ console.warn('연관 화면 자동 연결 실패:', e); }
+  }
+
   const doneCount=state.uploadFiles.filter(f=>f.status==='done').length;
+  const relatedCount=relatedFiles.filter(f=>f.status==='done').length;
   document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-3').style.display='block';
   document.getElementById('step-2').classList.remove('active');document.getElementById('step-2').classList.add('done');
   document.getElementById('step-3').classList.add('active');
-  document.getElementById('upload-done-desc').textContent=`${appendMode?'기존 세트에 '+doneCount+'개 화면이 추가됐습니다':doneCount+'개 화면이 등록됐습니다'}`;
+  document.getElementById('upload-done-desc').textContent=`메인 ${mainFiles.filter(f=>f.status==='done').length}장${relatedCount?` · 연관 화면 ${relatedCount}장`:''} 등록됐습니다`;
   toast('업로드 완료!','success');
 }
 
