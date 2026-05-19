@@ -2234,33 +2234,48 @@ async function startUpload(){
   const untyped=state.uploadFiles.filter(f=>!f.screenTypeCode);
   if(untyped.length)return toast('모든 화면의 화면유형을 선택해주세요','error');
 
-  // 같은 조합 기존 세트 체크 → 있으면 덮어쓸지 확인
+  // 같은 버전 세트 체크
   let setId;
+  let appendMode=false;
+  let appendStartOrder=1;
   try{
     const existing=await api('GET',`/screen-sets?company=${meta.company}&type=${meta.type}&subtype=${meta.subtype}&latest_only=false`);
     const sameVersion=existing?.find(s=>s.version===meta.version);
     if(sameVersion){
-      const ok=confirm(`이미 ${meta.version} 세트가 존재합니다.\n기존 세트를 삭제하고 새로 업로드하시겠습니까?`);
-      if(!ok)return;
-      // 기존 세트 삭제 (화면 + 세트)
       const detail=await api('GET',`/screen-sets/${sameVersion.id}`);
-      if(detail?.screens?.length){
-        await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
+      const existingCount=detail?.screens?.length||0;
+      // 선택 다이얼로그
+      const choice = await showUploadChoiceModal(meta.version, existingCount);
+      if(choice===null)return; // 취소
+      if(choice==='append'){
+        // 추가 모드 - 기존 세트에 append
+        setId=sameVersion.id;
+        appendMode=true;
+        appendStartOrder=existingCount+1;
+      } else {
+        // 전체 교체 - 기존 삭제 후 새 세트
+        if(detail?.screens?.length){
+          await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
+        }
+        await api('DELETE',`/screen-sets/${sameVersion.id}`);
+        toast('기존 세트를 삭제했습니다');
       }
-      await api('DELETE',`/screen-sets/${sameVersion.id}`);
-      toast('기존 세트를 삭제했습니다');
     }
-    const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
-    const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
-    setId=newSet.id;
+    if(!appendMode){
+      const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
+      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
+      setId=newSet.id;
+    }
   }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
+
   for(let i=0;i<state.uploadFiles.length;i++){
     const item=state.uploadFiles[i];item.status='uploading';renderUploadPreviews();
     try{
+      const orderNo=appendMode?(appendStartOrder+i):(i+1);
       const ext=item.file.name.split('.').pop()||'png';
-      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:i+1,ext});
+      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:orderNo,ext});
       await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
-      await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:i+1,imgsrc:urlRes.file_path});
+      await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path});
       item.status='done';
     }catch(e){item.status='error';}
     renderUploadPreviews();
@@ -2269,8 +2284,56 @@ async function startUpload(){
   document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-3').style.display='block';
   document.getElementById('step-2').classList.remove('active');document.getElementById('step-2').classList.add('done');
   document.getElementById('step-3').classList.add('active');
-  document.getElementById('upload-done-desc').textContent=`${doneCount}개 화면이 등록되었습니다`;
+  document.getElementById('upload-done-desc').textContent=`${appendMode?'기존 세트에 '+doneCount+'개 화면이 추가됐습니다':doneCount+'개 화면이 등록됐습니다'}`;
   toast('업로드 완료!','success');
+}
+
+// 업로드 옵션 선택 다이얼로그 (Promise 기반)
+function showUploadChoiceModal(version, existingCount) {
+  return new Promise((resolve) => {
+    document.getElementById('generic-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'generic-modal';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">${version} 세트가 이미 있습니다</div>
+          <button class="modal-close" onclick="document.getElementById('generic-modal').remove();"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">현재 <strong>${existingCount}장</strong>이 등록되어 있습니다. 어떻게 하시겠습니까?</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='append';">
+              <div>
+                <div style="font-weight:500;margin-bottom:2px">기존 세트에 추가</div>
+                <div style="font-size:12px;color:var(--text-tertiary)">기존 ${existingCount}장 유지 · 새 이미지를 ${existingCount+1}번부터 추가</div>
+              </div>
+            </button>
+            <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='replace';">
+              <div>
+                <div style="font-weight:500;margin-bottom:2px;color:#C0392B">전체 교체</div>
+                <div style="font-size:12px;color:var(--text-tertiary)">기존 ${existingCount}장 삭제 후 새로 업로드</div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='cancel';">취소</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    // 버튼 클릭 감지
+    const checkChoice = setInterval(() => {
+      if (window._uploadChoice !== undefined) {
+        clearInterval(checkChoice);
+        const choice = window._uploadChoice;
+        delete window._uploadChoice;
+        resolve(choice === 'cancel' ? null : choice);
+      }
+    }, 100);
+  });
 }
 
 // ===================== MASTER VIEW =====================
