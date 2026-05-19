@@ -203,7 +203,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-subtle); }
 .upload-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 16px; }
 .upload-preview-item { position: relative; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-.upload-preview-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); }
+.upload-preview-thumb { position: relative; padding-top: calc(844/390*100%); background: var(--gray-100); min-width: 100px; }
 .upload-preview-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .upload-preview-info { padding: 6px 8px; }
 .upload-preview-name { font-size: 14px; color: var(--text-tertiary); margin-bottom: 4px; word-break: break-all; }
@@ -1355,7 +1355,7 @@ async function openCompareImagePicker(slot) {
 function applyComparePickerSelection(slot) {
   let selected = pickerScreens.filter(s=>pickerSelected.has(s.id));
   if (!selected.length && pickerScreens.length>0) selected=[...pickerScreens];
-  if (pickerOrderKeep) selected=selected.sort((a,b)=>a.order_no-b.order_no);
+  selected=selected.sort((a,b)=>a.order_no-b.order_no);
 
   // 회사 일치 검사
   const firstCompany = selected[0]?.set?.company_code || pickerFilters.company;
@@ -1863,7 +1863,7 @@ async function loadPickerScreens(){
   try {
     let screens=[];
     if(company&&type&&subtype){
-      const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&subtype=${subtype}&latest_only=false`);
+      const inclRel = pickerSlot==='__relation__' ? '&include_related=true' : ''; const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&subtype=${subtype}&latest_only=false${inclRel}`);
       const vSel=document.getElementById('pf-version');
       if(vSel&&sets) vSel.innerHTML=`<option value="">버전 전체</option>`+sets.map(s=>`<option value="${s.version}" ${version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
       let targetSets=sets||[];
