@@ -2262,24 +2262,35 @@ async function startUpload(){
   try{
     const existing=await api('GET',`/screen-sets?company=${meta.company}&type=${meta.type}&subtype=${meta.subtype}&latest_only=false`);
     const sameVersion=existing?.find(s=>s.version===meta.version);
+
+    // 전부 연관 화면이면 다이얼로그 없이 기존 세트에 바로 추가
+    const allRelated = state.uploadFiles.every(f => f.isRelated);
+
     if(sameVersion){
       const detail=await api('GET',`/screen-sets/${sameVersion.id}`);
       const existingCount=detail?.screens?.length||0;
-      // 선택 다이얼로그
-      const choice = await showUploadChoiceModal(meta.version, existingCount);
-      if(choice===null)return; // 취소
-      if(choice==='append'){
-        // 추가 모드 - 기존 세트에 append
+
+      if(allRelated){
+        // 연관 화면만 올리는 경우 → 자동으로 기존 세트에 추가
         setId=sameVersion.id;
         appendMode=true;
         appendStartOrder=existingCount+1;
       } else {
-        // 전체 교체 - 기존 삭제 후 새 세트
-        if(detail?.screens?.length){
-          await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
+        // 메인 플로우 포함 → 선택 다이얼로그
+        const choice = await showUploadChoiceModal(meta.version, existingCount);
+        if(choice===null)return; // 취소
+        if(choice==='append'){
+          setId=sameVersion.id;
+          appendMode=true;
+          appendStartOrder=existingCount+1;
+        } else {
+          // 전체 교체
+          if(detail?.screens?.length){
+            await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
+          }
+          await api('DELETE',`/screen-sets/${sameVersion.id}`);
+          toast('기존 세트를 삭제했습니다');
         }
-        await api('DELETE',`/screen-sets/${sameVersion.id}`);
-        toast('기존 세트를 삭제했습니다');
       }
     }
     if(!appendMode){
