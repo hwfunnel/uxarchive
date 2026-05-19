@@ -778,6 +778,8 @@ function openScreenDetail(screenId, setId) {
     </div>`;
   }).join('');
 
+  const isAdmin = state.user?.role === 'admin';
+
   el.innerHTML=`
     <button class="back-btn" onclick="renderSetDetail(state.currentSet,state.currentSetVersions)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
@@ -797,6 +799,15 @@ function openScreenDetail(screenId, setId) {
           <div class="flow-strip-title">플로우 순서</div>
           <div class="flow-items">${flowHtml}</div>
         </div>
+        <div id="related-screens-section" style="margin-top:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:500;color:var(--text-tertiary)">연관 화면</div>
+            ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openRelatedScreenPicker('${screen.id}')">+ 연결</button>`:''}
+          </div>
+          <div id="related-screens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">
+            <div style="font-size:12px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">화면 정보</div></div>
@@ -810,6 +821,8 @@ function openScreenDetail(screenId, setId) {
         </div>
       </div>
     </div>`;
+  // 연관 화면 비동기 로드
+  setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
 }
 
 // ===================== FUNCTION VIEW =====================
@@ -2722,6 +2735,128 @@ async function renameDownloadZip() {
   a.download = `renamed_${renameMeta.company}_${renameMeta.subtype}_${renameMeta.version}.zip`;
   a.click();
   toast('ZIP 다운로드 완료!', 'success');
+}
+
+
+// ===================== 연관 화면 =====================
+async function loadRelatedScreens(screenId) {
+  const grid = document.getElementById('related-screens-grid');
+  if (!grid) return;
+  try {
+    const relations = await api('GET', `/screen-relations?screen_id=${screenId}`);
+    if (!relations?.length) {
+      grid.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary);padding:8px 0;grid-column:1/-1">연관 화면이 없습니다${state.user?.role==='admin'?' · 위 + 연결 버튼으로 추가하세요':''}</div>`;
+      return;
+    }
+    grid.innerHTML = relations.map(r => {
+      const s = r.related;
+      const stName = state.screenTypes.find(st=>st.code===s.screen_type_code)?.name || s.screen_type_code;
+      const companyName = state.companies.find(c=>c.code===s.set?.company_code)?.name || '';
+      return `<div style="position:relative">
+        <div class="screen-card" onclick="openRelatedScreenDetail('${s.id}')">
+          <div class="screen-card-thumb">${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:'<span class="no-img">없음</span>'}</div>
+          <div class="screen-card-info">
+            <div class="screen-card-name" style="font-size:10px">${stName}</div>
+            <div class="screen-card-sub">${companyName}</div>
+          </div>
+        </div>
+        ${state.user?.role==='admin'?`<button onclick="removeRelation('${r.id}','${screenId}')" style="position:absolute;top:4px;right:4px;width:18px;height:18px;background:rgba(192,57,43,0.85);border:none;border-radius:50%;cursor:pointer;color:white;font-size:11px;display:flex;align-items:center;justify-content:center;z-index:2">×</button>`:''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    const grid2 = document.getElementById('related-screens-grid');
+    if (grid2) grid2.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary)">불러오기 실패</div>`;
+  }
+}
+
+async function removeRelation(relationId, screenId) {
+  if (!confirm('연관 화면 연결을 해제하시겠습니까?')) return;
+  try {
+    await api('DELETE', `/screen-relations/${relationId}`);
+    toast('연결 해제됨', 'success');
+    loadRelatedScreens(screenId);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function openRelatedScreenDetail(screenId) {
+  // 전체 세트에서 해당 화면 찾아서 열기
+  const screen = state.sets
+    ?.flatMap(s => s.screens||[])
+    ?.find(s => s.id === screenId);
+  if (screen && state.currentSet) {
+    openScreenDetail(screenId, state.currentSet.id);
+  }
+}
+
+async function openRelatedScreenPicker(screenId) {
+  // 기존 picker 모달 재활용 - 선택 후 relation 생성
+  pickerSlot = '__relation__';
+  pickerSelected = new Set();
+  pickerFilters = {company:'', type:'', subtype:'', screen_type:'', version:''};
+  pickerScreens = [];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'picker-overlay';
+  overlay.innerHTML = `
+    <div class="picker-modal">
+      <div class="picker-header">
+        <div class="picker-title">연관 화면 선택</div>
+        <button class="modal-close" onclick="document.getElementById('picker-overlay').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="picker-filters">
+        <select class="filter-pill" id="pf-company" onchange="onPickerFilter('company',this.value)">
+          <option value="">기업명</option>
+          ${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-type" onchange="onPickerFilter('type',this.value)">
+          <option value="">유형</option>
+          ${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-subtype" onchange="onPickerFilter('subtype',this.value)">
+          <option value="">유형상세</option>
+          ${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-screen-type" onchange="onPickerFilter('screen_type',this.value)">
+          <option value="">화면유형</option>
+          ${state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-version" onchange="onPickerFilter('version',this.value)">
+          <option value="">버전</option>
+        </select>
+      </div>
+      <div class="picker-body" id="picker-body">
+        <div class="picker-empty">필터를 선택하면 화면이 나타납니다</div>
+      </div>
+      <div class="picker-footer">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="pickerSelectAll()">전체선택</button>
+          <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
+          <span style="font-size:12px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
+        </div>
+        <button class="btn btn-primary" onclick="applyRelatedScreens('${screenId}')">연결하기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function applyRelatedScreens(screenId) {
+  const selected = pickerScreens.filter(s => pickerSelected.has(s.id));
+  if (!selected.length) return toast('화면을 선택해주세요', 'error');
+  let successCount = 0;
+  for (const s of selected) {
+    try {
+      await api('POST', '/screen-relations', { screen_id: screenId, related_screen_id: s.id });
+      successCount++;
+    } catch(e) {
+      if (!e.message.includes('unique')) toast(`${s.screen_type_code} 연결 실패: ${e.message}`, 'error');
+    }
+  }
+  document.getElementById('picker-overlay')?.remove();
+  toast(`${successCount}개 화면 연결됨`, 'success');
+  loadRelatedScreens(screenId);
 }
 
 function showModal(title,fieldsHtml,onConfirm,danger=false){
