@@ -372,6 +372,9 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
         <button class="nav-item" id="nav-upload" onclick="navigate('upload')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V3M5 6l3-3 3 3M3 13h10"/></svg>화면 업로드
         </button>
+        <button class="nav-item" id="nav-rename" onclick="navigate('rename')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h8M2 8h6M2 12h10M12 6l2 2-2 2"/></svg>파일명 변환
+        </button>
         <button class="nav-item" id="nav-master" onclick="navigate('master')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10v.5"/></svg>마스터 관리
         </button>
@@ -410,6 +413,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <div class="page" id="page-compare"><div id="compare-view"></div></div>
       <div class="page" id="page-upload"><div id="upload-view"></div></div>
       <div class="page" id="page-master"><div id="master-view"></div></div>
+      <div class="page" id="page-rename"><div id="rename-view"></div></div>
     </div>
   </div>
 </div>
@@ -527,7 +531,7 @@ function navigate(page) {
   document.getElementById(`nav-${page}`)?.classList.add('active');
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리'};
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
   if (page==='company') renderCompanyView();
@@ -535,6 +539,7 @@ function navigate(page) {
   if (page==='compare') renderCompareView();
   if (page==='upload') renderUploadView();
   if (page==='master') renderMasterView();
+  if (page==='rename') renderRenameView();
 }
 
 // ===================== COMPANY VIEW =====================
@@ -869,9 +874,13 @@ function renderCompareView() {
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <div id="analysis-mode-badge" style="display:none"></div>
-        <button class="btn btn-secondary btn-sm" id="btn-ai-screen" onclick="startAIScreenAnalysis()">
+        <button class="btn btn-secondary btn-sm" id="btn-ai-screen" onclick="startAIScreenAnalysis(3000)">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4 6.5h5M6.5 4v5"/></svg>
-          AI 화면 분석
+          AI 분석 · 상세
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="startAIScreenAnalysis(1500)">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4 6.5h3"/></svg>
+          AI 분석 · 요약
         </button>
         <button class="btn btn-secondary btn-sm" onclick="toast('AI 플로우 분석 기능은 준비 중입니다')">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6.5h9M8 3.5l3 3-3 3"/></svg>
@@ -1259,7 +1268,7 @@ function applyComparePickerSelection(slot) {
 }
 
 // ── AI 화면 분석 실행 ────────────────────────────────────────
-async function startAIScreenAnalysis() {
+async function startAIScreenAnalysis(maxTokens=3000) {
   const sA = compareSections.A;
   const sB = compareSections.B;
 
@@ -1310,7 +1319,7 @@ async function startAIScreenAnalysis() {
         <div style="background:var(--gray-50);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary)">${unmatchedList}</div>
         <p style="color:var(--text-tertiary);font-size:12px">매칭되지 않은 화면은 직접 비교되지 않으며, 전체 플로우 흐름 파악을 위한 참고 자료로만 활용됩니다.<br>매칭된 <strong style="color:var(--text-primary)">${matchedCodes.length}개</strong> 화면을 기준으로 분석을 진행합니다.</p>
       </div>`,
-      ()=>{ closeModal(); runAIAnalysis(matchedCodes, codesA, codesB, sA, sB); }
+      ()=>{ closeModal(); runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens); }
     );
     // 취소 버튼 텍스트 변경
     setTimeout(()=>{
@@ -1323,11 +1332,11 @@ async function startAIScreenAnalysis() {
   }
 
   // 전부 매칭 → 바로 실행
-  runAIAnalysis(matchedCodes, codesA, codesB, sA, sB);
+  runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens);
 }
 
 // 실제 AI 분석 실행
-async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB) {
+async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=3000) {
   const resultWrap = document.getElementById('analysis-result-wrap');
   if (!resultWrap) return;
 
@@ -1344,7 +1353,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB) {
     <div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
         <div class="spinner"></div>
-        <span style="font-size:14px;font-weight:500">AI 분석 중...</span>
+        <span style="font-size:14px;font-weight:500">AI 분석 중... ${maxTokens>=3000?'(상세)':('(요약)')}</span>
         <span style="font-size:12px;color:var(--text-tertiary)">Sonnet 4.6 · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
       </div>
     </div>`;
@@ -1411,7 +1420,15 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB) {
     const baseRole = `당신은 10년 이상 경력의 인터넷 보험사 전략팀 겸 UX 디자이너입니다.
 보험 상품 가입 퍼널 최적화, 특약 경쟁력 분석, 전환율 개선을 전문으로 합니다.
 금융감독원 다크패턴 가이드라인에 정통하며, 보험업 디지털 채널 UX 트렌드를 깊이 이해합니다.
-분석은 날카롭고 실무적으로, 좋은 점도 문제점도 숨기지 말고 보험업 전문가 관점에서 솔직하게 작성하세요.`;
+
+[작성 원칙]
+- 전문 용어나 마케팅 용어 사용 금지. 누구나 읽었을 때 바로 이해되는 쉬운 말로 서술
+- 예) "소셜프루프" → "별점, 후기, 가입자 수 등 다른 사람들의 경험을 보여주는 요소"
+- 예) "CTA" → "가입 버튼", "전환율" → "실제 가입으로 이어지는 비율"
+- 변동사항은 가감 없이 전부 기록. 애매하면 "확인 필요"로 표시
+- 특약 할인율은 항목별로 수치까지 전부 추출해서 기록
+- 후기·별점·가입자 수 등 화면 내 신뢰 요소의 변화는 위치·내용·형태까지 구체적으로 서술
+- 분석·평가는 사실 서술 후 별도 섹션에만 작성`;
 
     const commonAnalysisFramework = `
 [3관점 통합 분석 프레임워크]
@@ -1447,23 +1464,28 @@ ${commonAnalysisFramework}
 
 [응답 형식 - 반드시 준수]
 
-## 1. 정보 전략 — 무엇이 바뀌었나
-| 항목 | 이전 버전 | 신규 버전 | 변화 방향 | 전략적 의도 추정 |
-(특약 수치, 카피, 조건, 강조 요소 중심으로 빠짐없이)
+## 1. 특약·할인율 변경 내역
+화면에 보이는 모든 특약 항목의 할인율·수치·조건을 항목별로 전부 추출
+| 특약 항목 | 이전 버전 | 신규 버전 | 변화 | 비고 |
+변화 컬럼: ↑상향 / ↓하향 / 신규 / 제거 / ⚠조건강화 / 유지 중 하나만 사용
+수치가 보이면 반드시 숫자로 기록 (예: 19~2% → 25.8~14.2%)
+조건 변경(점수 기준 등)도 별도 행으로 추출
 
-## 2. 화면 구성 — 어떻게 바뀌었나
-| 위치/항목 | 이전 | 신규 | 유형 | 사용자 영향 |
-(레이아웃, CTA, 정보 계층, 단계 표시 변경 중심)
+## 2. 화면 구성 변경 내역
+화면에서 눈에 보이는 모든 요소의 변경사항을 위치·내용·형태 기준으로 전부 서술
+| 위치/항목 | 이전 버전 | 신규 버전 | 변화 유형 |
+변화 유형: 신규 / 제거 / 위치변경 / 강조 / 유지
+- 별점·후기·가입자 수 등 신뢰 요소: 어디에 있었는지, 어디로 갔는지, 어떤 내용인지 구체적으로
+- 버튼 위치·문구 변화
+- 이미지·아이콘 변화
+- 텍스트 강조 방식(크기·색상·위치) 변화
 
-## 3. 전환 전략 — 왜 바꿨을까
-변경 사항이 전환율·이탈률에 미칠 영향을 전략적으로 분석
+## 3. 총평
+◆ 잘된 변경: 구체적으로 무엇이 왜 좋은지 (쉬운 말로)
+◆ 우려되는 부분: 놓친 것, 역효과 가능성, 금융감독원 가이드라인 위반 가능성
+◆ 개선 제안: 실무에서 바로 적용 가능한 것 3가지 이상 (→ 로 시작)
 
-## 4. 전문가 종합 평가
-◆ 잘한 변경 (이유 포함)
-◆ 리스크 포인트 (놓친 것, 역효과 가능성)
-◆ 추가 개선 제안
-
-한국어. 실무 보고서 수준으로 간결하고 날카롭게.`
+한국어. 쉬운 말로. 변동사항은 빠짐없이.`
       : `${baseRole}
 
 [분석 모드: 경쟁사 화면 비교]
@@ -1473,34 +1495,37 @@ ${commonAnalysisFramework}
 
 [응답 형식 - 반드시 준수]
 
-## 1. 정보 전략 비교 — 무엇을 어떻게 팔고 있나
-| 항목 | ${companyNameA} | ${companyNameB} | 비고 |
-(특약 수치, 카피라이팅, 강조 요소, 면책조항 처리 중심)
+## 1. 특약·할인율·보장 항목 비교
+화면에 보이는 모든 특약 항목의 수치·조건을 양사 기준으로 항목별 전부 추출
+| 특약 항목 | ${companyNameA} | ${companyNameB} | 비교 결과 | 비고 |
+비교 결과: A우위 / B우위 / 동등 / 확인필요
 
-## 2. 화면 구성 비교 — 어떻게 안내하고 있나
-| 항목 | ${companyNameA} | ${companyNameB} | 비고 |
-(정보 계층, CTA, 단계 표시, 다크패턴 여부 중심)
+## 2. 화면 구성 비교
+화면에서 눈에 보이는 모든 요소를 양사 기준으로 전부 비교
+| 항목 | ${companyNameA} | ${companyNameB} | 비교 결과 |
+- 별점·후기·가입자 수 등 신뢰 요소: 위치·내용·형태 구체적으로
+- 가입 버튼 위치·문구·강조 방식
+- 할인 조건·면책조항 노출 방식
+- 화면 상단부터 하단까지 주요 구성 요소 순서
 
-## 3. 전환 전략 비교 — 어떻게 유도하고 있나
-| 항목 | ${companyNameA} | ${companyNameB} | 비고 |
-(소셜프루프, 가격 앵커링, 이탈 방지, CTA 전략 중심)
+## 3. 총평
+◆ ${companyNameA} 잘하는 것 (쉬운 말로, 구체적 근거)
+◆ ${companyNameA} 아쉬운 것
+◆ ${companyNameB} 잘하는 것
+◆ ${companyNameB} 아쉬운 것
+◆ 우리 서비스에 바로 적용할 수 있는 것 (→ 로 시작, 3개 이상)
 
-## 4. 전문가 종합 평가
-◆ ${companyNameA} 강점 / 리스크
-◆ ${companyNameB} 강점 / 리스크
-◆ 우리 서비스 개선에 적용할 인사이트 (실무 액션 아이템)
-
-한국어. 실무 보고서 수준으로 간결하고 날카롭게.`;
+한국어. 쉬운 말로. 항목별 빠짐없이.`;
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
-      max_tokens: 3000
+      max_tokens: maxTokens
     });
 
     if (!res) throw new Error('분석 요청 실패');
     const text = res.content?.find(b=>b.type==='text')?.text || '';
-    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra);
+    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra, maxTokens);
 
   } catch(e) {
     resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
@@ -1509,38 +1534,155 @@ ${commonAnalysisFramework}
   }
 }
 
-// 결과 렌더
-function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose) {
-  // 마크다운 → HTML 간단 변환
-  const md2html = t => t
-    .replace(/^## (.+)$/gm,'<h3 style="font-size:14px;font-weight:600;margin:20px 0 10px;color:var(--text-primary);padding-bottom:6px;border-bottom:1px solid var(--border)">$1</h3>')
-    .replace(/^◆ (.+)$/gm,'<div style="margin-bottom:8px"><span style="font-weight:600;color:var(--primary)">◆</span> <span style="font-size:13px">$1</span></div>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\|(.+)\|/g, (m,p) => {
-      const cells = p.split('|').map(c=>c.trim());
-      return '<tr>' + cells.map(c=>`<td style="padding:7px 10px;border-bottom:0.5px solid var(--border);font-size:12px">${c}</td>`).join('') + '</tr>';
-    })
-    .replace(/(<tr>.+<\/tr>\n?)+/gs, m=>`<div style="overflow-x:auto;margin:8px 0"><table style="width:100%;border-collapse:collapse;background:var(--gray-0);border:0.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">${m}</table></div>`)
-    .replace(/\n\n/g,'<br><br>')
-    .replace(/\n/g,'<br>');
+// 결과 렌더 - 보고서 스타일
+function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxTokens=3000) {
+
+  // 변화 방향 뱃지 변환
+  function changeBadge(val) {
+    const v = val.trim();
+    if (v.includes('↑') || v.includes('상향') || v.includes('강화') || v.includes('추가')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#EAF3DE;color:#3B6D11">${v}</span>`;
+    if (v.includes('↓') || v.includes('하향') || v.includes('축소') || v.includes('감소')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FCEBEB;color:#A32D2D">${v}</span>`;
+    if (v.includes('신규') || v.includes('추가') || v.includes('NEW')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#E6F1FB;color:#185FA5">${v}</span>`;
+    if (v.includes('제거') || v.includes('삭제') || v.includes('없음')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#5F5E5A">${v}</span>`;
+    if (v.includes('⚠') || v.includes('주의') || v.includes('조건')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FAEEDA;color:#854F0B">${v}</span>`;
+    if (v.includes('유지') || v.includes('동일')) return `<span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#888780">${v}</span>`;
+    return `<span style="font-size:12px;color:var(--text-secondary)">${v}</span>`;
+  }
+
+  // 마크다운 → 보고서 HTML 변환
+  function md2report(t) {
+    const lines = t.split('\n');
+    let html = '';
+    let inTable = false;
+    let tableRows = [];
+    let tableHeaders = [];
+    let sectionIdx = 0;
+    const sectionColors = [
+      {num:'#FFF0EB',txt:'#FF4600'}, // orange
+      {num:'#E6F1FB',txt:'#185FA5'}, // blue
+      {num:'#EAF3DE',txt:'#3B6D11'}, // green
+      {num:'#EEEDFE',txt:'#534AB7'}, // purple
+    ];
+
+    const flushTable = () => {
+      if (!tableRows.length) return;
+      const isChangeTable = tableHeaders.some(h => h.includes('변화') || h.includes('유형'));
+      let thtml = `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">
+          <thead><tr style="background:var(--gray-50)">`;
+      tableHeaders.forEach(h => {
+        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
+      });
+      thtml += `</tr></thead><tbody>`;
+      tableRows.forEach(row => {
+        thtml += `<tr>`;
+        row.forEach((cell, ci) => {
+          const isChangeCol = isChangeTable && (tableHeaders[ci]?.includes('변화') || tableHeaders[ci]?.includes('유형') || tableHeaders[ci]?.includes('방향'));
+          const cellHtml = isChangeCol ? changeBadge(cell) : `<span style="color:var(--text-primary)">${cell}</span>`;
+          thtml += `<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5">${cellHtml}</td>`;
+        });
+        thtml += `</tr>`;
+      });
+      thtml += `</tbody></table></div>`;
+      html += thtml;
+      tableRows = []; tableHeaders = []; inTable = false;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // 섹션 헤더 (## )
+      if (line.startsWith('## ')) {
+        flushTable();
+        const title = line.replace('## ', '').trim();
+        const sc = sectionColors[sectionIdx % sectionColors.length];
+        sectionIdx++;
+        html += `<div style="display:flex;align-items:center;gap:8px;margin:${sectionIdx>1?'24px':'0'} 0 12px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
+          <div style="font-size:14px;font-weight:500">${title}</div>
+        </div>`;
+        continue;
+      }
+
+      // 소제목 (### )
+      if (line.startsWith('### ')) {
+        flushTable();
+        html += `<div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
+        continue;
+      }
+
+      // 표 구분선
+      if (line.match(/^\|[-| :]+\|$/)) continue;
+
+      // 표 행
+      if (line.startsWith('|') && line.endsWith('|')) {
+        const cells = line.slice(1,-1).split('|').map(c=>c.trim()).filter((_,idx)=>true);
+        if (!inTable) {
+          inTable = true;
+          tableHeaders = cells;
+        } else {
+          tableRows.push(cells);
+        }
+        continue;
+      }
+
+      // 표 종료
+      if (inTable && !line.startsWith('|')) { flushTable(); }
+
+      // ◆ 항목
+      if (line.startsWith('◆ ')) {
+        const rest = line.replace('◆ ','');
+        const isGood = rest.includes('잘한') || rest.includes('긍정') || rest.includes('강점');
+        const isRisk = rest.includes('리스크') || rest.includes('위험') || rest.includes('문제');
+        const isInsight = rest.includes('인사이트') || rest.includes('제안') || rest.includes('개선');
+        const dotColor = isGood ? '#639922' : isRisk ? '#E24B4A' : isInsight ? '#378ADD' : '#888780';
+        html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${rest}</div>
+        </div>`;
+        continue;
+      }
+
+      // - 항목 (리스트)
+      if (line.match(/^[-•·] /)) {
+        html += `<div style="display:flex;gap:8px;font-size:13px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
+          <span style="color:var(--text-tertiary);flex-shrink:0">→</span>
+          <span>${line.replace(/^[-•·] /,'')}</span>
+        </div>`;
+        continue;
+      }
+
+      // 인사이트 박스 (→ 로 시작하는 항목들 포함 처리됨)
+      // 일반 텍스트
+      if (line.trim()) {
+        html += `<div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
+      } else {
+        html += `<div style="height:8px"></div>`;
+      }
+    }
+    flushTable();
+    return html;
+  }
+
+  const reportDate = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\. /g,'.').replace('.','');
 
   wrap.innerHTML = `
-    <div id="analysis-report" style="border-top:1px solid var(--border);padding-top:24px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div id="analysis-report" style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:16px;font-weight:600">AI 화면 분석 결과</div>
-          <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">
-            ${isSame?nameA+' 버전 비교':nameA+' vs '+nameB} · 정보전략 · 화면구성 · 전환전략 통합분석
-            ${purpose?` · 추가요청: ${purpose}`:''}
+          <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">AI 화면 분석 결과</div>
+          <div style="font-size:12px;color:var(--text-tertiary)">
+            ${isSame ? nameA+' 버전 비교' : nameA+' vs '+nameB} · 정보전략 · 화면구성 · 전환전략 통합분석 · ${maxTokens>=3000?'상세':'요약'}
+            ${purpose ? ' · 추가요청: '+purpose : ''}
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="downloadAnalysisReport()">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 2v7M3.5 6.5l3 3 3-3M2 11h9"/></svg>
+        <button class="btn btn-secondary btn-sm" onclick="downloadAnalysisReport()" style="flex-shrink:0">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg>
           이미지 저장
         </button>
       </div>
-      <div id="analysis-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;line-height:1.8">
-        ${md2html(text)}
+      <div id="analysis-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">
+        ${md2report(text)}
       </div>
     </div>`;
 }
@@ -1659,20 +1801,87 @@ function applyPickerSelection(){
 // ===================== UPLOAD VIEW =====================
 // 4번: 파일명에서 화면유형 코드 자동 매칭
 function guessScreenTypeFromFilename(filename){
-  // 파일명을 대문자로 변환 후 각 화면유형 코드와 매칭
-  const upper=filename.toUpperCase().replace(/\.[^.]+$/,''); // 확장자 제거
-  // 우선순위: 정확히 _ 구분된 토큰으로 매칭
+  const upper=filename.toUpperCase().replace(/\.[^.]+$/,'');
   const tokens=upper.split(/[_\-\s\.]+/);
   for(const st of state.screenTypes){
     const code=st.code.toUpperCase();
     if(tokens.includes(code))return st.code;
   }
-  // 토큰 매칭 안되면 부분 포함 검사 (긴 코드 우선)
   const sorted=[...state.screenTypes].sort((a,b)=>b.code.length-a.code.length);
   for(const st of sorted){
     if(upper.includes(st.code.toUpperCase()))return st.code;
   }
   return '';
+}
+
+// 파일명에서 모든 메타정보 자동 추출
+// 규칙: {기업코드}_{유형코드}_{유형상세코드}_{화면유형코드}_{버전}_{순서}.ext
+function parseFilename(filename){
+  const base = filename.replace(/\.[^.]+$/, ''); // 확장자 제거
+  const tokens = base.split('_');
+  const result = {company:'', type:'', subtype:'', screenType:'', version:'', order:0};
+
+  // 기업코드 매칭 (1번째 토큰)
+  const companyMatch = state.companies.find(c => tokens[0]?.toUpperCase() === c.code.toUpperCase());
+  if (companyMatch) result.company = companyMatch.code;
+
+  // 유형코드 매칭 (2번째 토큰)
+  const typeMatch = state.types.find(t => tokens[1]?.toUpperCase() === t.code.toUpperCase());
+  if (typeMatch) result.type = typeMatch.code;
+
+  // 유형상세코드 매칭 - 하이픈 포함 가능하므로 여러 토큰 조합 시도
+  // 예: HW-CAR-CM → 토큰이 ['HW', 'CAR', 'CM'] 일 수도 있고 ['HW-CAR-CM'] 일 수도 있음
+  if (result.company && result.type) {
+    const remaining = tokens.slice(2).join('_');
+    // 가장 긴 유형상세코드부터 매칭 시도
+    const sortedSub = [...state.subtypes].sort((a,b)=>b.code.length-a.code.length);
+    for (const s of sortedSub) {
+      const codeUpper = s.code.toUpperCase();
+      const remainUpper = remaining.toUpperCase();
+      if (remainUpper.startsWith(codeUpper + '_') || remainUpper === codeUpper) {
+        result.subtype = s.code;
+        // 유형상세 이후 토큰 파싱
+        const afterSubtype = remaining.slice(s.code.length + 1); // +1 for underscore
+        const afterTokens = afterSubtype.split('_');
+        // 화면유형코드 매칭
+        result.screenType = guessScreenTypeFromFilename(afterSubtype);
+        // 버전 매칭 (V1, V2 등)
+        const versionToken = afterTokens.find(t => /^V\d+$/i.test(t));
+        if (versionToken) result.version = versionToken.toUpperCase();
+        // 순서 매칭 (숫자만)
+        const orderToken = afterTokens.find(t => /^\d+$/.test(t));
+        if (orderToken) result.order = parseInt(orderToken);
+        break;
+      }
+    }
+  }
+
+  // 버전/순서가 안 잡혔으면 전체 토큰에서 재시도
+  if (!result.version) {
+    const vt = tokens.find(t => /^V\d+$/i.test(t));
+    if (vt) result.version = vt.toUpperCase();
+  }
+  if (!result.order) {
+    const ot = tokens.find(t => /^\d{2,3}$/.test(t));
+    if (ot) result.order = parseInt(ot);
+  }
+
+  return result;
+}
+
+// 파일 목록에서 공통 메타정보 추출 (기업/유형/유형상세/버전)
+function detectCommonMeta(files){
+  const parsed = Array.from(files).map(f => parseFilename(f.name));
+  const companies = [...new Set(parsed.map(p=>p.company).filter(Boolean))];
+  const types = [...new Set(parsed.map(p=>p.type).filter(Boolean))];
+  const subtypes = [...new Set(parsed.map(p=>p.subtype).filter(Boolean))];
+  const versions = [...new Set(parsed.map(p=>p.version).filter(Boolean))];
+  return {
+    company: companies.length === 1 ? companies[0] : '',
+    type: types.length === 1 ? types[0] : '',
+    subtype: subtypes.length === 1 ? subtypes[0] : '',
+    version: versions.length === 1 ? versions[0] : '',
+  };
 }
 
 function renderUploadView(){
@@ -1702,7 +1911,24 @@ function renderUploadView(){
           </div>
           <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
-          <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="goUploadStep2()">다음</button></div>
+          <!-- 파일 미리 선택으로 자동 감지 -->
+          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px">
+            <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>
+              파일명 규칙에 맞는 이미지를 여기 끌어다 놓으면 기본 정보가 자동으로 채워집니다
+            </div>
+            <div style="border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);padding:14px;text-align:center;cursor:pointer;font-size:12px;color:var(--text-tertiary);transition:all 0.15s"
+              id="step1-drop"
+              onclick="document.getElementById('step1-file-input').click()"
+              ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--primary-subtle)'"
+              ondragleave="this.style.borderColor='var(--border-strong)';this.style.background=''"
+              ondrop="event.preventDefault();this.style.borderColor='var(--border-strong)';this.style.background='';autoDetectFromFiles(event.dataTransfer.files)">
+              파일 드롭 또는 클릭해서 자동 감지
+            </div>
+            <input type="file" id="step1-file-input" accept="image/*" multiple style="display:none" onchange="autoDetectFromFiles(event.target.files)">
+            <div id="step1-detect-result" style="display:none;margin-top:8px;padding:8px 10px;background:var(--primary-subtle);border-radius:var(--radius-md);font-size:12px;color:var(--primary)"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn btn-primary" onclick="goUploadStep2()">다음</button></div>
         </div>
       </div>
     </div>
@@ -1798,14 +2024,72 @@ function goUploadStep2(){
 }
 function handleDrop(e){addFiles(e.dataTransfer.files);}
 function handleFileSelect(e){addFiles(e.target.files);}
-function addFiles(files){
-  Array.from(files).forEach(f=>{
-    if(f.type.startsWith('image/')){
-      // 4번: 파일명에서 화면유형 자동 매칭
-      const autoCode=guessScreenTypeFromFilename(f.name);
-      state.uploadFiles.push({file:f,status:'pending',screenTypeCode:autoCode});
+
+// Step1 파일 드롭 → 자동 메타 감지
+function autoDetectFromFiles(files){
+  const meta = detectCommonMeta(files);
+  let detected = [];
+
+  if(meta.company){
+    document.getElementById('up-company').value = meta.company;
+    state.uploadMeta.company = meta.company;
+    detected.push('기업: '+( state.companies.find(c=>c.code===meta.company)?.name||meta.company));
+  }
+  if(meta.type){
+    document.getElementById('up-type').value = meta.type;
+    state.uploadMeta.type = meta.type;
+    detected.push('유형: '+(state.types.find(t=>t.code===meta.type)?.name||meta.type));
+  }
+  if(meta.subtype){
+    document.getElementById('up-subtype').value = meta.subtype;
+    state.uploadMeta.subtype = meta.subtype;
+    detected.push('유형상세: '+(state.subtypes.find(s=>s.code===meta.subtype)?.name||meta.subtype));
+  }
+  if(meta.version){
+    document.getElementById('up-version').value = meta.version;
+    state.uploadMeta.version = meta.version;
+    detected.push('버전: '+meta.version);
+  }
+
+  const resultEl = document.getElementById('step1-detect-result');
+  if(resultEl){
+    if(detected.length){
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = '<strong>자동 감지됨:</strong> '+detected.join(' · ')
+        +(detected.length < 4 ? ' · <span style="color:var(--text-secondary)">나머지는 직접 입력해주세요</span>' : '');
+      toast('기본 정보가 자동으로 채워졌어요!', 'success');
+    } else {
+      resultEl.style.display = 'block';
+      resultEl.style.background = 'var(--gray-100)';
+      resultEl.style.color = 'var(--text-tertiary)';
+      resultEl.textContent = '파일명에서 정보를 감지하지 못했어요. 직접 입력해주세요.';
     }
+  }
+
+  // 파일도 바로 업로드 목록에 추가
+  addFiles(files);
+}
+
+function addFiles(files){
+  // 파일명 순서(숫자) 기준 정렬
+  const sorted = Array.from(files).filter(f=>f.type.startsWith('image/')).sort((a,b)=>{
+    const na = a.name.match(/\d+/g)?.map(Number)||[];
+    const nb = b.name.match(/\d+/g)?.map(Number)||[];
+    for(let i=0;i<Math.max(na.length,nb.length);i++){
+      const diff=(na[i]||0)-(nb[i]||0);
+      if(diff!==0)return diff;
+    }
+    return a.name.localeCompare(b.name);
   });
+  sorted.forEach(f=>{
+    // 중복 방지
+    if(state.uploadFiles.find(u=>u.file.name===f.name&&u.file.size===f.size))return;
+    const parsed = parseFilename(f.name);
+    const autoCode = parsed.screenType || guessScreenTypeFromFilename(f.name);
+    state.uploadFiles.push({file:f, status:'pending', screenTypeCode:autoCode, parsedOrder:parsed.order});
+  });
+  // parsedOrder 기준 재정렬
+  state.uploadFiles.sort((a,b)=>(a.parsedOrder||0)-(b.parsedOrder||0));
   renderUploadPreviews();
 }
 function renderUploadPreviews(){
@@ -2037,31 +2321,407 @@ async function confirmDeleteScreen(screenId, screenName) {
 
 
 // 이미지 URL → Canvas 리사이즈 → base64
-async function resizeImageToBase64(url, maxPx=1568) {
+async function resizeImageToBase64(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
         let {width: w, height: h} = img;
-        // 긴 변이 maxPx 초과 시 비율 유지하며 축소
-        if (w > maxPx || h > maxPx) {
-          const ratio = Math.min(maxPx/w, maxPx/h);
+        // 세로만 7500px 제한 (가로 원본 유지 - 텍스트 판독 품질 보장)
+        if (h > 7500) {
+          const ratio = 7500 / h;
           w = Math.round(w * ratio);
-          h = Math.round(h * ratio);
+          h = 7500;
         }
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        // jpeg로 변환 (용량 절감)
-        const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+        // PNG로 변환 (텍스트 선명도 유지)
+        const base64 = canvas.toDataURL('image/png').split(',')[1];
         resolve(base64);
       } catch(e) { reject(e); }
     };
     img.onerror = reject;
     img.src = url;
   });
+}
+
+// ===================== FILE RENAME VIEW =====================
+let renameFiles = [];
+let renameMeta = {company:'', type:'', subtype:'', version:'V1'};
+let renameStep = 1;
+
+function renderRenameView() {
+  const el = document.getElementById('rename-view');
+  renameFiles = [];
+  renameStep = 1;
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">파일명 변환</div><div class="page-desc">업로드할 이미지의 파일명을 규칙에 맞게 일괄 변환합니다</div></div>
+    </div>
+
+    <!-- 스텝 바 -->
+    <div style="display:flex;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+      ${['기본 정보','이미지 업로드','화면유형 지정','결과 확인'].map((t,i)=>`
+        <div id="rename-step-${i+1}" onclick="renameGoStep(${i+1})" style="flex:1;padding:10px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;border-right:${i<3?'1px solid var(--border)':'none'};background:${i===0?'var(--gray-0)':'var(--gray-50)'};color:${i===0?'var(--text-primary)':'var(--text-tertiary)'}">
+          <span style="width:18px;height:18px;border-radius:50%;background:${i===0?'var(--primary)':'var(--gray-200)'};color:${i===0?'white':'var(--text-tertiary)'};font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>${t}
+        </div>`).join('')}
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="rename-sec-1">
+      <div class="card" style="max-width:520px">
+        <div class="card-header"><div class="card-title">기본 정보 입력</div><div style="font-size:12px;color:var(--text-tertiary)">모든 이미지에 일괄 적용됩니다</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div class="form-group">
+              <label class="form-label">기업 코드</label>
+              <select class="select" id="rn-company" style="width:100%;font-family:var(--font-mono)" onchange="renameMeta.company=this.value;renameUpdatePreview()">
+                <option value="">선택</option>
+                ${state.companies.map(c=>`<option value="${c.code}">${c.name} (${c.code})</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">유형 코드</label>
+              <select class="select" id="rn-type" style="width:100%;font-family:var(--font-mono)" onchange="renameMeta.type=this.value;renameUpdatePreview()">
+                <option value="">선택</option>
+                ${state.types.map(t=>`<option value="${t.code}">${t.name} (${t.code})</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">유형상세 코드</label>
+              <select class="select" id="rn-subtype" style="width:100%;font-family:var(--font-mono)" onchange="renameMeta.subtype=this.value;renameUpdatePreview()">
+                <option value="">선택</option>
+                ${state.subtypes.map(s=>`<option value="${s.code}">${s.name} (${s.code})</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">버전</label>
+              <input class="input" id="rn-version" value="V1" style="font-family:var(--font-mono)" oninput="renameMeta.version=this.value;renameUpdatePreview()">
+            </div>
+          </div>
+          <div id="rn-preview" style="display:none;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--primary);margin-bottom:16px;word-break:break-all"></div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="renameGoStep(2)">다음 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="rename-sec-2" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">이미지 업로드</div><div style="font-size:12px;color:var(--text-tertiary)">파일명 숫자 순으로 자동 정렬됩니다</div></div>
+        <div class="card-body">
+          <div class="upload-zone" onclick="document.getElementById('rn-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondrop="event.preventDefault();this.classList.remove('drag');renameHandleDrop(event)" ondragleave="this.classList.remove('drag')">
+            <div style="margin-bottom:8px;color:var(--text-tertiary)"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 18V6M9 11l5-5 5 5M4 22h20"/></svg></div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:3px">클릭하거나 드래그해서 이미지 업로드</div>
+            <div style="font-size:12px;color:var(--text-tertiary)">최대 100장 · PNG, JPG, WebP</div>
+          </div>
+          <input type="file" id="rn-file-input" accept="image/*" multiple style="display:none" onchange="renameHandleFiles(event.target.files)">
+          <div id="rn-file-count" style="font-size:12px;color:var(--text-tertiary);margin:10px 0"></div>
+          <div class="screen-grid-5" id="rn-file-grid"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:12px">
+            <button class="btn" onclick="renameGoStep(1)">← 이전</button>
+            <button class="btn btn-primary" id="rn-btn-step3" disabled onclick="renameGoStep(3)">다음 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="rename-sec-3" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="card-title">화면유형 지정</div>
+            <span id="rn-matched-badge" class="badge badge-green"></span>
+            <span id="rn-unmatched-badge" class="badge badge-new"></span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="renameAutoMatch()">자동 매칭</button>
+            <button class="btn btn-secondary btn-sm" onclick="renameBulkAssign()">일괄 적용</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="screen-grid-5" id="rn-assign-grid"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:12px">
+            <button class="btn" onclick="renameGoStep(2)">← 이전</button>
+            <button class="btn btn-primary" onclick="renameGoStep(4)">결과 확인 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="rename-sec-4" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="card-title">결과 확인</div>
+            <span id="rn-total-count" class="badge badge-gray"></span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="renameCopyAll()"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><path d="M2 7V2h5"/></svg> 파일명 복사</button>
+            <button class="btn btn-primary btn-sm" onclick="renameDownloadZip()"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg> ZIP 다운로드</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table class="table" id="rn-result-table">
+            <thead><tr><th style="width:40px">#</th><th>원본 파일명</th><th>새 파일명</th><th>화면유형</th><th style="width:60px"></th></tr></thead>
+            <tbody id="rn-result-body"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-start">
+          <button class="btn" onclick="renameGoStep(3)">← 수정</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renameUpdatePreview() {
+  const el = document.getElementById('rn-preview');
+  if (!el) return;
+  const {company, type, subtype, version} = renameMeta;
+  if (company && type && subtype && version) {
+    el.style.display = 'block';
+    el.textContent = `${company}_${type}_${subtype}_{화면유형코드}_${version}_001.png`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function renameGoStep(step) {
+  if (step === 2) {
+    const {company, type, subtype, version} = renameMeta;
+    if (!company || !type || !subtype || !version) return toast('모든 항목을 선택해주세요', 'error');
+  }
+  renameStep = step;
+  // 스텝 바 업데이트
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`rename-step-${i}`);
+    if (!el) continue;
+    const num = el.querySelector('span');
+    if (i < step) {
+      el.style.background = 'var(--gray-50)';
+      el.style.color = 'var(--text-tertiary)';
+      if (num) { num.style.background = '#EAF3DE'; num.style.color = '#1A7F3C'; num.textContent = '✓'; }
+    } else if (i === step) {
+      el.style.background = 'var(--gray-0)';
+      el.style.color = 'var(--text-primary)';
+      if (num) { num.style.background = 'var(--primary)'; num.style.color = 'white'; num.textContent = i; }
+    } else {
+      el.style.background = 'var(--gray-50)';
+      el.style.color = 'var(--text-tertiary)';
+      if (num) { num.style.background = 'var(--gray-200)'; num.style.color = 'var(--text-tertiary)'; num.textContent = i; }
+    }
+  }
+  // 섹션 토글
+  for (let i = 1; i <= 4; i++) {
+    const sec = document.getElementById(`rename-sec-${i}`);
+    if (sec) sec.style.display = i === step ? 'block' : 'none';
+  }
+  // STEP 3 진입 시 그리드 렌더
+  if (step === 3) renameRenderAssignGrid();
+  if (step === 4) renameRenderResult();
+}
+
+function renameHandleDrop(e) { renameHandleFiles(e.dataTransfer.files); }
+function renameHandleFiles(files) {
+  const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  // 파일명 숫자 순 정렬
+  arr.sort((a, b) => {
+    const na = a.name.match(/\d+/g)?.map(Number) || [];
+    const nb = b.name.match(/\d+/g)?.map(Number) || [];
+    for (let i = 0; i < Math.max(na.length, nb.length); i++) {
+      const diff = (na[i] || 0) - (nb[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    return a.name.localeCompare(b.name);
+  });
+  renameFiles = arr.map((f, i) => ({
+    file: f,
+    order: i + 1,
+    screenTypeCode: renameGuessType(f.name),
+    url: URL.createObjectURL(f),
+  }));
+  renameRenderFileGrid();
+  document.getElementById('rn-file-count').textContent = `${renameFiles.length}개 선택됨`;
+  const btn = document.getElementById('rn-btn-step3');
+  if (btn) btn.disabled = renameFiles.length === 0;
+}
+
+function renameGuessType(filename) {
+  const upper = filename.toUpperCase().replace(/\.[^.]+$/, '');
+  const tokens = upper.split(/[_\-\s\.]+/);
+  for (const st of state.screenTypes) {
+    if (tokens.includes(st.code.toUpperCase())) return st.code;
+  }
+  const sorted = [...state.screenTypes].sort((a, b) => b.code.length - a.code.length);
+  for (const st of sorted) {
+    if (upper.includes(st.code.toUpperCase())) return st.code;
+  }
+  return '';
+}
+
+function renameGetNewName(item) {
+  const {company, type, subtype, version} = renameMeta;
+  const code = item.screenTypeCode || 'UNKNOWN';
+  const order = String(item.order).padStart(3, '0');
+  const ext = item.file.name.split('.').pop() || 'png';
+  return `${company}_${type}_${subtype}_${code}_${version}_${order}.${ext}`;
+}
+
+function renameGetStOptions() {
+  const grouped = {};
+  state.screenTypes.forEach(s => {
+    const cat = s.category || '기타';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(s);
+  });
+  return Object.entries(grouped).map(([cat, items]) =>
+    `<optgroup label="${cat}">${items.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function renameRenderFileGrid() {
+  const grid = document.getElementById('rn-file-grid');
+  if (!grid) return;
+  grid.innerHTML = renameFiles.map((item, i) => `
+    <div class="screen-card">
+      <div class="screen-card-thumb">
+        <img src="${item.url}" loading="lazy">
+        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
+      </div>
+      <div class="screen-card-info">
+        <div class="screen-card-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.file.name}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renameRenderAssignGrid() {
+  const grid = document.getElementById('rn-assign-grid');
+  if (!grid) return;
+  const stOpts = renameGetStOptions();
+  grid.innerHTML = renameFiles.map((item, i) => {
+    const newName = renameGetNewName(item);
+    const isMatched = !!item.screenTypeCode;
+    return `<div class="screen-card">
+      <div class="screen-card-thumb" style="position:relative">
+        <img src="${item.url}" loading="lazy">
+        <div style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.55);color:white;font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px">${item.order}</div>
+        <div style="position:absolute;top:5px;right:5px;font-size:9px;font-weight:600;padding:2px 5px;border-radius:2px;${isMatched?'background:#EDFCF2;color:#1A7F3C':'background:#FFF3E0;color:#E65100'}">${isMatched?'자동':'미지정'}</div>
+      </div>
+      <div class="screen-card-info">
+        <select style="width:100%;height:24px;font-size:10px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary);margin-bottom:3px" onchange="renameFiles[${i}].screenTypeCode=this.value;renameUpdateAssignCard(${i})" id="rn-sel-${i}">
+          <option value="">화면유형 선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`, `value="${item.screenTypeCode}" selected`)}
+        </select>
+        <div id="rn-newname-${i}" style="font-size:9px;color:var(--primary);font-family:var(--font-mono);line-height:1.4;word-break:break-all">${newName}</div>
+      </div>
+    </div>`;
+  }).join('');
+  renameUpdateMatchCount();
+}
+
+function renameUpdateAssignCard(i) {
+  const el = document.getElementById(`rn-newname-${i}`);
+  if (el) el.textContent = renameGetNewName(renameFiles[i]);
+  const badge = document.getElementById(`rn-sel-${i}`)?.closest('.screen-card')?.querySelector('[style*="position:absolute;top:5px;right"]');
+  renameUpdateMatchCount();
+}
+
+function renameUpdateMatchCount() {
+  const matched = renameFiles.filter(f => f.screenTypeCode).length;
+  const unmatched = renameFiles.length - matched;
+  const mb = document.getElementById('rn-matched-badge');
+  const ub = document.getElementById('rn-unmatched-badge');
+  if (mb) mb.textContent = `매칭됨 ${matched}개`;
+  if (ub) { ub.textContent = `미지정 ${unmatched}개`; ub.style.display = unmatched > 0 ? '' : 'none'; }
+}
+
+function renameAutoMatch() {
+  renameFiles.forEach((item, i) => {
+    if (!item.screenTypeCode) {
+      item.screenTypeCode = renameGuessType(item.file.name);
+    }
+    const sel = document.getElementById(`rn-sel-${i}`);
+    if (sel && item.screenTypeCode) sel.value = item.screenTypeCode;
+    const el = document.getElementById(`rn-newname-${i}`);
+    if (el) el.textContent = renameGetNewName(item);
+  });
+  renameUpdateMatchCount();
+  toast('자동 매칭 완료', 'success');
+}
+
+function renameBulkAssign() {
+  // 현재 미지정 파일들에 첫 번째 지정된 코드를 일괄 적용
+  const firstCode = renameFiles.find(f => f.screenTypeCode)?.screenTypeCode;
+  if (!firstCode) return toast('먼저 하나 이상 화면유형을 선택해주세요', 'error');
+  renameFiles.forEach((item, i) => {
+    if (!item.screenTypeCode) {
+      item.screenTypeCode = firstCode;
+      const sel = document.getElementById(`rn-sel-${i}`);
+      if (sel) sel.value = firstCode;
+      const el = document.getElementById(`rn-newname-${i}`);
+      if (el) el.textContent = renameGetNewName(item);
+    }
+  });
+  renameUpdateMatchCount();
+  toast('일괄 적용 완료', 'success');
+}
+
+function renameRenderResult() {
+  const tbody = document.getElementById('rn-result-body');
+  const countEl = document.getElementById('rn-total-count');
+  if (!tbody) return;
+  if (countEl) countEl.textContent = `총 ${renameFiles.length}개`;
+  const stOpts = renameGetStOptions();
+  tbody.innerHTML = renameFiles.map((item, i) => {
+    const newName = renameGetNewName(item);
+    const stName = state.screenTypes.find(s => s.code === item.screenTypeCode)?.name || (item.screenTypeCode || '미지정');
+    return `<tr>
+      <td style="font-family:var(--font-mono);color:var(--text-tertiary)">${item.order}</td>
+      <td style="font-size:12px;color:var(--text-secondary);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.file.name}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--primary)">${newName}</td>
+      <td style="font-size:12px">${stName}</td>
+      <td>
+        <select style="height:24px;font-size:10px;padding:0 4px;border:0.5px solid var(--border);border-radius:3px;background:var(--gray-0);color:var(--text-primary)" onchange="renameFiles[${i}].screenTypeCode=this.value;renameRenderResult()">
+          <option value="">선택</option>${stOpts.replace(`value="${item.screenTypeCode}"`, `value="${item.screenTypeCode}" selected`)}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renameCopyAll() {
+  const names = renameFiles.map(f => renameGetNewName(f)).join('\n');
+  navigator.clipboard.writeText(names).then(() => toast('파일명 복사 완료!', 'success')).catch(() => toast('복사 실패', 'error'));
+}
+
+async function renameDownloadZip() {
+  if (typeof JSZip === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  toast('ZIP 생성 중...');
+  const zip = new JSZip();
+  for (const item of renameFiles) {
+    const arrayBuffer = await item.file.arrayBuffer();
+    zip.file(renameGetNewName(item), arrayBuffer);
+  }
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `renamed_${renameMeta.company}_${renameMeta.subtype}_${renameMeta.version}.zip`;
+  a.click();
+  toast('ZIP 다운로드 완료!', 'success');
 }
 
 function showModal(title,fieldsHtml,onConfirm,danger=false){
