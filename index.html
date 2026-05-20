@@ -1520,7 +1520,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
         if (s.signed_url) {
           try {
             const b64 = await resizeImageToBase64(s.signed_url);
-            userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
+            userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
           } catch(e) { console.warn('이미지 리사이즈 실패:', s.signed_url, e); }
         }
       }
@@ -1529,7 +1529,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
         if (s.signed_url) {
           try {
             const b64 = await resizeImageToBase64(s.signed_url);
-            userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
+            userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
           } catch(e) { console.warn('이미지 리사이즈 실패:', s.signed_url, e); }
         }
       }
