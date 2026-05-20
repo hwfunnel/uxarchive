@@ -1001,9 +1001,13 @@ function renderCompareView() {
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M4 6.5h3"/></svg>
           AI 분석 · 요약
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="toast('AI 플로우 분석 기능은 준비 중입니다')">
+        <button class="btn btn-secondary btn-sm" onclick="startAIFlowAnalysis(4000)" title="두 회사의 전체 가입 흐름을 5개 카테고리 기준으로 비교 분석합니다">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6.5h9M8 3.5l3 3-3 3"/></svg>
-          AI 플로우 분석
+          AI 플로우 분석 · 상세
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="startAIFlowAnalysis(2000)" title="핵심 차이점 위주로 요약 분석합니다">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6.5h6M8 3.5l3 3-3 3"/></svg>
+          AI 플로우 분석 · 요약
         </button>
       </div>
     </div>
@@ -1059,8 +1063,11 @@ function renderCompareView() {
     <!-- A/B 섹션 -->
     <div class="compare-layout" id="compare-cols"></div>
 
-    <!-- 분석 결과 -->
+    <!-- 화면 분석 결과 -->
     <div id="analysis-result-wrap" style="display:none;margin-top:28px"></div>
+
+    <!-- 플로우 분석 결과 -->
+    <div id="flow-result-wrap" style="display:none;margin-top:28px"></div>
   `;
   renderCompareCols();
   updateCompareMetaBar();
@@ -1189,6 +1196,7 @@ function renderCompareCol(slot) {
       <div style="display:flex;gap:6px;align-items:center">
         ${checked.size>0 ? `<button class="btn btn-danger btn-sm" onclick="deleteCompareChecked('${slot}')">선택 삭제 (${checked.size})</button>` : ''}
         <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('${slot}')">+ 화면 추가</button>
+        ${screens.length && compareSections[slot][0]?.set?.company_code ? `<button class="btn btn-ghost btn-sm" onclick="openVersionPicker('${slot}')" title="같은 상품의 다른 버전 화면을 빠르게 불러옵니다" style="font-size:12px">↻ 다른 버전</button>` : ''}
         ${companyName ? `<button class="btn btn-ghost btn-sm" onclick="clearCompareSlot('${slot}')">초기화</button>` : ''}
       </div>
     </div>`;
@@ -1384,6 +1392,123 @@ function applyComparePickerSelection(slot) {
   document.getElementById('picker-overlay')?.remove();
   renderCompareCols();
   updateCompareMetaBar();
+}
+
+
+// ── 다른 버전 빠른 불러오기 ─────────────────────────────────
+async function openVersionPicker(slot) {
+  const screens = compareSections[slot];
+  if (!screens.length) return;
+
+  // 현재 슬롯 기준 메타 추출
+  const ref = screens[0];
+  const setMeta = ref.set || {};
+  const companyCode  = setMeta.company_code  || compareCompany[slot];
+  const typeCode     = setMeta.type_code     || '';
+  const subtypeCode  = setMeta.subtype_code  || '';
+  const currentVer   = setMeta.version       || '';
+
+  const companyName  = state.companies.find(c=>c.code===companyCode)?.name  || companyCode;
+  const subtypeName  = state.subtypes.find(s=>s.code===subtypeCode)?.name   || subtypeCode;
+
+  if (!companyCode || !typeCode || !subtypeCode) {
+    toast('현재 섹션 화면의 상품 정보가 불완전합니다', 'error');
+    return;
+  }
+
+  // 같은 회사·유형·유형상세의 모든 버전 조회
+  const sets = await api('GET', `/screen-sets?company=${companyCode}&type=${typeCode}&subtype=${subtypeCode}&latest_only=false`);
+  if (!sets || !sets.length) { toast('다른 버전이 없습니다', 'default'); return; }
+
+  // 현재 버전 제외
+  const otherSets = sets.filter(s => s.version !== currentVer);
+  if (!otherSets.length) { toast('다른 버전이 없습니다', 'default'); return; }
+
+  // 버전 선택 모달
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'version-picker-overlay';
+
+  overlay.innerHTML = `
+    <div class="picker-modal" style="max-width:420px">
+      <div class="picker-header">
+        <div class="picker-title">다른 버전 불러오기</div>
+        <button class="modal-close" onclick="document.getElementById('version-picker-overlay').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div style="padding:16px 20px">
+        <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:12px">
+          ${companyName} · ${subtypeName} · 현재: <span style="font-weight:600;color:var(--text-primary)">${currentVer}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${otherSets.map(s => `
+            <button class="btn btn-secondary" style="justify-content:space-between;padding:12px 16px" onclick="loadVersionScreens('${slot}','${s.id}','${s.version}')">
+              <span style="font-weight:600">${s.version}</span>
+              <span style="font-size:12px;color:var(--text-tertiary)">${s.uploaded_at||''} · ${(s.screens||[]).length||'?'}장</span>
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+async function loadVersionScreens(slot, setId, version) {
+  document.getElementById('version-picker-overlay')?.remove();
+  toast('화면 불러오는 중...');
+
+  try {
+    const setDetail = await api('GET', `/screen-sets/${setId}`);
+    if (!setDetail || !setDetail.screens?.length) {
+      toast('해당 버전에 화면이 없습니다', 'error');
+      return;
+    }
+
+    // signed URL 포함 screens 조회
+    const screensWithUrl = await api('GET', `/screens?id=${setDetail.screens.map(s=>s.id).join(',')}&include_related=false`);
+    const screens = (screensWithUrl || setDetail.screens).sort((a,b)=>(a.order_no||0)-(b.order_no||0));
+
+    // 각 screen에 set 메타 붙이기
+    screens.forEach(s => { if (!s.set) s.set = setDetail; });
+
+    // 다른 슬롯 회사 충돌 체크
+    const otherSlot = slot === 'A' ? 'B' : 'A';
+    const otherCompany = compareCompany[otherSlot];
+    const thisCompany = setDetail.company_code;
+    if (compareCompany[slot] && compareCompany[slot] !== thisCompany) {
+      toast('이미 다른 회사 화면이 있습니다', 'error');
+      return;
+    }
+
+    // 기존 섹션 교체 여부 확인
+    if (compareSections[slot].length > 0) {
+      showModal(
+        '기존 화면 교체',
+        `<p style="font-size:14px;color:var(--text-secondary);line-height:1.7">${slot} 섹션의 기존 화면을 <strong>${version}</strong> 버전으로 교체할까요?<br>기존 화면 ${compareSections[slot].length}장이 삭제됩니다.</p>`,
+        () => {
+          closeModal();
+          compareSections[slot] = screens.slice(0, 50);
+          compareCompany[slot] = thisCompany;
+          renderCompareCols();
+          updateCompareMetaBar();
+          toast(`${version} · ${screens.length}장 불러왔습니다`, 'success');
+        }
+      );
+      setTimeout(() => {
+        const confirm = document.querySelector('#generic-modal #modal-confirm-btn');
+        if (confirm) confirm.textContent = '교체하기';
+      }, 50);
+    } else {
+      compareSections[slot] = screens.slice(0, 50);
+      compareCompany[slot] = thisCompany;
+      renderCompareCols();
+      updateCompareMetaBar();
+      toast(`${version} · ${screens.length}장 불러왔습니다`, 'success');
+    }
+  } catch(e) {
+    toast('불러오기 실패: ' + e.message, 'error');
+  }
 }
 
 // ── AI 화면 분석 실행 ────────────────────────────────────────
@@ -1828,6 +1953,473 @@ async function downloadAnalysisReport() {
     toast('저장 완료!', 'success');
   } catch(e) { toast('저장 실패: '+e.message, 'error'); }
 }
+
+
+// ══════════════════════════════════════════════════════════
+// AI 플로우 분석
+// ══════════════════════════════════════════════════════════
+
+const FLOW_CATEGORY_MAP = {
+  AGREE_PRE:'약관', AGREE_PRD:'약관', AGREE_PHONE:'약관', AGREE_NOTICE:'약관',
+  AGREE_TERM:'약관', AGREE_PAY:'약관', AGREE_APPLY:'약관', AGREE_TERM_LIST:'약관',
+  AGREE_DISCOUNT_ALL:'약관', AGREE_DISCOUNT_MAKER:'약관', AGREE_DISCOUNT_TMAP:'약관',
+  AGREE_DISCOUNT_NAVER:'약관', AGREE_DISCOUNT_CONN:'약관', AGREE_DISCOUNT_WINTER:'약관',
+  AGREE_DISCOUNT_ECO:'약관',
+  CERT_INPUT:'인적사항', CERT_DONE:'인적사항', CERT_METHOD:'인적사항',
+  CERT_PHONE:'인적사항', INFO_BASIC:'인적사항', INFO_JOB:'인적사항',
+  INFO_CONFIRM:'인적사항', INFO_DISEASE:'인적사항', PIN:'인적사항',
+  CAR_NUM:'차량', CAR_REG:'차량', CAR_SELECT:'차량', CAR_LIST:'차량',
+  CAR_INFO:'차량', CAR_PERIOD:'차량', CAR_OPTION:'차량', PRICE_INPUT:'차량',
+  CAR_OWNER:'차량', CAR_EXTRA:'차량',
+  DRIVER_RANGE:'운전자', DRIVER_INFO:'운전자',
+  PREMIUM_CALC_Y:'보험료특약', PREMIUM_CALC_M:'보험료특약',
+  COVERAGE_RANGE:'보험료특약', COVERAGE_EDIT:'보험료특약', COVERAGE_RECOMMEND:'보험료특약',
+  COVERAGE_DETAIL:'보험료특약', COVERAGE_STAT:'보험료특약',
+  SPEC_PHOTO:'보험료특약', SPEC_RECOMMEND_A:'보험료특약', SPEC_SELECT_A:'보험료특약',
+  SPEC_SELECT_OPT_A:'보험료특약', SPEC_INFO:'보험료특약',
+};
+
+const FLOW_EXCLUDE_CODES = new Set([
+  'SPLASH','AD_POPUP','AD_BANNER','EVENT_PAGE','CHATBOT','FAQ','CS',
+  'BOTTOM_SHEET','ROADING','TM_BANNER','MAIN','MAIN_ADD','PRD_DESC',
+  'RECOMMEND','TM','PRD_DESC_Y','PRD_DESC_M','ACCIDENT',
+]);
+
+function calcFlowCoverage(screens) {
+  const catList = { '약관':0, '인적사항':0, '차량':0, '운전자':0, '보험료특약':0 };
+  screens.forEach(s => {
+    const cat = FLOW_CATEGORY_MAP[s.screen_type_code];
+    if (cat) catList[cat]++;
+  });
+  const covered = Object.values(catList).filter(v => v > 0).length;
+  return { count: covered, total: 5, catList };
+}
+
+async function startAIFlowAnalysis(maxTokens) {
+  maxTokens = maxTokens || 4000;
+  const sA = compareSections.A;
+  const sB = compareSections.B;
+
+  if (!sA.length || !sB.length) {
+    toast('A·B 섹션 모두 화면을 추가해주세요', 'error');
+    return;
+  }
+
+  const filterFlow = function(screens) {
+    return screens
+      .filter(function(s) { return !(s.order_no >= 9000) && !FLOW_EXCLUDE_CODES.has(s.screen_type_code); })
+      .sort(function(a, b) { return (a.order_no||0) - (b.order_no||0); });
+  };
+
+  const flowA = filterFlow(sA);
+  const flowB = filterFlow(sB);
+
+  if (!flowA.length || !flowB.length) {
+    toast('정규 플로우 화면이 없습니다. 화면 유형을 확인해주세요.', 'error');
+    return;
+  }
+
+  await runAIFlowAnalysis(flowA, flowB, maxTokens);
+}
+
+async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
+  maxTokens = maxTokens || 4000;
+  const resultWrap = document.getElementById('flow-result-wrap');
+  if (!resultWrap) return;
+
+  const cA = compareCompany.A;
+  const cB = compareCompany.B;
+  const companyNameA = (state.companies.find(function(c){return c.code===cA;}) || {}).name || cA || 'A';
+  const companyNameB = (state.companies.find(function(c){return c.code===cB;}) || {}).name || cB || 'B';
+  const isSameCompany = !!(cA && cB && cA === cB);
+
+  // 버전 기반 이전/신규 자동 판단
+  const verA = (flowA[0]?.set?.version || '').replace(/[^0-9]/g, '') * 1 || 0;
+  const verB = (flowB[0]?.set?.version || '').replace(/[^0-9]/g, '') * 1 || 0;
+  const verLabelA = flowA[0]?.set?.version || '';
+  const verLabelB = flowB[0]?.set?.version || '';
+  // 같은 회사일 때: 낮은 버전 = 이전, 높은 버전 = 신규. 순서가 반대면 swap
+  var nameA, nameB, resolvedFlowA, resolvedFlowB, covA, covB;
+  if (isSameCompany && verA > verB) {
+    // A가 더 최신 → swap해서 A=이전, B=신규로
+    nameA = companyNameA + ' ' + verLabelB + ' (이전)';
+    nameB = companyNameB + ' ' + verLabelA + ' (신규)';
+    resolvedFlowA = flowB;
+    resolvedFlowB = flowA;
+  } else if (isSameCompany) {
+    nameA = companyNameA + (verLabelA ? ' ' + verLabelA + ' (이전)' : ' (이전)');
+    nameB = companyNameB + (verLabelB ? ' ' + verLabelB + ' (신규)' : ' (신규)');
+    resolvedFlowA = flowA;
+    resolvedFlowB = flowB;
+  } else {
+    nameA = companyNameA;
+    nameB = companyNameB;
+    resolvedFlowA = flowA;
+    resolvedFlowB = flowB;
+  }
+  covA = calcFlowCoverage(resolvedFlowA);
+  covB = calcFlowCoverage(resolvedFlowB);
+
+  const getName = function(code) {
+    return (state.screenTypes.find(function(s){return s.code===code;}) || {}).name || code;
+  };
+  const extra = getAnalysisExtra();
+
+  resultWrap.style.display = 'block';
+  resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
+    '<div class="spinner"></div>' +
+    '<span style="font-size:14px;font-weight:500">플로우 분석 중... ' + (maxTokens >= 4000 ? '(상세)' : '(요약)') + '</span>' +
+    '<span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ' + (resolvedFlowA.length + resolvedFlowB.length) + '장 전송</span>' +
+    '</div></div>';
+  resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
+
+  try {
+    const catNames = { '약관':'약관 동의', '인적사항':'인적사항', '차량':'차량 정보', '운전자':'운전자 정보', '보험료특약':'보험료·특약' };
+    const covText = function(cov) {
+      return Object.entries(cov.catList)
+        .map(function(e) { return '- ' + catNames[e[0]] + ': ' + e[1] + '개'; })
+        .join('\n');
+    };
+
+    const userContent = [];
+
+    const modeText = isSameCompany
+      ? '[분석 모드: 버전 비교 — ' + companyNameA + ']\n이전 버전과 신규 버전의 가입 흐름을 비교합니다.'
+      : '[분석 모드: 경쟁사 비교 — ' + nameA + ' vs ' + nameB + ']';
+
+    let contextText = modeText + '\n\n' +
+      '[A사 정보]\n' +
+      '회사명: ' + nameA + '\n' +
+      '총 화면 수: ' + resolvedFlowA.length + '장\n' +
+      '카테고리 커버리지: ' + covA.count + '/5\n' +
+      covText(covA) + '\n\n' +
+      '[B사 정보]\n' +
+      '회사명: ' + nameB + '\n' +
+      '총 화면 수: ' + resolvedFlowB.length + '장\n' +
+      '카테고리 커버리지: ' + covB.count + '/5\n' +
+      covText(covB) + '\n\n' +
+      '이미지는 가입 순서(order_no) 기준으로 정렬되어 있습니다.\n' +
+      '각 이미지 앞 레이블: [화면유형코드 / 순서N / 화면유형명]';
+
+    if (extra) contextText += '\n\n[추가 분석 요청]\n' + extra;
+    userContent.push({type:'text', text: contextText});
+
+    userContent.push({type:'text', text: '\n=== ' + nameA + ' 화면 (' + resolvedFlowA.length + '장, 순서대로) ==='});
+    for (var i = 0; i < resolvedFlowA.length; i++) {
+      var s = resolvedFlowA[i];
+      userContent.push({type:'text', text: '[' + (s.screen_type_code||'?') + ' / 순서' + (s.order_no||'?') + ' / ' + getName(s.screen_type_code) + ']'});
+      if (s.signed_url) {
+        try {
+          var b64 = await resizeImageToBase64(s.signed_url);
+          userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
+        } catch(e) { console.warn('이미지 로드 실패:', s.signed_url, e); }
+      }
+    }
+
+    userContent.push({type:'text', text: '\n=== ' + nameB + ' 화면 (' + resolvedFlowB.length + '장, 순서대로) ==='});
+    for (var j = 0; j < resolvedFlowB.length; j++) {
+      var sb = resolvedFlowB[j];
+      userContent.push({type:'text', text: '[' + (sb.screen_type_code||'?') + ' / 순서' + (sb.order_no||'?') + ' / ' + getName(sb.screen_type_code) + ']'});
+      if (sb.signed_url) {
+        try {
+          var b64b = await resizeImageToBase64(sb.signed_url);
+          userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64b}});
+        } catch(e) { console.warn('이미지 로드 실패:', sb.signed_url, e); }
+      }
+    }
+
+    const systemPrompt = '당신은 10년 이상 경력의 자동차보험 가입 퍼널 전문가입니다.\n' +
+      '보험사 디지털 채널의 가입 흐름 설계, 이탈 구간 분석, 정보 수집 전략 최적화를 전문으로 합니다.\n' +
+      '보험을 어려워하는 일반 사용자의 시점과 전문가의 전략적 시점을 동시에 갖고 분석합니다.\n\n' +
+      '[자동차보험 가입에 필요한 5가지 정보 카테고리]\n' +
+      '① 약관 동의: AGREE_PRE / AGREE_PRD / AGREE_PHONE / AGREE_NOTICE / AGREE_TERM / AGREE_PAY / AGREE_APPLY / AGREE_TERM_LIST / AGREE_DISCOUNT_ALL / AGREE_DISCOUNT_MAKER / AGREE_DISCOUNT_TMAP / AGREE_DISCOUNT_NAVER / AGREE_DISCOUNT_CONN / AGREE_DISCOUNT_WINTER / AGREE_DISCOUNT_ECO\n' +
+      '② 인적사항 수집: CERT_INPUT / CERT_DONE / CERT_METHOD / CERT_PHONE / INFO_BASIC / INFO_JOB / INFO_CONFIRM / INFO_DISEASE / PIN\n' +
+      '③ 자동차 정보 수집: CAR_NUM / CAR_REG / CAR_SELECT / CAR_LIST / CAR_INFO / CAR_PERIOD / CAR_OPTION / PRICE_INPUT / CAR_OWNER / CAR_EXTRA\n' +
+      '④ 운전자 정보 수집: DRIVER_RANGE / DRIVER_INFO\n' +
+      '⑤ 보험료·특약: PREMIUM_CALC_Y / PREMIUM_CALC_M / COVERAGE_RANGE / COVERAGE_EDIT / COVERAGE_RECOMMEND / COVERAGE_DETAIL / COVERAGE_STAT / SPEC_PHOTO / SPEC_RECOMMEND_A / SPEC_SELECT_A / SPEC_SELECT_OPT_A / SPEC_INFO\n\n' +
+      '[분석 제외 대상]\n메인화면 / 광고팝업 / 챗봇 / 앱 스플래시 / 사고처리 / TM 연결 배너 등 정규 가입 흐름 외 화면\n\n' +
+      '[작성 원칙]\n' +
+      '- 전문 용어 사용 금지. 쉬운 말로 서술 (CTA→가입버튼, 이탈률→가입 포기 비율, 퍼널→가입 흐름)\n' +
+      '- 사실 서술 먼저, 평가는 총평 섹션에만 작성\n' +
+      '- 확인 불가 항목은 "확인 필요"로 표시\n' +
+      '- 변동사항·차이점은 가감 없이 전부 기록\n\n' +
+      '[응답 형식 — 반드시 아래 구조로 출력]\n\n' +
+      '## SUMMARY\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n' +
+      '|------|---------|----------|\n' +
+      '| 총 화면 수 | | |\n' +
+      '| 카테고리 커버리지 | ' + covA.count + '/5 | ' + covB.count + '/5 |\n' +
+      '| 약관 수집 시점 | | |\n' +
+      '| 인증 수단 수 | | |\n' +
+      '| 차량번호 입력 시점 | | |\n' +
+      '| 보험료 산출 시점 | | |\n\n' +
+      '## 1. 플로우 전체 구조\n' +
+      '좌우 비교 표로 출력. 뱃지는 반드시 아래 4가지 중 하나만 사용:\n' +
+      '공통 단계 / A만 있음 / B만 있음 / 같은 단계 다른 방식\n\n' +
+      '| 순서 | ' + nameA + ' 단계 | ' + nameB + ' 단계 | 뱃지 |\n' +
+      '|------|-------------|-------------|------|\n\n' +
+      '## 2. 카테고리별 수집 전략 비교\n\n' +
+      '### ① 약관 동의\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
+      '| 수집 시점 | | |\n| 동의 화면 수 | | |\n| 필수·선택 구분 방식 | | |\n| 일괄 처리 vs 단계별 분산 | | |\n| 할인특약 조회 동의 포함 여부 | | |\n| 특이사항 | | |\n\n' +
+      '### ② 인적사항 수집\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
+      '| 수집 시점 | | |\n| 인증 수단 종류 및 수 | | |\n| 이름·주민번호 입력 방식 | | |\n| 특이사항 | | |\n\n' +
+      '### ③ 자동차 정보 수집\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
+      '| 수집 시점 | | |\n| 차량번호 입력 시점 | | |\n| 차량 조회 방식 | | |\n| 부속품·옵션 입력 여부 | | |\n| 특이사항 | | |\n\n' +
+      '### ④ 운전자 정보 수집\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
+      '| 수집 시점 | | |\n| 운전자 범위 선택 방식 | | |\n| 특이사항 | | |\n\n' +
+      '### ⑤ 보험료·특약\n' +
+      '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
+      '| 보험료 산출 시점 | | |\n| 특약 선택 시점 (산출 전/후) | | |\n| 보상범위 수정 가능 여부 | | |\n| 특약 사진 등록 요구 여부 | | |\n| 특이사항 | | |\n\n' +
+      '## 3. 이탈 위험 구간 분석\n' +
+      '가입을 포기하고 싶어질 가능성이 높은 구간을 분석합니다.\n' +
+      '위험도: 높음 / 중간 / 낮음\n\n' +
+      '| 구간 | 이탈 위험도 | 위험한 이유 | ' + nameA + ' 대응 방식 | ' + nameB + ' 대응 방식 |\n' +
+      '|------|-----------|------------|-----------------|----------------|\n\n' +
+      '## 4. 총평\n' +
+      '◆ ' + nameA + '이 잘하는 것\n' +
+      '◆ ' + nameA + '의 아쉬운 점\n' +
+      '◆ ' + nameB + '이 잘하는 것\n' +
+      '◆ ' + nameB + '의 아쉬운 점\n' +
+      '◆ 두 회사 공통 개선 필요 사항\n' +
+      '→ 바로 적용할 수 있는 것 (→ 로 시작, 3개 이상, 구체적으로)\n\n' +
+      '한국어. 쉬운 말로. 빠짐없이.';
+
+    const res = await api('POST', '/ai/analyze', {
+      system: systemPrompt,
+      messages: [{role:'user', content: userContent}],
+      max_tokens: maxTokens
+    });
+
+    if (!res) throw new Error('분석 요청 실패');
+    const text = (res.content || []).find(function(b){return b.type==='text';});
+    const resultText = text ? text.text : '';
+    renderFlowResult(resultWrap, resultText, nameA, nameB, isSameCompany, maxTokens);
+
+  } catch(e) {
+    resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px">' +
+      '<div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">플로우 분석 오류: ' + e.message + '</div>' +
+      '</div>';
+  }
+}
+
+function renderFlowResult(wrap, text, nameA, nameB, isSame, maxTokens) {
+  maxTokens = maxTokens || 4000;
+
+  function flowBadge(val) {
+    var v = val.trim();
+    if (v.indexOf('공통 단계') !== -1)           return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">공통 단계</span>';
+    if (v.indexOf('A만 있음') !== -1)            return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#E6F1FB;color:#185FA5">A만 있음</span>';
+    if (v.indexOf('B만 있음') !== -1)            return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EEEDFE;color:#534AB7">B만 있음</span>';
+    if (v.indexOf('같은 단계 다른 방식') !== -1) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">같은 단계 다른 방식</span>';
+    if (v.indexOf('높음') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">높음</span>';
+    if (v.indexOf('중간') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">중간</span>';
+    if (v.indexOf('낮음') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">낮음</span>';
+    return '<span style="font-size:14px;color:var(--text-secondary)">' + v + '</span>';
+  }
+
+  function parseSummaryCards(text) {
+    var lines = text.split('\n');
+    var summaryStart = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf('## SUMMARY') === 0) { summaryStart = i; break; }
+    }
+    if (summaryStart === -1) return '';
+    var rows = [];
+    for (var i = summaryStart + 1; i < lines.length; i++) {
+      var l = lines[i];
+      if (l.indexOf('## ') === 0) break;
+      if (l.indexOf('|') === 0 && !l.match(/^\|[-| :]+\|$/)) {
+        var cells = l.slice(1, -1).split('|').map(function(c){return c.trim();});
+        if (cells.length >= 3 && cells[0].indexOf('항목') === -1 && cells[0].indexOf('---') === -1) {
+          rows.push(cells);
+        }
+      }
+    }
+    if (!rows.length) return '';
+    var cards = rows.slice(0, 6).map(function(r) {
+      return '<div style="background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px">' +
+        '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;font-weight:500">' + (r[0]||'') + '</div>' +
+        '<div style="display:flex;gap:10px;align-items:flex-start">' +
+          '<div style="flex:1">' +
+            '<div style="font-size:10px;color:var(--primary);font-weight:600;margin-bottom:2px">' + nameA + '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:var(--text-primary)">' + (r[1]||'-') + '</div>' +
+          '</div>' +
+          '<div style="color:var(--border);font-size:12px;margin-top:12px">vs</div>' +
+          '<div style="flex:1">' +
+            '<div style="font-size:10px;color:#534AB7;font-weight:600;margin-bottom:2px">' + nameB + '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:var(--text-primary)">' + (r[2]||'-') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">' + cards + '</div>';
+  }
+
+  function md2flowReport(t) {
+    var lines = t.split('\n');
+    var html = '';
+    var inTable = false;
+    var tableRows = [];
+    var tableHeaders = [];
+    var sectionIdx = 0;
+    var skipSummary = false;
+    var sectionColors = [
+      {bg:'#FFF0EB',txt:'#FF4600'},
+      {bg:'#E6F1FB',txt:'#185FA5'},
+      {bg:'#EAF3DE',txt:'#3B6D11'},
+      {bg:'#EEEDFE',txt:'#534AB7'},
+    ];
+
+    function flushTable() {
+      if (!tableRows.length) return;
+      var isBadgeTable = tableHeaders.some(function(h){ return h.indexOf('뱃지') !== -1 || h.indexOf('위험도') !== -1 || h.indexOf('상태') !== -1; });
+      var thtml = '<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:auto">' +
+        '<thead><tr style="background:var(--gray-50)">';
+      tableHeaders.forEach(function(h) {
+        thtml += '<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:13px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">' + h + '</th>';
+      });
+      thtml += '</tr></thead><tbody>';
+      tableRows.forEach(function(row) {
+        thtml += '<tr>';
+        row.forEach(function(cell, ci) {
+          var isBadgeCol = isBadgeTable && tableHeaders[ci] && (tableHeaders[ci].indexOf('뱃지') !== -1 || tableHeaders[ci].indexOf('위험도') !== -1 || tableHeaders[ci].indexOf('상태') !== -1);
+          var cellHtml = isBadgeCol ? flowBadge(cell) : '<span style="color:var(--text-primary)">' + cell + '</span>';
+          thtml += '<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5">' + cellHtml + '</td>';
+        });
+        thtml += '</tr>';
+      });
+      thtml += '</tbody></table></div>';
+      html += thtml;
+      tableRows = []; tableHeaders = []; inTable = false;
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+
+      if (line.indexOf('## SUMMARY') === 0) { skipSummary = true; continue; }
+      if (skipSummary && line.indexOf('## ') === 0) skipSummary = false;
+      if (skipSummary) continue;
+
+      if (line.indexOf('## ') === 0) {
+        flushTable();
+        var title = line.replace('## ', '').trim();
+        var sc = sectionColors[sectionIdx % sectionColors.length];
+        sectionIdx++;
+        html += '<div style="display:flex;align-items:center;gap:8px;margin:' + (sectionIdx > 1 ? '28px' : '0') + ' 0 14px">' +
+          '<div style="width:22px;height:22px;border-radius:50%;background:' + sc.bg + ';color:' + sc.txt + ';font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + sectionIdx + '</div>' +
+          '<div style="font-size:15px;font-weight:600;color:var(--text-primary)">' + title + '</div>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.indexOf('### ') === 0) {
+        flushTable();
+        html += '<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:14px 0 6px;padding:6px 10px;background:var(--gray-50);border-radius:var(--radius-sm)">' + line.replace('### ', '') + '</div>';
+        continue;
+      }
+
+      if (line.match(/^\|[-| :]+\|$/)) continue;
+
+      if (line.indexOf('|') === 0 && line.lastIndexOf('|') === line.length - 1) {
+        var cells = line.slice(1, -1).split('|').map(function(c){return c.trim();});
+        if (!inTable) { inTable = true; tableHeaders = cells; }
+        else { tableRows.push(cells); }
+        continue;
+      }
+
+      if (inTable && line.indexOf('|') !== 0) flushTable();
+
+      if (line.indexOf('◆ ') === 0) {
+        var rest = line.replace('◆ ', '');
+        var isGood = rest.indexOf('잘하') !== -1 || rest.indexOf('강점') !== -1;
+        var isBad = rest.indexOf('아쉬') !== -1 || rest.indexOf('문제') !== -1 || rest.indexOf('위험') !== -1 || rest.indexOf('우려') !== -1;
+        var dotColor = isGood ? '#3B6D11' : isBad ? '#A32D2D' : '#534AB7';
+        html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;margin-top:5px"></div>' +
+          '<div style="font-size:14px;font-weight:500;color:var(--text-primary)">' + rest + '</div>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.indexOf('→ ') === 0) {
+        html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 14px;background:#EAF3DE;border-radius:var(--radius-md);margin-bottom:6px">' +
+          '<span style="color:#3B6D11;font-weight:700;flex-shrink:0">→</span>' +
+          '<span style="font-size:14px;color:#1F4D0A;font-weight:500">' + line.slice(2) + '</span>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.match(/^[-•·] /)) {
+        html += '<div style="display:flex;gap:8px;font-size:14px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">' +
+          '<span style="color:var(--text-tertiary);flex-shrink:0">·</span>' +
+          '<span>' + line.replace(/^[-•·] /, '') + '</span>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.trim()) {
+        html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">' +
+          line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-primary)">$1</strong>') +
+          '</div>';
+      } else {
+        html += '<div style="height:8px"></div>';
+      }
+    }
+    flushTable();
+    return html;
+  }
+
+  var summaryCards = parseSummaryCards(text);
+  var reportBody = md2flowReport(text);
+  var modeLabel = isSame ? nameA + ' 버전 비교' : nameA + ' vs ' + nameB;
+
+  wrap.innerHTML =
+    '<div id="flow-analysis-report" style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
+        '<div>' +
+          '<div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">AI 플로우 분석 결과</div>' +
+          '<div style="font-size:14px;color:var(--text-tertiary)">' + modeLabel + ' · 가입 흐름 5개 카테고리 분석 · ' + (maxTokens >= 4000 ? '상세' : '요약') + '</div>' +
+        '</div>' +
+        '<button class="btn btn-secondary btn-sm" onclick="downloadFlowReport()" style="flex-shrink:0">' +
+          '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg>' +
+          ' 이미지 저장' +
+        '</button>' +
+      '</div>' +
+      summaryCards +
+      '<div id="flow-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">' +
+        reportBody +
+      '</div>' +
+    '</div>';
+}
+
+async function downloadFlowReport() {
+  var el = document.getElementById('flow-analysis-report');
+  if (!el) return;
+  toast('이미지 저장 중...');
+  try {
+    if (!window.html2canvas) {
+      await new Promise(function(res, rej) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    var canvas = await html2canvas(el, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+    var a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = '플로우분석_' + new Date().toISOString().slice(0,10) + '.png';
+    a.click();
+    toast('저장 완료!', 'success');
+  } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
+}
+
 
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
