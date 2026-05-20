@@ -2111,7 +2111,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       userContent.push({type:'text', text: '[' + (s.screen_type_code||'?') + ' / 순서' + (s.order_no||'?') + ' / ' + getName(s.screen_type_code) + ']'});
       if (s.signed_url) {
         try {
-          var b64 = await resizeImageToBase64(s.signed_url);
+          var b64 = await resizeImageToBase64ForFlow(s.signed_url);
           userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
         } catch(e) { console.warn('이미지 로드 실패:', s.signed_url, e); }
       }
@@ -2123,7 +2123,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       userContent.push({type:'text', text: '[' + (sb.screen_type_code||'?') + ' / 순서' + (sb.order_no||'?') + ' / ' + getName(sb.screen_type_code) + ']'});
       if (sb.signed_url) {
         try {
-          var b64b = await resizeImageToBase64(sb.signed_url);
+          var b64b = await resizeImageToBase64ForFlow(sb.signed_url);
           userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64b}});
         } catch(e) { console.warn('이미지 로드 실패:', sb.signed_url, e); }
       }
@@ -3155,6 +3155,40 @@ async function confirmDeleteScreen(screenId, screenName) {
 
 
 // 이미지 URL → Canvas 리사이즈 → base64
+async function resizeImageToBase64ForFlow(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        let {width: w, height: h} = img;
+        // 가로 1500px 이하로 제한 (텍스트 밀도 유지)
+        // 세로는 2000px 이하로만 제한 (API 한도)
+        const MAX_W = 1500;
+        const MAX_H = 2000;
+        if (w > MAX_W) {
+          const ratio = MAX_W / w;
+          w = MAX_W;
+          h = Math.round(h * ratio);
+        }
+        if (h > MAX_H) {
+          const ratio = MAX_H / h;
+          h = MAX_H;
+          w = Math.round(w * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/png').split(',')[1];
+        resolve(base64);
+      } catch(e) { reject(e); }
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function resizeImageToBase64(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
