@@ -688,8 +688,14 @@ function renderSetDetail(set, allVersions) {
     </div>
     <div class="version-tabs">${versionTabs}</div>
     ${changeSummaryHtml}
-    ${isAdmin?`<div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+    ${isAdmin?`<div style="font-size:13px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>드래그로 순서 변경 · 화면 우상단 🗑️ 클릭으로 개별 삭제</div>
+    </div>
+    <div id="order-save-bar" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--primary-subtle);border:1px solid var(--primary-light);border-radius:var(--radius-md);margin-bottom:14px">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M7 2v5l3 2"/><circle cx="7" cy="7" r="6"/></svg>
+      <span style="font-size:13px;color:var(--primary);font-weight:500;flex:1">순서가 변경되었습니다. 저장하시겠어요?</span>
+      <button class="btn btn-ghost btn-sm" onclick="cancelOrderChange()">되돌리기</button>
+      <button class="btn btn-primary btn-sm" onclick="saveOrderNow()">순서 저장</button>
     </div>`:''}
     <div class="screen-grid-5" id="set-detail-grid">${screensHtml}</div>`;
 }
@@ -724,7 +730,7 @@ function onSetDrop(e,idx){
 function onSetDragEnd(e){
   e.currentTarget.style.opacity='';
   document.querySelectorAll('.draggable-card').forEach(c=>{c.classList.remove('drag-over');c.style.opacity='';});
-  if(setDragOrder) showOrderSaveModal();
+  if(setDragOrder) showOrderSaveBar(true);
   dragSrcIdx=null;
 }
 
@@ -746,36 +752,36 @@ function rerenderSetGrid(screens){
   });
 }
 
-function showOrderSaveModal(){
+function showOrderSaveBar(show){
+  let bar = document.getElementById('order-save-bar');
+  if(!bar) return;
+  bar.style.display = show ? 'flex' : 'none';
+}
+
+async function saveOrderNow(){
+  if(!setDragOrder) return;
   const savedOrder = [...setDragOrder];
-  showModal('순서를 변경하시겠어요?',
-    `<p style="font-size: 14px;color:var(--text-secondary);line-height:1.6">드래그한 순서로 변경합니다.<br>이 작업은 실제 DB에 저장됩니다.</p>`,
-    async()=>{
-      closeModal();
-      const btn = document.getElementById('modal-confirm-btn');
-      try{
-        toast('저장 중...');
-        for(let i=0;i<savedOrder.length;i++){
-          await api('PATCH',`/screens/${savedOrder[i].id}`,{order_no:i+1});
-        }
-        savedOrder.forEach((s,i)=>{s.order_no=i+1;});
-        state.currentSet.screens=savedOrder;
-        setDragOrder=null;
-        toast('순서가 저장되었습니다','success');
-        renderSetDetail(state.currentSet,[]);
-      }catch(e){
-        setDragOrder=null;
-        toast('저장 실패: '+e.message,'error');
-      }
+  const bar = document.getElementById('order-save-bar');
+  if(bar) bar.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">저장 중...</span>';
+  try{
+    for(let i=0;i<savedOrder.length;i++){
+      await api('PATCH',`/screens/${savedOrder[i].id}`,{order_no:i+1});
     }
-  );
-  // 취소 시 원복
-  setTimeout(()=>{
-    const cancelBtn=document.querySelector('#generic-modal .btn-secondary');
-    if(cancelBtn){
-      cancelBtn.onclick=()=>{setDragOrder=null;closeModal();renderSetDetail(state.currentSet,state.currentSetVersions);};
-    }
-  },50);
+    savedOrder.forEach((s,i)=>{s.order_no=i+1;});
+    state.currentSet.screens=savedOrder;
+    setDragOrder=null;
+    toast('순서가 저장되었습니다','success');
+    renderSetDetail(state.currentSet,[]);
+  }catch(e){
+    toast('저장 실패: '+e.message,'error');
+    renderSetDetail(state.currentSet,state.currentSetVersions);
+  }
+}
+
+function cancelOrderChange(){
+  setDragOrder=null;
+  showOrderSaveBar(false);
+  renderSetDetail(state.currentSet,state.currentSetVersions);
 }
 
 function openScreenDetail(screenId, setId) {
