@@ -193,6 +193,15 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
 .screen-type-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.screen-type-nav-item { display:flex; align-items:center; }
+.screen-type-section-toggle { display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 10px 4px;background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-tertiary); }
+.screen-type-section-toggle:hover { color:var(--text-secondary); }
+.screen-type-section-toggle .toggle-icon { transition:transform 0.2s;transform:rotate(-90deg); }
+.screen-type-section-toggle.open .toggle-icon { transform:rotate(0deg); }
+.screen-type-section-body { display:none;flex-direction:column; }
+.screen-type-section-body.expanded { display:flex; }
+.screen-type-section-group { border-bottom:1px solid var(--border); }
+.screen-type-section-group:last-child { border-bottom:none; }
 .function-main { flex: 1; min-width: 0; }
 .company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .chip { padding: 3px 10px; border-radius: 3px; font-size: 14px; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); }
@@ -851,12 +860,77 @@ function openScreenDetail(screenId, setId) {
 // ===================== FUNCTION VIEW =====================
 async function renderFunctionView() {
   const navEl=document.getElementById('screen-type-nav');
-  const categories=[...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
-  navEl.innerHTML=categories.map(cat=>`
-    <div>
-      <div class="screen-type-section-label">${cat}</div>
-      ${state.screenTypes.filter(s=>s.category===cat).map(s=>`<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">${s.name}</button>`).join('')}
-    </div>`).join('');
+
+  // 검색창 + 카운트 포함 사이드바 렌더
+  async function buildScreenTypeNav(filterText='') {
+    // 카운트 캐시
+    if (!state._screenTypeCounts) {
+      try { state._screenTypeCounts = await api('GET', '/screens/count-by-type') || {}; }
+      catch(e) { state._screenTypeCounts = {}; }
+    }
+    const counts = state._screenTypeCounts;
+    const q = filterText.trim().toLowerCase();
+    const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
+
+    navEl.innerHTML = `
+      <div style="padding:8px 8px 6px">
+        <div style="position:relative">
+          <input
+            id="screen-type-search"
+            type="text"
+            placeholder="화면 유형 검색..."
+            value="${filterText}"
+            oninput="buildScreenTypeNavDebounced(this.value)"
+            style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"
+          />
+          <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
+        </div>
+      </div>
+      ${categories.map(cat => {
+        let items = state.screenTypes.filter(s => s.category === cat);
+        if (q) items = items.filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
+        if (!items.length) return '';
+        // 카운트 많은 순 정렬
+        items = [...items].sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
+        return `<div class="screen-type-section-group">
+          <button class="screen-type-section-toggle" onclick="toggleScreenTypeSection(this)" data-cat="${cat}">
+            <span>${cat}</span>
+            <svg class="toggle-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="screen-type-section-body${q?' expanded':''}">
+            ${items.map(s => {
+              const cnt = counts[s.code] || 0;
+              return `<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">
+                <span style="flex:1;text-align:left">${s.name}</span>
+                ${cnt ? `<span style="font-size:11px;color:var(--text-tertiary);flex-shrink:0;margin-left:4px">${cnt}</span>` : ''}
+              </button>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}`;
+
+    // 현재 선택 항목 active 복원
+    if (currentFunctionType) {
+      document.querySelector(`.screen-type-nav-item[data-code="${currentFunctionType}"]`)?.classList.add('active');
+      // 해당 섹션 펼치기
+      const activeBtn = document.querySelector(`.screen-type-nav-item[data-code="${currentFunctionType}"]`);
+      activeBtn?.closest('.screen-type-section-body')?.classList.add('expanded');
+    }
+  }
+
+  let _navDebounceTimer = null;
+  window.buildScreenTypeNavDebounced = function(val) {
+    clearTimeout(_navDebounceTimer);
+    _navDebounceTimer = setTimeout(() => buildScreenTypeNav(val), 200);
+  };
+
+  window.toggleScreenTypeSection = function(btn) {
+    const body = btn.nextElementSibling;
+    body.classList.toggle('expanded');
+    btn.classList.toggle('open');
+  };
+
+  await buildScreenTypeNav();
 
   const chipsEl=document.getElementById('company-chips');
   chipsEl.innerHTML=`<button class="chip active" onclick="filterFunctionCompany('all',this)">전체</button>`+
@@ -870,7 +944,16 @@ let currentFunctionType=null, currentFunctionCompany='all';
 async function loadFunctionScreens(typeCode) {
   currentFunctionType=typeCode;
   document.querySelectorAll('.screen-type-nav-item').forEach(el=>el.classList.remove('active'));
-  document.querySelector(`[data-code="${typeCode}"]`)?.classList.add('active');
+  const activeEl = document.querySelector(`[data-code="${typeCode}"]`);
+  if (activeEl) {
+    activeEl.classList.add('active');
+    // 해당 섹션 자동 펼치기
+    const body = activeEl.closest('.screen-type-section-body');
+    if (body) {
+      body.classList.add('expanded');
+      body.previousElementSibling?.classList.add('open');
+    }
+  }
   const gridEl=document.getElementById('function-grid');
   gridEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
