@@ -747,29 +747,32 @@ function rerenderSetGrid(screens){
 }
 
 function showOrderSaveModal(){
+  const savedOrder = [...setDragOrder];
   showModal('순서를 변경하시겠어요?',
     `<p style="font-size: 14px;color:var(--text-secondary);line-height:1.6">드래그한 순서로 변경합니다.<br>이 작업은 실제 DB에 저장됩니다.</p>`,
     async()=>{
+      closeModal();
+      const btn = document.getElementById('modal-confirm-btn');
       try{
-        // 각 화면의 order_no를 새 순서대로 PATCH
-        for(let i=0;i<setDragOrder.length;i++){
-          await api('PATCH',`/screens/${setDragOrder[i].id}`,{order_no:i+1});
+        toast('저장 중...');
+        for(let i=0;i<savedOrder.length;i++){
+          await api('PATCH',`/screens/${savedOrder[i].id}`,{order_no:i+1});
         }
-        // state 업데이트
-        setDragOrder.forEach((s,i)=>{s.order_no=i+1;});
-        state.currentSet.screens=setDragOrder;
+        savedOrder.forEach((s,i)=>{s.order_no=i+1;});
+        state.currentSet.screens=savedOrder;
         setDragOrder=null;
-        closeModal();
         toast('순서가 저장되었습니다','success');
         renderSetDetail(state.currentSet,[]);
-      }catch(e){toast(e.message,'error');}
+      }catch(e){
+        setDragOrder=null;
+        toast('저장 실패: '+e.message,'error');
+      }
     }
   );
   // 취소 시 원복
   setTimeout(()=>{
     const cancelBtn=document.querySelector('#generic-modal .btn-secondary');
     if(cancelBtn){
-      const orig=cancelBtn.onclick;
       cancelBtn.onclick=()=>{setDragOrder=null;closeModal();renderSetDetail(state.currentSet,state.currentSetVersions);};
     }
   },50);
