@@ -188,7 +188,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* FUNCTION VIEW */
 .function-layout { display: flex; gap: 16px; }
-.screen-type-nav { width: 180px; min-width: 180px; overflow: hidden; display:flex; flex-direction:column; }
+.screen-type-nav { width: 400px; min-width: 400px; overflow: hidden; display:flex; flex-direction:column; }
 .screen-type-section-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
 .screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
@@ -204,8 +204,8 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-type-section-group:last-child { border-bottom:none; }
 .function-main { flex: 1; min-width: 0; }
 .company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; min-width: 480px; }
-.chip { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight:500; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); height:50px; min-width:80px; display:inline-flex; align-items:center; justify-content:center; }
-.chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+.chip { padding: 8px 16px; border-radius: 8px; font-size: 16px; font-weight:400; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); height:50px; min-width:80px; display:inline-flex; align-items:center; justify-content:center; }
+.chip.active { background: var(--primary); border-color: var(--primary); color: white; font-weight:700; }
 
 /* UPLOAD */
 .upload-zone { border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); padding: 40px 20px; text-align: center; cursor: pointer; transition: all var(--transition); background: var(--gray-0); }
@@ -425,6 +425,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
           <div class="screen-type-nav" id="screen-type-nav"></div>
           <div class="function-main">
             <div class="company-chips" id="company-chips"></div>
+            <div id="function-search-bar" style="margin-bottom:12px"></div>
             <div id="function-grid"></div>
           </div>
         </div>
@@ -890,14 +891,6 @@ async function renderFunctionView() {
     // 검색 중일 땐 기존 단일 컬럼 모드
     if (q) {
       navEl.innerHTML = `
-        <div style="padding:8px 8px 6px">
-          <div style="position:relative">
-            <input id="screen-type-search" type="text" placeholder="화면 유형 검색..." value="${filterText}"
-              oninput="buildScreenTypeNavDebounced(this.value)"
-              style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"/>
-            <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
-          </div>
-        </div>
         <div style="flex:1;overflow-y:auto">
           ${categories.map(cat => {
             let items = state.screenTypes.filter(s => s.category === cat);
@@ -937,15 +930,17 @@ async function renderFunctionView() {
       .filter(s => s.category === _selectedCat)
       .sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
 
+    // 검색바를 function-search-bar 영역에 렌더링
+    const searchBarEl = document.getElementById('function-search-bar');
+    if (searchBarEl) {
+      searchBarEl.innerHTML = `<div style="position:relative;max-width:400px">
+        <input id="screen-type-search" type="text" placeholder="화면 유형 검색..." value=""
+          oninput="buildScreenTypeNavDebounced(this.value)"
+          style="width:100%;box-sizing:border-box;padding:8px 12px 8px 34px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"/>
+        <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="14" height="14" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
+      </div>`;
+    }
     navEl.innerHTML = `
-      <div style="padding:8px 8px 6px">
-        <div style="position:relative">
-          <input id="screen-type-search" type="text" placeholder="검색..." value=""
-            oninput="buildScreenTypeNavDebounced(this.value)"
-            style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"/>
-          <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
-        </div>
-      </div>
       <div style="display:flex;flex:1;overflow:hidden;border-top:1px solid var(--border)">
         <!-- 왼쪽: 카테고리 -->
         <div id="cat-col" style="width:96px;min-width:96px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
@@ -987,7 +982,12 @@ async function renderFunctionView() {
   let _navDebounceTimer = null;
   window.buildScreenTypeNavDebounced = function(val) {
     clearTimeout(_navDebounceTimer);
-    _navDebounceTimer = setTimeout(() => buildScreenTypeNav(val), 200);
+    _navDebounceTimer = setTimeout(() => {
+      buildScreenTypeNav(val);
+      // 검색바 값 동기화
+      const sb = document.getElementById('screen-type-search');
+      if (sb && sb.value !== val) sb.value = val;
+    }, 200);
   };
 
   window.toggleScreenTypeSection = function(btn) {
