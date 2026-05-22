@@ -382,6 +382,9 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
         <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>화면 비교
         </button>
+        <button class="nav-item" id="nav-darkpattern" onclick="navigate('darkpattern')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 10.5v.5"/></svg>다크패턴 검수
+        </button>
       </div>
       <div class="nav-section" id="admin-nav" style="display:none">
         <div class="nav-section-label">관리자</div>
@@ -430,6 +433,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <div class="page" id="page-upload"><div id="upload-view"></div></div>
       <div class="page" id="page-master"><div id="master-view"></div></div>
       <div class="page" id="page-rename"><div id="rename-view"></div></div>
+      <div class="page" id="page-darkpattern"><div id="darkpattern-view"></div></div>
     </div>
   </div>
 </div>
@@ -547,7 +551,7 @@ function navigate(page) {
   document.getElementById(`nav-${page}`)?.classList.add('active');
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환'};
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
   if (page==='company') renderCompanyView();
@@ -556,6 +560,7 @@ function navigate(page) {
   if (page==='upload') renderUploadView();
   if (page==='master') renderMasterView();
   if (page==='rename') renderRenameView();
+  if (page==='darkpattern') renderDarkpatternView();
 }
 
 // ===================== COMPANY VIEW =====================
@@ -2513,6 +2518,521 @@ async function downloadFlowReport() {
 }
 
 
+
+// ══════════════════════════════════════════════════════════
+// 다크패턴 검수
+// ══════════════════════════════════════════════════════════
+
+function renderDarkpatternView() {
+  const el = document.getElementById('darkpattern-view');
+  el.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">다크패턴 검수</div>
+        <div class="page-desc">화면 이미지를 업로드하면 금감원·방통위 가이드라인 기반으로 다크패턴을 분석합니다</div>
+      </div>
+    </div>
+
+    <!-- 업로드 영역 -->
+    <div style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px">화면 업로드</div>
+      <div id="dp-drop-zone"
+        style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:32px;text-align:center;cursor:pointer;transition:all 150ms;background:var(--gray-50)"
+        onclick="document.getElementById('dp-file-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--primary-subtle)'"
+        ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--gray-50)'"
+        ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='var(--gray-50)';dpHandleDrop(event)">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" style="margin-bottom:8px"><path d="M14 18V8M9 13l5-5 5 5M5 22h18"/></svg>
+        <div style="font-size:14px;color:var(--text-secondary);font-weight:500">이미지를 드래그하거나 클릭해서 업로드</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">PNG, JPG · 단일 화면 또는 여러 화면 (최대 20장)</div>
+      </div>
+      <input type="file" id="dp-file-input" accept="image/*" multiple style="display:none" onchange="dpHandleFiles(this.files)">
+
+      <!-- 미리보기 -->
+      <div id="dp-preview" style="display:none;margin-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary)" id="dp-preview-count"></div>
+          <button class="btn btn-ghost btn-sm" onclick="dpClearAll()">전체 삭제</button>
+        </div>
+        <div id="dp-preview-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- 추가 분석 요청 -->
+    <div style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">추가 분석 요청 <span style="font-weight:400;color:var(--text-tertiary)">(선택)</span></div>
+      <textarea id="dp-extra" placeholder="특별히 집중해서 분석해야 할 부분이 있으면 입력해주세요. 예) 동의 버튼 배치 방식이 잘못된 계층구조에 해당하는지 확인해줘" style="width:100%;box-sizing:border-box;min-height:72px;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);resize:vertical;font-family:inherit"></textarea>
+    </div>
+
+    <!-- 분석 버튼 -->
+    <div style="display:flex;gap:10px;margin-bottom:28px">
+      <button class="btn btn-primary" onclick="startDarkpatternAnalysis(4000)" id="dp-btn-detail">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M6.5 4v3M6.5 8.5v.5"/></svg>
+        다크패턴 검수 · 상세
+      </button>
+      <button class="btn btn-secondary" onclick="startDarkpatternAnalysis(2000)" id="dp-btn-summary">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h9M2 7h6M2 10h7"/></svg>
+        다크패턴 검수 · 요약
+      </button>
+    </div>
+
+    <!-- 결과 -->
+    <div id="dp-result-wrap" style="display:none"></div>
+  `;
+
+  // 상태 초기화
+  window._dpFiles = [];
+}
+
+// 파일 드롭 핸들러
+function dpHandleDrop(e) {
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  dpAddFiles(files);
+}
+
+function dpHandleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  dpAddFiles(files);
+  document.getElementById('dp-file-input').value = '';
+}
+
+function dpAddFiles(files) {
+  if (!window._dpFiles) window._dpFiles = [];
+  const remaining = 20 - window._dpFiles.length;
+  const toAdd = files.slice(0, remaining);
+  if (files.length > remaining) toast(`최대 20장까지 업로드 가능합니다 (${remaining}장 추가됨)`, 'default');
+  toAdd.forEach(f => window._dpFiles.push(f));
+  dpRenderPreview();
+}
+
+function dpRenderPreview() {
+  const files = window._dpFiles || [];
+  const previewWrap = document.getElementById('dp-preview');
+  const grid = document.getElementById('dp-preview-grid');
+  const countEl = document.getElementById('dp-preview-count');
+  if (!files.length) { previewWrap.style.display = 'none'; return; }
+  previewWrap.style.display = 'block';
+  countEl.textContent = files.length + '장 업로드됨' + (files.length > 1 ? ' · 순서대로 플로우 분석' : ' · 단일 화면 분석');
+  grid.innerHTML = files.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div style="position:relative;width:80px;flex-shrink:0">
+      <img src="${url}" style="width:80px;height:120px;object-fit:cover;border-radius:var(--radius-md);border:1px solid var(--border)">
+      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.55);color:#fff;font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px">${i+1}</div>
+      <button onclick="dpRemoveFile(${i})" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 1l6 6M7 1L1 7"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function dpRemoveFile(idx) {
+  window._dpFiles.splice(idx, 1);
+  dpRenderPreview();
+}
+
+function dpClearAll() {
+  window._dpFiles = [];
+  dpRenderPreview();
+}
+
+async function startDarkpatternAnalysis(maxTokens) {
+  const files = window._dpFiles || [];
+  if (!files.length) { toast('화면 이미지를 먼저 업로드해주세요', 'error'); return; }
+
+  const resultWrap = document.getElementById('dp-result-wrap');
+  const extra = (document.getElementById('dp-extra') || {}).value || '';
+  const isMulti = files.length > 1;
+
+  resultWrap.style.display = 'block';
+  resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div class="spinner"></div>
+      <span style="font-size:14px;font-weight:500">다크패턴 검수 중... ${maxTokens >= 4000 ? '(상세)' : '(요약)'}</span>
+      <span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ${files.length}장 분석</span>
+    </div>
+  </div>`;
+  resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
+
+  try {
+    // 이미지 base64 변환
+    const toBase64 = (file) => new Promise((res, rej) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          let w = img.width, h = img.height;
+          const MAX_W = 1500, MAX_H = 2000;
+          if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+          if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          res(canvas.toDataURL('image/png').split(',')[1]);
+        } catch(e) { rej(e); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('이미지 로드 실패')); };
+      img.src = url;
+    });
+
+    // 유저 메시지 구성
+    const userContent = [];
+    let contextText = isMulti
+      ? `[분석 모드: 플로우 분석 (${files.length}장)]\n이미지는 가입 플로우 순서대로 업로드되었습니다. 전체 흐름을 고려하여 다크패턴을 분석해주세요.`
+      : `[분석 모드: 단일 화면 분석]`;
+    if (extra) contextText += '\n\n[추가 분석 요청]\n' + extra;
+    userContent.push({type:'text', text: contextText});
+
+    for (let i = 0; i < files.length; i++) {
+      userContent.push({type:'text', text: `[화면 ${i+1}/${files.length}]`});
+      const b64 = await toBase64(files[i]);
+      userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
+    }
+
+    const systemPrompt = `당신은 금융·디지털 서비스 다크패턴 전문 검수 담당자입니다.
+아래 두 가지 공식 가이드라인을 기준으로 화면을 검수합니다:
+
+[참고 가이드라인 1] 방송통신위원회 「디지털서비스 이용자보호를 위한 다크패턴 사례집」 (2025.01)
+- 6대 유형: 반복적 간섭(Nagging) / 경로 방해(Obstruction) / 규정 숨김(Sneaking) / 인터페이스 조작(Interface Interference) / 행동 강요(Forced Action) / 사회적 증거 조작(Social Proof)
+
+[참고 가이드라인 2] 금융위원회·금융감독원 「온라인 금융상품 판매 관련 다크패턴 가이드라인」 (2025.12)
+- 4대 범주 15개 유형:
+  · 오도형: 설명절차 과도한 축약 / 속임수 질문 / 잘못된 계층구조 / 특정옵션 사전선택 / 허위광고 및 기만적 유인행위
+  · 방해형: 취소·탈퇴 등의 방해 / 숨겨진 정보 / 가격비교 방해 / 클릭 피로감 유발
+  · 압박형: 계약과정 중 기습적 광고 / 반복간섭 / 감정적 언어사용 / 감각조작 / 다른 소비자의 활동 알림
+  · 편취유도형: 순차공개 가격책정
+
+[한화손보 다크패턴 자체점검 체크리스트 기준]
+검수 결과는 아래 체크리스트 항목별로 O(해당) / X(해당없음) / △(보류·확인필요) 로 판정합니다.
+
+I. 오도형
+1. 설명절차의 과도한 축약
+  - 주요 설명내용을 읽지 않고 다음 단계 진행 가능 여부
+  - 확인페이지 등 단계 축약 여부
+  - 이해여부 개별확인 없이 일괄처리 여부
+  - 중요사항 확인을 다른 화면과 통합·생략 여부
+
+2. 속임수 질문
+  - 두 가지 이상 질문 동시 제시로 착오 유발 여부
+  - 모호하거나 다의적 표현 사용 여부
+  - 이중부정문 등으로 의도치 않은 선택 유도 여부
+
+3. 잘못된 계층구조
+  - 사업자에게 유리한 항목이 색상·크기·위치에서 두드러지게 강조되어 있는가
+  - 선택사항이 필수인 것처럼 오인될 수 있는 화면 구성
+  - 동의/비동의가 동등한 시각적 수준으로 제공되지 않는가
+
+4. 특정 옵션의 사전선택
+  - 전체선택·전체취소 버튼 미제공 여부
+  - 사업자에게 유리한 옵션이 사전 선택(기본값)되어 있는가
+  - 금융소비자의 명시적 선택 없이 동의 효과 발생 여부
+
+5. 허위광고 및 기만적인 유인행위
+  - 객관적 근거 없이 유리한 혜택만 강조하거나 비교 기준 불명확
+  - 혜택 조건이 있음에도 제한 없이 주어지는 것처럼 표시
+  - 불확실한 사항에 단정적·확정적 표현 사용
+
+II. 방해형
+1. 취소·탈퇴 등의 방해
+  - 가입 절차 대비 취소·해지 절차가 더 복잡한가
+  - 취소·해지 경로가 다른 메뉴에 숨겨져 있거나 불명확한가
+  - 비대면 가입 상품임에도 해지 시 상담원 연결 필수 여부
+
+2. 숨겨진 정보
+  - 중요 정보가 '자세히 보기' 클릭 시에만 확인 가능한가
+  - 혜택 정보는 크고 명확하게, 유의사항은 흐리거나 작게 표시하는가
+  - 금융소비자에게 불이익이 될 수 있는 사항이 인지하기 어렵게 되어 있는가
+
+3. 가격비교 방해
+  - 동일 화면 내 상품별 금리 표시 기준에 일관성이 없는가
+  - 우대 조건 없이 최대 혜택만 강조하고 있는가
+
+4. 클릭 피로감 유발
+  - 계약해지·청약철회 메뉴 접근이 어렵게 구성되어 있는가
+  - 광고 팝업을 닫기 위해 여러 번 확인이 필요한가
+
+III. 압박형
+1. 계약과정 중 기습적 광고
+  - 계약 진행 중 거래 목적과 무관한 상품·서비스 광고 노출
+  - 부수적 서비스가 주된 상품 가입에 필수인 것처럼 오인 가능한가
+
+2. 반복간섭
+  - 거부·유보 의사를 표시했음에도 동일 요구를 2회 이상 반복하는가
+  - '다음에 하기' 선택 후에도 재확인 팝업이 뜨는가
+
+3. 감정적 언어사용
+  - 불안·부담·기회를 자극하는 감정적 표현으로 특정 선택 유도
+  - 감정적 언어로 금융상품 성격을 오인할 소지가 있는가
+
+4. 감각조작
+  - 특정 선택 유도를 위해 색상·깜빡임·강조 효과를 반복 사용하는가
+
+5. 다른 소비자의 활동 알림
+  - 다른 소비자의 활동 상태를 거짓으로 알리고 있는가
+
+IV. 편취유도형
+1. 순차공개 가격책정
+  - 첫 화면에서 실제 적용 어려운 최대 혜택만 표시하고 계약 진행 중 추가 비용·조건이 단계적으로 드러나는 구조인가
+  - 가격·이율이 변동될 수 있다는 사실을 불명확하게 고지하였는가
+
+[작성 원칙]
+- 화면에서 실제로 확인 가능한 사항만 판정. 확인 불가 항목은 반드시 △(보류)로 표시
+- 단일 화면: 해당 화면 기준으로 판정
+- 여러 화면(플로우): 전체 흐름을 고려하여 각 화면 번호를 명시하며 판정
+- 쉬운 말로 서술. 전문 용어 지양
+- 위험도: 높음 / 중간 / 낮음 으로 표시
+
+[응답 형식 — 반드시 아래 구조로 출력]
+
+## 검수 요약
+| 항목 | 결과 |
+|------|------|
+| 분석 화면 수 | N장 |
+| 다크패턴 감지 항목 | N개 |
+| 위험도 높음 | N개 |
+| 위험도 중간 | N개 |
+| 위험도 낮음 | N개 |
+
+## 체크리스트 판정 결과
+
+### I. 오도형
+| 유형 | 항목 | 판정 | 위험도 | 근거 |
+|------|------|------|--------|------|
+(O=해당 / X=해당없음 / △=보류)
+X 항목은 근거 생략 가능
+
+### II. 방해형
+(동일 구조)
+
+### III. 압박형
+(동일 구조)
+
+### IV. 편취유도형
+(동일 구조)
+
+## 추가 우려사항
+체크리스트에 없지만 가이드라인 정신상 우려되는 사항이 있으면 아래 형식으로 추가:
+| 항목 | 위험도 | 근거 및 개선 방향 |
+
+## 종합 의견
+전체적인 다크패턴 수준 평가 및 우선 개선 권고사항 (→ 로 시작, 3개 이상)
+
+한국어. 쉬운 말로. 화면에서 확인 가능한 것만.`;
+
+    const res = await api('POST', '/ai/analyze', {
+      system: systemPrompt,
+      messages: [{role:'user', content: userContent}],
+      max_tokens: maxTokens
+    });
+
+    if (!res) throw new Error('분석 요청 실패');
+    const text = (res.content || []).find(b => b.type === 'text')?.text || '';
+    renderDarkpatternResult(resultWrap, text, files.length, maxTokens);
+
+  } catch(e) {
+    resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
+      <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">검수 오류: ${e.message}</div>
+    </div>`;
+  }
+}
+
+function renderDarkpatternResult(wrap, text, fileCount, maxTokens) {
+
+  function dpBadge(val) {
+    const v = (val||'').trim();
+    if (v === 'O' || v.includes('O(해당)')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">O 해당</span>';
+    if (v === 'X' || v.includes('X(')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">X 해당없음</span>';
+    if (v === '△' || v.includes('△') || v.includes('보류')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">△ 보류</span>';
+    return '<span style="font-size:12px;color:var(--text-secondary)">' + v + '</span>';
+  }
+
+  function riskBadge(val) {
+    const v = (val||'').trim();
+    if (v.includes('높음')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">높음</span>';
+    if (v.includes('중간')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">중간</span>';
+    if (v.includes('낮음')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">낮음</span>';
+    if (!v || v === '-') return '<span style="font-size:11px;color:var(--text-tertiary)">-</span>';
+    return '<span style="font-size:11px;color:var(--text-secondary)">' + v + '</span>';
+  }
+
+  function md2dpReport(t) {
+    const lines = t.split('\n');
+    let html = '';
+    let inTable = false, tableRows = [], tableHeaders = [];
+    let sectionIdx = 0;
+    let skipSummary = false;
+    const sectionColors = [
+      {bg:'#FCEBEB',txt:'#A32D2D'},
+      {bg:'#FAEEDA',txt:'#854F0B'},
+      {bg:'#E6F1FB',txt:'#185FA5'},
+      {bg:'#EEEDFE',txt:'#534AB7'},
+    ];
+
+    function flushTable() {
+      if (!tableRows.length) return;
+      const isChecklist = tableHeaders.some(h => h.includes('판정') || h.includes('결과'));
+      const isRisk = tableHeaders.some(h => h.includes('위험도'));
+      let thtml = '<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto">' +
+        '<thead><tr style="background:var(--gray-50)">';
+      tableHeaders.forEach(h => {
+        thtml += '<th style="padding:8px 12px;text-align:left;font-weight:500;font-size:12px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">' + h + '</th>';
+      });
+      thtml += '</tr></thead><tbody>';
+      tableRows.forEach(row => {
+        thtml += '<tr>';
+        row.forEach((cell, ci) => {
+          const h = tableHeaders[ci] || '';
+          let cellHtml;
+          if (h.includes('판정')) cellHtml = dpBadge(cell);
+          else if (h.includes('위험도')) cellHtml = riskBadge(cell);
+          else if (h.includes('결과') && (cell === 'O' || cell === 'X' || cell === '△')) cellHtml = dpBadge(cell);
+          else cellHtml = '<span style="color:var(--text-primary);line-height:1.5">' + cell + '</span>';
+          thtml += '<td style="padding:8px 12px;border-bottom:0.5px solid var(--border);vertical-align:top">' + cellHtml + '</td>';
+        });
+        thtml += '</tr>';
+      });
+      thtml += '</tbody></table></div>';
+      html += thtml;
+      tableRows = []; tableHeaders = []; inTable = false;
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (line.startsWith('## 검수 요약')) { skipSummary = true; continue; }
+      if (skipSummary && line.startsWith('## ')) skipSummary = false;
+      if (skipSummary) continue;
+
+      if (line.startsWith('## ')) {
+        flushTable();
+        const title = line.replace('## ', '').trim();
+        const sc = sectionColors[sectionIdx % sectionColors.length];
+        sectionIdx++;
+        html += '<div style="display:flex;align-items:center;gap:8px;margin:' + (sectionIdx > 1 ? '28px' : '0') + ' 0 14px">' +
+          '<div style="width:22px;height:22px;border-radius:50%;background:' + sc.bg + ';color:' + sc.txt + ';font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + sectionIdx + '</div>' +
+          '<div style="font-size:15px;font-weight:600;color:var(--text-primary)">' + title + '</div>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.startsWith('### ')) {
+        flushTable();
+        html += '<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:12px 0 6px;padding:5px 10px;background:var(--gray-50);border-radius:var(--radius-sm)">' + line.replace('### ', '') + '</div>';
+        continue;
+      }
+
+      if (line.match(/^\|[-| :]+\|$/)) continue;
+
+      if (line.startsWith('|') && line.lastIndexOf('|') === line.length - 1) {
+        const cells = line.slice(1, -1).split('|').map(c => c.trim());
+        if (!inTable) { inTable = true; tableHeaders = cells; }
+        else { tableRows.push(cells); }
+        continue;
+      }
+
+      if (inTable && !line.startsWith('|')) flushTable();
+
+      if (line.startsWith('→ ')) {
+        html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 14px;background:#EAF3DE;border-radius:var(--radius-md);margin-bottom:6px">' +
+          '<span style="color:#3B6D11;font-weight:700;flex-shrink:0">→</span>' +
+          '<span style="font-size:14px;color:#1F4D0A;font-weight:500">' + line.slice(2) + '</span>' +
+          '</div>';
+        continue;
+      }
+
+      if (line.match(/^[-•·] /)) {
+        html += '<div style="display:flex;gap:8px;font-size:13px;color:var(--text-secondary);padding:3px 14px;line-height:1.6">' +
+          '<span style="color:var(--text-tertiary);flex-shrink:0">·</span>' +
+          '<span>' + line.replace(/^[-•·] /, '') + '</span></div>';
+        continue;
+      }
+
+      if (line.trim()) {
+        html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px">' +
+          line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-primary)">$1</strong>') + '</div>';
+      } else {
+        html += '<div style="height:6px"></div>';
+      }
+    }
+    flushTable();
+    return html;
+  }
+
+  // 요약 카드 파싱
+  function parseSummaryCards(text) {
+    const lines = text.split('\n');
+    const start = lines.findIndex(l => l.startsWith('## 검수 요약'));
+    if (start === -1) return '';
+    const rows = [];
+    for (let i = start + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (l.startsWith('## ')) break;
+      if (l.startsWith('|') && !l.match(/^\|[-| :]+\|$/) && !l.includes('항목')) {
+        const cells = l.slice(1,-1).split('|').map(c=>c.trim());
+        if (cells.length >= 2) rows.push(cells);
+      }
+    }
+    if (!rows.length) return '';
+    const colorMap = {
+      '위험도 높음': {bg:'#FCEBEB', txt:'#A32D2D'},
+      '위험도 중간': {bg:'#FAEEDA', txt:'#854F0B'},
+      '위험도 낮음': {bg:'#EAF3DE', txt:'#3B6D11'},
+      '다크패턴 감지 항목': {bg:'#E6F1FB', txt:'#185FA5'},
+    };
+    return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">' +
+      rows.slice(0,6).map(r => {
+        const col = colorMap[r[0]] || {bg:'var(--gray-50)', txt:'var(--text-primary)'};
+        return '<div style="background:' + col.bg + ';border-radius:var(--radius-md);padding:14px 16px">' +
+          '<div style="font-size:11px;color:' + col.txt + ';font-weight:600;margin-bottom:4px;opacity:0.8">' + (r[0]||'') + '</div>' +
+          '<div style="font-size:20px;font-weight:700;color:' + col.txt + '">' + (r[1]||'-') + '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  const summaryCards = parseSummaryCards(text);
+  const reportBody = md2dpReport(text);
+
+  wrap.innerHTML = '<div id="dp-analysis-report" style="border-top:1px solid var(--border);padding-top:24px">' +
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
+      '<div>' +
+        '<div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">다크패턴 검수 결과</div>' +
+        '<div style="font-size:14px;color:var(--text-tertiary)">' + fileCount + '장 · ' + (maxTokens >= 4000 ? '상세 분석' : '요약 분석') + ' · 금감원·방통위 가이드라인 기준</div>' +
+      '</div>' +
+      '<button class="btn btn-secondary btn-sm" onclick="downloadDpReport()">' +
+        '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg> 이미지 저장' +
+      '</button>' +
+    '</div>' +
+    summaryCards +
+    '<div id="dp-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">' +
+      reportBody +
+    '</div>' +
+  '</div>';
+}
+
+async function downloadDpReport() {
+  const el = document.getElementById('dp-analysis-report');
+  if (!el) return;
+  toast('이미지 저장 중...');
+  try {
+    if (!window.html2canvas) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const canvas = await html2canvas(el, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = '다크패턴검수_' + new Date().toISOString().slice(0,10) + '.png';
+    a.click();
+    toast('저장 완료!', 'success');
+  } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
+}
+
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
 let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
@@ -2542,6 +3062,7 @@ async function loadPickerScreens(){
   const body=document.getElementById('picker-body');
   if(!body)return;
   const {company,type,subtype,screen_type,version}=pickerFilters;
+  const isRelationMode = pickerSlot === '__relation__';
   if(!company&&!screen_type){body.innerHTML='<div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>';return;}
   body.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
@@ -2564,8 +3085,19 @@ async function loadPickerScreens(){
       for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company){
-      if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}&company=${company}`)||[];}
-      else{const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));};}
+      if(screen_type){
+        // 연관모드: 9000번대 포함 전체 조회
+        const inclRelParam = isRelationMode ? '&include_related=true' : '';
+        screens=await api('GET',`/screens?screen_type=${screen_type}&company=${company}${inclRelParam}`)||[];
+      } else {
+        const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];
+        for(const s of sets){
+          // 연관모드: include_related=true로 9000번대 포함
+          const inclRelParam = isRelationMode ? '?include_related=true' : '';
+          const detail=await api('GET',`/screen-sets/${s.id}${inclRelParam}`);
+          screens.push(...(detail?.screens||[]));
+        }
+      }
     } else if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];}
     const seen=new Set();screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
     screens.sort((a,b)=>a.order_no-b.order_no);
@@ -3004,9 +3536,18 @@ async function startUpload(){
   }
 
   // 연관 화면 업로드 - 별도 세트 없이 같은 세트에 넣되 order_no를 9000번대로 분리
-  // 업로드 후 첫 번째 메인 화면과 자동 연결
+  // 기존 9000번대 화면 수 확인해서 충돌 방지
   const relatedScreenIds = [];
-  const relatedStartOrder = 9000;
+  let relatedStartOrder = 9000;
+  try {
+    const existingSetDetail = await api('GET', `/screen-sets/${setId}?include_related=true`);
+    const existingRelated = (existingSetDetail?.screens||[]).filter(s => s.order_no >= 9000);
+    if (existingRelated.length > 0) {
+      const maxOrder = Math.max(...existingRelated.map(s => s.order_no));
+      relatedStartOrder = maxOrder + 1;
+    }
+  } catch(e) { relatedStartOrder = 9000; }
+
   for(let i=0;i<relatedFiles.length;i++){
     const item=relatedFiles[i]; item.status='uploading'; renderUploadPreviews();
     try{
@@ -3739,7 +4280,9 @@ async function openRelatedScreenPicker(screenId) {
   // 기존 picker 모달 재활용 - 선택 후 relation 생성
   pickerSlot = '__relation__';
   pickerSelected = new Set();
-  pickerFilters = {company:'', type:'', subtype:'', screen_type:'', version:''};
+  // 현재 세트의 회사를 기본값으로 pre-fill (타 유형 화면도 조회 가능하게 type/subtype은 비워둠)
+  const currentCompany = state.currentSet?.company_code || compareCompany?.A || '';
+  pickerFilters = {company: currentCompany, type:'', subtype:'', screen_type:'', version:''};
   pickerScreens = [];
 
   const overlay = document.createElement('div');
@@ -3756,7 +4299,7 @@ async function openRelatedScreenPicker(screenId) {
       <div class="picker-filters">
         <select class="filter-pill" id="pf-company" onchange="onPickerFilter('company',this.value)">
           <option value="">기업명</option>
-          ${state.companies.map(c=>`<option value="${c.code}">${c.name}</option>`).join('')}
+          ${state.companies.map(c=>`<option value="${c.code}" ${c.code===pickerFilters.company?'selected':''}>${c.name}</option>`).join('')}
         </select>
         <select class="filter-pill" id="pf-type" onchange="onPickerFilter('type',this.value)">
           <option value="">유형</option>
@@ -3787,6 +4330,11 @@ async function openRelatedScreenPicker(screenId) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  // 회사가 pre-fill 됐으면 바로 화면 로드
+  if (pickerFilters.company) {
+    updatePickerFilterStyles();
+    await loadPickerScreens();
+  }
 }
 
 async function applyRelatedScreens(screenId) {
