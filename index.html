@@ -203,8 +203,8 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-type-section-group { border-bottom:1px solid var(--border); }
 .screen-type-section-group:last-child { border-bottom:none; }
 .function-main { flex: 1; min-width: 0; }
-.company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-.chip { padding: 3px 10px; border-radius: 3px; font-size: 14px; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); }
+.company-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; min-width: 480px; }
+.chip { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight:500; cursor: pointer; border: 1px solid var(--border); background: var(--gray-0); color: var(--text-secondary); transition: all var(--transition); height:50px; min-width:80px; display:inline-flex; align-items:center; justify-content:center; }
 .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
 
 /* UPLOAD */
@@ -948,32 +948,31 @@ async function renderFunctionView() {
       </div>
       <div style="display:flex;flex:1;overflow:hidden;border-top:1px solid var(--border)">
         <!-- 왼쪽: 카테고리 -->
-        <div id="cat-col" style="width:88px;min-width:88px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-50)">
+        <div id="cat-col" style="width:96px;min-width:96px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
           ${categories.map(cat => {
             const catCount = state.screenTypes
               .filter(s => s.category === cat)
               .reduce((acc, s) => acc + (counts[s.code]||0), 0);
             const isActive = cat === _selectedCat;
             return `<button onclick="selectFunctionCategory('${cat.replace(/'/g,"\'")}');event.stopPropagation()"
-              style="width:100%;padding:9px 8px;text-align:left;border:none;cursor:pointer;font-size:11px;line-height:1.4;word-break:keep-all;
+              style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
                 background:${isActive ? 'var(--primary-light)' : 'transparent'};
-                color:${isActive ? 'var(--primary)' : 'var(--text-secondary)'};
-                font-weight:${isActive ? '600' : '400'};
+                color:${isActive ? 'var(--primary)' : 'var(--text-primary)'};
                 border-right:${isActive ? '2px solid var(--primary)' : '2px solid transparent'}"
               data-cat="${cat}">
               ${cat}
-              ${catCount ? `<div style="font-size:10px;color:${isActive?'var(--primary)':'var(--text-tertiary)'};margin-top:1px">${catCount}</div>` : ''}
+              ${catCount ? `<div style="font-size:11px;font-weight:400;color:${isActive?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${catCount}</div>` : ''}
             </button>`;
           }).join('')}
         </div>
-        <!-- 오른쪽: 화면유형 -->
-        <div id="type-col" style="flex:1;overflow-y:auto">
+        <!-- 오른쪽: 화면유형 (더 연한 배경) -->
+        <div id="type-col" style="flex:1;overflow-y:auto;background:#ffffff">
           ${rightItems.map(s => {
             const cnt = counts[s.code] || 0;
             const isActive = s.code === currentFunctionType;
             return `<button class="screen-type-nav-item${isActive?' active':''}" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">
-              <span style="flex:1;text-align:left;font-size:12px">${s.name}</span>
-              ${cnt ? `<span style="font-size:10px;color:var(--text-tertiary);flex-shrink:0;margin-left:3px">${cnt}</span>` : ''}
+              <span style="flex:1;text-align:left;font-size:14px;line-height:1.4;word-break:keep-all;white-space:normal">${s.name}</span>
+              ${cnt ? `<span style="font-size:11px;color:var(--text-tertiary);flex-shrink:0;margin-left:4px">${cnt}</span>` : ''}
             </button>`;
           }).join('')}
         </div>
@@ -1000,8 +999,8 @@ async function renderFunctionView() {
   await buildScreenTypeNav();
 
   const chipsEl=document.getElementById('company-chips');
-  chipsEl.innerHTML=`<button class="chip active" onclick="filterFunctionCompany('all',this)">전체</button>`+
-    state.companies.map(c=>`<button class="chip" onclick="filterFunctionCompany('${c.code}',this)">${c.name}</button>`).join('');
+  chipsEl.innerHTML=`<button class="chip active" onclick="filterFunctionCompany('all',this)" style="height:50px;min-width:80px;font-size:14px">전체</button>`+
+    state.companies.map(c=>`<button class="chip" onclick="filterFunctionCompany('${c.code}',this)" style="height:50px;min-width:80px;font-size:14px">${c.name}</button>`).join('');
 
   document.getElementById('function-grid').innerHTML=`<div class="empty-state"><div class="empty-title">화면 유형을 선택해주세요</div><div class="empty-desc">왼쪽에서 화면 유형을 선택하면 기업별 화면이 나타납니다</div></div>`;
 }
