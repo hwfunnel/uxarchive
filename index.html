@@ -1496,14 +1496,15 @@ async function openCompareImagePicker(slot) {
   // 기존 openScreenPicker 활용
   pickerSlot = slot;
   pickerSelected = new Set();
-  pickerFilters = {company: compareCompany[slot]||'', type:'', subtype:'', screen_type:'', version:''};
+  // __dp__ 슬롯은 회사 제한 없음
+  pickerFilters = {company: slot==='__dp__' ? '' : (compareCompany[slot]||''), type:'', subtype:'', screen_type:'', version:''};
 
   const overlay=document.createElement('div');
   overlay.className='modal-overlay'; overlay.id='picker-overlay';
   overlay.innerHTML=`
     <div class="picker-modal">
       <div class="picker-header">
-        <div class="picker-title">화면 추가 — ${slot} 섹션${compareCompany[slot]?' ('+( state.companies.find(c=>c.code===compareCompany[slot])?.name||compareCompany[slot])+'만 선택 가능)':''}</div>
+        <div class="picker-title">${slot==='__dp__' ? '다크패턴 검수 화면 선택' : '화면 추가 — '+slot+' 섹션'+(compareCompany[slot]?' ('+(state.companies.find(c=>c.code===compareCompany[slot])?.name||compareCompany[slot])+'만 선택 가능)':'')}</div>
         <button class="modal-close" onclick="document.getElementById('picker-overlay').remove()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
       </div>
       <div class="picker-filters">
@@ -1537,7 +1538,7 @@ async function openCompareImagePicker(slot) {
           <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
           <span style="font-size: 14px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
         </div>
-        <button class="btn btn-primary" onclick="applyComparePickerSelection('${slot}')">추가하기</button>
+        <button class="btn btn-primary" onclick="${slot==='__dp__'?'applyDpPickerSelection()':'applyComparePickerSelection(\''+slot+'\')'}">추가하기</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -2625,24 +2626,18 @@ function renderDarkpatternView() {
     <div style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">검수할 화면 선택</div>
-        <button class="btn btn-secondary btn-sm" onclick="openDpScreenPicker()">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="4" height="4" rx="0.5"/><rect x="7.5" y="1.5" width="4" height="4" rx="0.5"/><rect x="1.5" y="7.5" width="4" height="4" rx="0.5"/><rect x="7.5" y="7.5" width="4" height="4" rx="0.5"/></svg>
-          + 화면 추가
-        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('__dp__')">+ 화면 추가</button>
+          <button class="btn btn-ghost btn-sm" onclick="dpClearAll()">초기화</button>
+        </div>
       </div>
-
-      <!-- 선택된 화면 없을 때 -->
       <div id="dp-empty" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:32px;text-align:center;background:var(--gray-50)">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" style="margin-bottom:8px"><rect x="4" y="4" width="8" height="8" rx="1.5"/><rect x="16" y="4" width="8" height="8" rx="1.5"/><rect x="4" y="16" width="8" height="8" rx="1.5"/><rect x="16" y="16" width="8" height="8" rx="1.5"/></svg>
         <div style="font-size:14px;color:var(--text-secondary);font-weight:500">화면 추가 버튼으로 검수할 화면을 선택하세요</div>
         <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">단일 화면 또는 여러 화면 플로우 분석 (최대 20장)</div>
       </div>
-
-      <!-- 선택된 화면 미리보기 -->
       <div id="dp-preview" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:500;color:var(--text-primary)" id="dp-preview-count"></div>
-          <button class="btn btn-ghost btn-sm" onclick="dpClearAll()">전체 초기화</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary);flex:1" id="dp-preview-count"></div>
         </div>
         <div id="dp-preview-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
