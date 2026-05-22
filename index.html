@@ -188,7 +188,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* FUNCTION VIEW */
 .function-layout { display: flex; gap: 16px; }
-.screen-type-nav { width: 180px; min-width: 180px; overflow-y: auto; }
+.screen-type-nav { width: 180px; min-width: 180px; overflow: hidden; display:flex; flex-direction:column; }
 .screen-type-section-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
 .screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
@@ -875,9 +875,10 @@ function openScreenDetail(screenId, setId) {
 async function renderFunctionView() {
   const navEl=document.getElementById('screen-type-nav');
 
-  // 검색창 + 카운트 포함 사이드바 렌더
+  // 2컬럼 사이드바: 왼쪽=카테고리, 오른쪽=화면유형
+  let _selectedCat = null;
+
   async function buildScreenTypeNav(filterText='') {
-    // 카운트 캐시
     if (!state._screenTypeCounts) {
       try { state._screenTypeCounts = await api('GET', '/screens/count-by-type') || {}; }
       catch(e) { state._screenTypeCounts = {}; }
@@ -886,51 +887,103 @@ async function renderFunctionView() {
     const q = filterText.trim().toLowerCase();
     const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
 
+    // 검색 중일 땐 기존 단일 컬럼 모드
+    if (q) {
+      navEl.innerHTML = `
+        <div style="padding:8px 8px 6px">
+          <div style="position:relative">
+            <input id="screen-type-search" type="text" placeholder="화면 유형 검색..." value="${filterText}"
+              oninput="buildScreenTypeNavDebounced(this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"/>
+            <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto">
+          ${categories.map(cat => {
+            let items = state.screenTypes.filter(s => s.category === cat);
+            items = items.filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
+            if (!items.length) return '';
+            items = [...items].sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
+            return `<div style="margin-bottom:4px">
+              <div style="font-size:10px;font-weight:600;color:var(--text-tertiary);padding:6px 10px 2px;letter-spacing:0.05em;text-transform:uppercase">${cat}</div>
+              ${items.map(s => {
+                const cnt = counts[s.code] || 0;
+                return `<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">
+                  <span style="flex:1;text-align:left">${s.name}</span>
+                  ${cnt ? `<span style="font-size:11px;color:var(--text-tertiary);flex-shrink:0;margin-left:4px">${cnt}</span>` : ''}
+                </button>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>`;
+      if (currentFunctionType) {
+        document.querySelector(`.screen-type-nav-item[data-code="${currentFunctionType}"]`)?.classList.add('active');
+      }
+      return;
+    }
+
+    // 2컬럼 모드
+    // 카테고리 초기값: 현재 선택된 화면의 카테고리 or 첫 번째
+    if (!_selectedCat) {
+      if (currentFunctionType) {
+        const curType = state.screenTypes.find(s => s.code === currentFunctionType);
+        _selectedCat = curType?.category || categories[0];
+      } else {
+        _selectedCat = categories[0];
+      }
+    }
+
+    const rightItems = state.screenTypes
+      .filter(s => s.category === _selectedCat)
+      .sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
+
     navEl.innerHTML = `
       <div style="padding:8px 8px 6px">
         <div style="position:relative">
-          <input
-            id="screen-type-search"
-            type="text"
-            placeholder="화면 유형 검색..."
-            value="${filterText}"
+          <input id="screen-type-search" type="text" placeholder="검색..." value=""
             oninput="buildScreenTypeNavDebounced(this.value)"
-            style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"
-          />
+            style="width:100%;box-sizing:border-box;padding:6px 10px 6px 28px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);outline:none"/>
           <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2.5 2.5"/></svg>
         </div>
       </div>
-      ${categories.map(cat => {
-        let items = state.screenTypes.filter(s => s.category === cat);
-        if (q) items = items.filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q));
-        if (!items.length) return '';
-        // 카운트 많은 순 정렬
-        items = [...items].sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
-        return `<div class="screen-type-section-group">
-          <button class="screen-type-section-toggle" onclick="toggleScreenTypeSection(this)" data-cat="${cat}">
-            <span>${cat}</span>
-            <svg class="toggle-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l4 4 4-4"/></svg>
-          </button>
-          <div class="screen-type-section-body${q?' expanded':''}">
-            ${items.map(s => {
-              const cnt = counts[s.code] || 0;
-              return `<button class="screen-type-nav-item" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">
-                <span style="flex:1;text-align:left">${s.name}</span>
-                ${cnt ? `<span style="font-size:11px;color:var(--text-tertiary);flex-shrink:0;margin-left:4px">${cnt}</span>` : ''}
-              </button>`;
-            }).join('')}
-          </div>
-        </div>`;
-      }).join('')}`;
-
-    // 현재 선택 항목 active 복원
-    if (currentFunctionType) {
-      document.querySelector(`.screen-type-nav-item[data-code="${currentFunctionType}"]`)?.classList.add('active');
-      // 해당 섹션 펼치기
-      const activeBtn = document.querySelector(`.screen-type-nav-item[data-code="${currentFunctionType}"]`);
-      activeBtn?.closest('.screen-type-section-body')?.classList.add('expanded');
-    }
+      <div style="display:flex;flex:1;overflow:hidden;border-top:1px solid var(--border)">
+        <!-- 왼쪽: 카테고리 -->
+        <div id="cat-col" style="width:88px;min-width:88px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-50)">
+          ${categories.map(cat => {
+            const catCount = state.screenTypes
+              .filter(s => s.category === cat)
+              .reduce((acc, s) => acc + (counts[s.code]||0), 0);
+            const isActive = cat === _selectedCat;
+            return `<button onclick="selectFunctionCategory('${cat.replace(/'/g,"\'")}');event.stopPropagation()"
+              style="width:100%;padding:9px 8px;text-align:left;border:none;cursor:pointer;font-size:11px;line-height:1.4;word-break:keep-all;
+                background:${isActive ? 'var(--primary-light)' : 'transparent'};
+                color:${isActive ? 'var(--primary)' : 'var(--text-secondary)'};
+                font-weight:${isActive ? '600' : '400'};
+                border-right:${isActive ? '2px solid var(--primary)' : '2px solid transparent'}"
+              data-cat="${cat}">
+              ${cat}
+              ${catCount ? `<div style="font-size:10px;color:${isActive?'var(--primary)':'var(--text-tertiary)'};margin-top:1px">${catCount}</div>` : ''}
+            </button>`;
+          }).join('')}
+        </div>
+        <!-- 오른쪽: 화면유형 -->
+        <div id="type-col" style="flex:1;overflow-y:auto">
+          ${rightItems.map(s => {
+            const cnt = counts[s.code] || 0;
+            const isActive = s.code === currentFunctionType;
+            return `<button class="screen-type-nav-item${isActive?' active':''}" onclick="loadFunctionScreens('${s.code}')" data-code="${s.code}">
+              <span style="flex:1;text-align:left;font-size:12px">${s.name}</span>
+              ${cnt ? `<span style="font-size:10px;color:var(--text-tertiary);flex-shrink:0;margin-left:3px">${cnt}</span>` : ''}
+            </button>`;
+          }).join('')}
+        </div>
+      </div>`;
   }
+
+  window.selectFunctionCategory = function(cat) {
+    _selectedCat = cat;
+    buildScreenTypeNav('');
+  };
 
   let _navDebounceTimer = null;
   window.buildScreenTypeNavDebounced = function(val) {
@@ -957,16 +1010,13 @@ let currentFunctionType=null, currentFunctionCompany='all';
 
 async function loadFunctionScreens(typeCode) {
   currentFunctionType=typeCode;
+  // 선택된 화면유형의 카테고리로 _selectedCat 동기화
+  const selType = state.screenTypes.find(s => s.code === typeCode);
+  if (selType?.category) window._selectedCat = selType.category;
   document.querySelectorAll('.screen-type-nav-item').forEach(el=>el.classList.remove('active'));
   const activeEl = document.querySelector(`[data-code="${typeCode}"]`);
   if (activeEl) {
     activeEl.classList.add('active');
-    // 해당 섹션 자동 펼치기
-    const body = activeEl.closest('.screen-type-section-body');
-    if (body) {
-      body.classList.add('expanded');
-      body.previousElementSibling?.classList.add('open');
-    }
   }
   const gridEl=document.getElementById('function-grid');
   gridEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
