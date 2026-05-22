@@ -87,7 +87,11 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 .screen-card { background: var(--gray-0); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: border-color var(--transition), box-shadow var(--transition); }
 .screen-card:hover { border-color: var(--gray-300); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .screen-card-thumb { width: 100%; position: relative; padding-top: calc(844 / 390 * 100%); background: var(--gray-100); overflow: hidden; }
-.screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.screen-card-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: opacity 0.2s; }
+.screen-card-thumb img.lazy-loading { opacity: 0; }
+.screen-card-thumb img[data-lazy-src]:not([src]) { opacity: 0; }
+@keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+.lazy-placeholder { position:absolute; inset:0; background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-50) 50%,var(--gray-100) 75%); background-size:400px 100%; animation:shimmer 1.2s infinite; }
 .screen-card-thumb .no-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-tertiary); }
 .screen-card-info { padding: 6px 8px; }
 .screen-card-order { font-size: 14px; font-family: var(--font-mono); color: var(--text-tertiary); margin-bottom: 2px; }
@@ -578,9 +582,16 @@ async function renderCompanyView() {
       el.innerHTML=`<div class="page-header"><div><div class="page-title">기업별 조회</div></div></div><div class="empty-state"><div class="empty-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#A8A49E" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg></div><div class="empty-title">화면이 없습니다</div><div class="empty-desc">관리자가 화면을 업로드하면 여기에 표시됩니다</div></div>`;
       return;
     }
-    let html=`<div class="page-header"><div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div></div>`;
+    let html=`<div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div>
+      <button class="btn ${state.productOnly?'btn-primary':'btn-secondary'}" onclick="toggleProductOnly()" id="product-only-btn" style="white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="10" height="7" rx="1.5"/><path d="M4.5 3V2a1.5 1.5 0 013 0v1"/></svg>
+        ${state.productOnly?'✓ 상품만 보기':'상품만 보기'}
+      </button>
+    </div>`;
     state.companies.forEach((c,ci)=>{
-      const cSets=byCompany[c.code]?.sets||[];
+      let cSets=byCompany[c.code]?.sets||[];
+      if(state.productOnly) cSets=cSets.filter(s=>s.is_product===true);
       if(!cSets.length)return;
       html+=`<div class="company-section">
         <div class="company-section-header">
@@ -605,7 +616,8 @@ async function renderCompanyView() {
             <div style="font-size: 14px;font-weight:600;letter-spacing:-0.01em;line-height:1.3">${subtypeName}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
               <span style="font-size: 14px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
-              <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
+              ${s.is_product?'<span class="badge badge-primary" style="background:var(--primary-light);color:var(--primary);margin-right:4px">상품</span>':''}
+          <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
             </div>
           </div>
         </div>`;
@@ -613,9 +625,15 @@ async function renderCompanyView() {
       html+=`</div></div>`;
     });
     el.innerHTML=html;
+    observeLazyImages(el);
   } catch(e) {
     el.innerHTML=`<div class="empty-state"><div class="empty-title">불러오기 실패</div><div class="empty-desc">${e.message}</div></div>`;
   }
+}
+
+function toggleProductOnly() {
+  state.productOnly = !state.productOnly;
+  renderCompanyView();
 }
 
 async function openSetDetail(setId) {
@@ -632,6 +650,7 @@ async function openSetDetail(setId) {
 
 // ===================== SET DETAIL + DRAG & DROP ORDER =====================
 let dragSrcIdx=null;
+// state.productOnly → state.state.productOnly 로 통합됨
 
 function renderSetDetail(set, allVersions) {
   const el=document.getElementById('company-view');
@@ -741,6 +760,7 @@ function onSetDragEnd(e){
 }
 
 function rerenderSetGrid(screens){
+  observeLazyImages(document.getElementById('set-detail-grid'));
   const grid=document.getElementById('set-detail-grid');
   if(!grid)return;
   screens.forEach((s,i)=>{
@@ -877,14 +897,14 @@ async function renderFunctionView() {
   const navEl=document.getElementById('screen-type-nav');
 
   // 2컬럼 사이드바: 왼쪽=카테고리, 오른쪽=화면유형
-  let _selectedCat = null;
+  // state.selectedCat → state.selectedCat 으로 통합됨
 
   async function buildScreenTypeNav(filterText='') {
-    if (!state._screenTypeCounts) {
-      try { state._screenTypeCounts = await api('GET', '/screens/count-by-type') || {}; }
-      catch(e) { state._screenTypeCounts = {}; }
+    if (!state.screenTypeCounts) {
+      try { state.screenTypeCounts = await api('GET', '/screens/count-by-type') || {}; }
+      catch(e) { state.screenTypeCounts = {}; }
     }
-    const counts = state._screenTypeCounts;
+    const counts = state.screenTypeCounts;
     const q = filterText.trim().toLowerCase();
     const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
 
@@ -917,18 +937,18 @@ async function renderFunctionView() {
 
     // 2컬럼 모드
     // 카테고리 초기값: 현재 선택된 화면의 카테고리 or 첫 번째
-    if (!_selectedCat) {
+    if (!state.selectedCat) {
       if (currentFunctionType) {
         const curType = state.screenTypes.find(s => s.code === currentFunctionType);
-        _selectedCat = curType?.category || '__all__';
+        state.selectedCat = curType?.category || '__all__';
       } else {
-        _selectedCat = '__all__';
+        state.selectedCat = '__all__';
       }
     }
 
-    const rightItems = (_selectedCat === '__all__'
+    const rightItems = (state.selectedCat === '__all__'
       ? [...state.screenTypes]
-      : state.screenTypes.filter(s => s.category === _selectedCat)
+      : state.screenTypes.filter(s => s.category === state.selectedCat)
     ).sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
 
     // 검색바를 function-search-bar 영역에 렌더링
@@ -947,18 +967,18 @@ async function renderFunctionView() {
         <div id="cat-col" style="width:100px;min-width:100px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
           <button onclick="selectFunctionCategory('__all__');event.stopPropagation()"
             style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
-              background:${'__all__' === _selectedCat ? 'var(--primary-light)' : 'transparent'};
-              color:${'__all__' === _selectedCat ? 'var(--primary)' : 'var(--text-primary)'};
-              border-right:${'__all__' === _selectedCat ? '2px solid var(--primary)' : '2px solid transparent'}"
+              background:${'__all__' === state.selectedCat ? 'var(--primary-light)' : 'transparent'};
+              color:${'__all__' === state.selectedCat ? 'var(--primary)' : 'var(--text-primary)'};
+              border-right:${'__all__' === state.selectedCat ? '2px solid var(--primary)' : '2px solid transparent'}"
             data-cat="__all__">
             전체
-            <div style="font-size:11px;font-weight:400;color:${'__all__' === _selectedCat ?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${Object.values(counts).reduce((a,b)=>a+b,0)}</div>
+            <div style="font-size:11px;font-weight:400;color:${'__all__' === state.selectedCat ?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${Object.values(counts).reduce((a,b)=>a+b,0)}</div>
           </button>
           ${categories.map(cat => {
             const catCount = state.screenTypes
               .filter(s => s.category === cat)
               .reduce((acc, s) => acc + (counts[s.code]||0), 0);
-            const isActive = cat === _selectedCat;
+            const isActive = cat === state.selectedCat;
             return `<button onclick="selectFunctionCategory('${cat.replace(/'/g,"\'")}');event.stopPropagation()"
               style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
                 background:${isActive ? 'var(--primary-light)' : 'transparent'};
@@ -985,7 +1005,7 @@ async function renderFunctionView() {
   }
 
   window.selectFunctionCategory = function(cat) {
-    _selectedCat = cat;
+    state.selectedCat = cat;
     buildScreenTypeNav('');
   };
 
@@ -1019,15 +1039,16 @@ let currentFunctionType=null, currentFunctionCompany='all';
 
 async function loadFunctionScreens(typeCode) {
   currentFunctionType=typeCode;
-  // 선택된 화면유형의 카테고리로 _selectedCat 동기화
+  // 선택된 화면유형의 카테고리로 state.selectedCat 동기화
   const selType = state.screenTypes.find(s => s.code === typeCode);
-  if (selType?.category) window._selectedCat = selType.category;
+  if (selType?.category) window.state.selectedCat = selType.category;
   document.querySelectorAll('.screen-type-nav-item').forEach(el=>el.classList.remove('active'));
   const activeEl = document.querySelector(`[data-code="${typeCode}"]`);
   if (activeEl) {
     activeEl.classList.add('active');
   }
   const gridEl=document.getElementById('function-grid');
+  setTimeout(()=>observeLazyImages(gridEl), 50);
   gridEl.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
     const companyParam=currentFunctionCompany!=='all'?`&company=${currentFunctionCompany}`:'';
@@ -2640,7 +2661,7 @@ function renderDarkpatternView() {
   `;
 
   // 상태 초기화
-  window._dpFiles = [];
+  state.dpFiles = [];
 }
 
 // 파일 드롭 핸들러
@@ -2656,16 +2677,16 @@ function dpHandleFiles(fileList) {
 }
 
 function dpAddFiles(files) {
-  if (!window._dpFiles) window._dpFiles = [];
-  const remaining = 20 - window._dpFiles.length;
+  if (!state.dpFiles) state.dpFiles = [];
+  const remaining = 20 - state.dpFiles.length;
   const toAdd = files.slice(0, remaining);
   if (files.length > remaining) toast(`최대 20장까지 업로드 가능합니다 (${remaining}장 추가됨)`, 'default');
-  toAdd.forEach(f => window._dpFiles.push(f));
+  toAdd.forEach(f => state.dpFiles.push(f));
   dpRenderPreview();
 }
 
 function dpRenderPreview() {
-  const files = window._dpFiles || [];
+  const files = state.dpFiles || [];
   const previewWrap = document.getElementById('dp-preview');
   const grid = document.getElementById('dp-preview-grid');
   const countEl = document.getElementById('dp-preview-count');
@@ -2685,17 +2706,17 @@ function dpRenderPreview() {
 }
 
 function dpRemoveFile(idx) {
-  window._dpFiles.splice(idx, 1);
+  state.dpFiles.splice(idx, 1);
   dpRenderPreview();
 }
 
 function dpClearAll() {
-  window._dpFiles = [];
+  state.dpFiles = [];
   dpRenderPreview();
 }
 
 async function startDarkpatternAnalysis(maxTokens) {
-  const files = window._dpFiles || [];
+  const files = state.dpFiles || [];
   if (!files.length) { toast('화면 이미지를 먼저 업로드해주세요', 'error'); return; }
 
   const resultWrap = document.getElementById('dp-result-wrap');
@@ -3092,6 +3113,71 @@ async function downloadDpReport() {
   } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
 }
 
+
+// ══════════════════════════════════════════════════════════
+// 레이지 이미지 로딩 (Intersection Observer)
+// ══════════════════════════════════════════════════════════
+const _signedUrlCache = new Map(); // imgsrc → signed URL 캐시 (1시간)
+
+async function getSignedUrl(imgsrc) {
+  if (!imgsrc) return null;
+  const cached = _signedUrlCache.get(imgsrc);
+  if (cached && cached.expires > Date.now()) return cached.url;
+  try {
+    const res = await api('POST', '/storage/signed-url', { imgsrc });
+    if (res?.signed_url) {
+      _signedUrlCache.set(imgsrc, { url: res.signed_url, expires: Date.now() + 3500000 });
+      return res.signed_url;
+    }
+  } catch(e) { /* 실패 시 null 반환 */ }
+  return null;
+}
+
+const _lazyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(async (entry) => {
+    if (!entry.isIntersecting) return;
+    const img = entry.target;
+    const imgsrc = img.dataset.lazySrc;
+    if (!imgsrc) return;
+    _lazyObserver.unobserve(img);
+    img.classList.add('lazy-loading');
+    // signed_url이 이미 있으면 바로 사용
+    const cachedUrl = _signedUrlCache.get(imgsrc);
+    if (cachedUrl && cachedUrl.expires > Date.now()) {
+      img.src = cachedUrl.url;
+      img.classList.remove('lazy-loading');
+      return;
+    }
+    // Edge Function에서 직접 signed URL 받아오기
+    // (기존 screen 데이터에 signed_url이 있으면 그걸 그대로 사용)
+    img.src = img.dataset.lazySrc; // fallback은 원본 경로
+    img.classList.remove('lazy-loading');
+  });
+}, { rootMargin: '200px' }); // 뷰포트 200px 전에 미리 로딩
+
+// lazy-src가 있는 img를 observe 등록하는 헬퍼
+function observeLazyImages(container) {
+  const imgs = (container || document).querySelectorAll('img[data-lazy-src]');
+  imgs.forEach(img => {
+    if (img.dataset.lazySrc && !img.src) {
+      _lazyObserver.observe(img);
+    }
+  });
+}
+
+// signed_url을 받아서 img 태그 생성하는 헬퍼
+function lazyImg(signedUrl, imgsrc, extraStyle='', extraAttr='') {
+  if (signedUrl) {
+    // signed URL 캐시에 저장
+    if (imgsrc) _signedUrlCache.set(imgsrc, { url: signedUrl, expires: Date.now() + 3500000 });
+    return '<img src="' + signedUrl + '" loading="lazy"' + (extraStyle ? ' style="' + extraStyle + '"' : '') + (extraAttr ? ' ' + extraAttr : '') + '>';
+  }
+  if (imgsrc) {
+    return '<img data-lazy-src="' + imgsrc + '" loading="lazy"' + (extraStyle ? ' style="' + extraStyle + '"' : '') + (extraAttr ? ' ' + extraAttr : '') + '>';
+  }
+  return '<span class="no-img">없음</span>';
+}
+
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
 let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
@@ -3162,7 +3248,8 @@ async function loadPickerScreens(){
     screens.sort((a,b)=>a.order_no-b.order_no);
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
-    body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
+    // 피커 렌더 후 레이지 observe (아래 innerHTML 세팅 후 처리)
+  body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
       const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
       const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';
       const subtypeName2=state.subtypes.find(st=>st.code===s.set?.subtype_code)?.name||'';
@@ -3305,6 +3392,18 @@ function renderUploadView(){
           </div>
           <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
+          <div class="form-group">
+            <label class="form-label">상품 여부</label>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                <input type="radio" name="up-is-product" id="up-is-product-y" value="Y" style="accent-color:var(--primary)"> 상품 (Y)
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                <input type="radio" name="up-is-product" id="up-is-product-n" value="N" checked style="accent-color:var(--primary)"> 비상품 (N)
+              </label>
+            </div>
+            <div class="form-hint">가입 가능한 보험 상품 플로우면 Y, 회원가입·마이페이지 등이면 N</div>
+          </div>
           <!-- 파일 미리 선택으로 자동 감지 -->
           <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px">
             <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
@@ -3570,7 +3669,8 @@ async function startUpload(){
     }
     if(!appendMode){
       const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
-      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
+      const isProductVal = document.querySelector('input[name="up-is-product"]:checked')?.value === 'Y';
+      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,is_product:isProductVal,screens:screenList});
       setId=newSet.id;
     }
   }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
@@ -3910,7 +4010,7 @@ async function resizeImageToBase64(url) {
 
 // ===================== FILE RENAME VIEW =====================
 let renameFiles = [];
-let renameMeta = {company:'', type:'', subtype:'', version:'V1'};
+let renameMeta = {company:'', type:'', subtype:'', version:'V1', isProduct: false};
 let renameStep = 1;
 
 function renderRenameView() {
@@ -3960,6 +4060,19 @@ function renderRenameView() {
             <div class="form-group">
               <label class="form-label">버전</label>
               <input class="input" id="rn-version" value="V1" style="font-family:var(--font-mono)" oninput="renameMeta.version=this.value;renameUpdatePreview()">
+            </div>
+            <div class="form-group" style="grid-column:span 2">
+              <label class="form-label">상품 여부</label>
+              <div style="display:flex;gap:12px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="rn-is-product" value="Y" style="accent-color:var(--primary)"
+                    onchange="renameMeta.isProduct=(this.value==='Y')"> 상품 (Y)
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                  <input type="radio" name="rn-is-product" value="N" checked style="accent-color:var(--primary)"
+                    onchange="renameMeta.isProduct=(this.value==='Y')"> 비상품 (N)
+                </label>
+              </div>
             </div>
           </div>
           <div id="rn-preview" style="display:none;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-family:var(--font-mono);font-size: 14px;color:var(--primary);margin-bottom:16px;word-break:break-all"></div>
