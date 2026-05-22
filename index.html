@@ -188,7 +188,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* FUNCTION VIEW */
 .function-layout { display: flex; gap: 16px; }
-.screen-type-nav { width: 400px; min-width: 400px; overflow: hidden; display:flex; flex-direction:column; }
+.screen-type-nav { width: 300px; min-width: 300px; overflow: hidden; display:flex; flex-direction:column; }
 .screen-type-section-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); padding: 10px 10px 3px; }
 .screen-type-nav-item { padding: 5px 10px; border-radius: var(--radius-md); font-size: 14px; cursor: pointer; color: var(--text-secondary); transition: all var(--transition); border: none; background: none; width: 100%; text-align: left; }
 .screen-type-nav-item:hover { background: var(--gray-100); color: var(--text-primary); }
@@ -920,15 +920,16 @@ async function renderFunctionView() {
     if (!_selectedCat) {
       if (currentFunctionType) {
         const curType = state.screenTypes.find(s => s.code === currentFunctionType);
-        _selectedCat = curType?.category || categories[0];
+        _selectedCat = curType?.category || '__all__';
       } else {
-        _selectedCat = categories[0];
+        _selectedCat = '__all__';
       }
     }
 
-    const rightItems = state.screenTypes
-      .filter(s => s.category === _selectedCat)
-      .sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
+    const rightItems = (_selectedCat === '__all__'
+      ? [...state.screenTypes]
+      : state.screenTypes.filter(s => s.category === _selectedCat)
+    ).sort((a,b) => (counts[b.code]||0) - (counts[a.code]||0));
 
     // 검색바를 function-search-bar 영역에 렌더링
     const searchBarEl = document.getElementById('function-search-bar');
@@ -943,7 +944,16 @@ async function renderFunctionView() {
     navEl.innerHTML = `
       <div style="display:flex;flex:1;overflow:hidden;border-top:1px solid var(--border)">
         <!-- 왼쪽: 카테고리 -->
-        <div id="cat-col" style="width:96px;min-width:96px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
+        <div id="cat-col" style="width:100px;min-width:100px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
+          <button onclick="selectFunctionCategory('__all__');event.stopPropagation()"
+            style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
+              background:${'__all__' === _selectedCat ? 'var(--primary-light)' : 'transparent'};
+              color:${'__all__' === _selectedCat ? 'var(--primary)' : 'var(--text-primary)'};
+              border-right:${'__all__' === _selectedCat ? '2px solid var(--primary)' : '2px solid transparent'}"
+            data-cat="__all__">
+            전체
+            <div style="font-size:11px;font-weight:400;color:${'__all__' === _selectedCat ?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${Object.values(counts).reduce((a,b)=>a+b,0)}</div>
+          </button>
           ${categories.map(cat => {
             const catCount = state.screenTypes
               .filter(s => s.category === cat)
