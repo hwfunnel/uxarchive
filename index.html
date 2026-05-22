@@ -1049,7 +1049,7 @@ async function loadFunctionScreens(typeCode) {
   currentFunctionType=typeCode;
   // 선택된 화면유형의 카테고리로 state.selectedCat 동기화
   const selType = state.screenTypes.find(s => s.code === typeCode);
-  if (selType?.category) window.state.selectedCat = selType.category;
+  if (selType?.category) state.selectedCat = selType.category;
   document.querySelectorAll('.screen-type-nav-item').forEach(el=>el.classList.remove('active'));
   const activeEl = document.querySelector(`[data-code="${typeCode}"]`);
   if (activeEl) {
