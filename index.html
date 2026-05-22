@@ -970,12 +970,11 @@ async function renderFunctionView() {
       <div style="display:flex;flex:1;overflow:hidden;border-top:1px solid var(--border)">
         <!-- 왼쪽: 카테고리 -->
         <div id="cat-col" style="width:100px;min-width:100px;overflow-y:auto;border-right:1px solid var(--border);background:var(--gray-100,#f0f0f0)">
-          <button onclick="selectFunctionCategory('__all__');event.stopPropagation()"
+          <button onclick="onCatBtnClick(this)" data-cat="__all__"
             style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
               background:${'__all__' === state.selectedCat ? 'var(--primary-light)' : 'transparent'};
               color:${'__all__' === state.selectedCat ? 'var(--primary)' : 'var(--text-primary)'};
-              border-right:${'__all__' === state.selectedCat ? '2px solid var(--primary)' : '2px solid transparent'}"
-            data-cat="__all__">
+              border-right:${'__all__' === state.selectedCat ? '2px solid var(--primary)' : '2px solid transparent'}">
             전체
             <div style="font-size:11px;font-weight:400;color:${'__all__' === state.selectedCat ?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${Object.values(counts).reduce((a,b)=>a+b,0)}</div>
           </button>
@@ -984,12 +983,11 @@ async function renderFunctionView() {
               .filter(s => s.category === cat)
               .reduce((acc, s) => acc + (counts[s.code]||0), 0);
             const isActive = cat === state.selectedCat;
-            return `<button onclick="selectFunctionCategory('${cat.replace(/'/g,"\'")}');event.stopPropagation()"
+            return `<button onclick="onCatBtnClick(this)" data-cat="${cat.replace(/"/g,'&quot;')}"
               style="width:100%;padding:10px 10px;text-align:left;border:none;cursor:pointer;font-size:14px;font-weight:700;line-height:1.4;word-break:keep-all;
                 background:${isActive ? 'var(--primary-light)' : 'transparent'};
                 color:${isActive ? 'var(--primary)' : 'var(--text-primary)'};
-                border-right:${isActive ? '2px solid var(--primary)' : '2px solid transparent'}"
-              data-cat="${cat}">
+                border-right:${isActive ? '2px solid var(--primary)' : '2px solid transparent'}">
               ${cat}
               ${catCount ? `<div style="font-size:11px;font-weight:400;color:${isActive?'var(--primary)':'var(--text-tertiary)'};margin-top:2px">${catCount}</div>` : ''}
             </button>`;
@@ -1012,6 +1010,11 @@ async function renderFunctionView() {
   window.selectFunctionCategory = function(cat) {
     state.selectedCat = cat;
     buildScreenTypeNav('');
+  };
+
+  window.onCatBtnClick = function(btn) {
+    const cat = btn.getAttribute('data-cat');
+    if (cat) { state.selectedCat = cat; buildScreenTypeNav(''); }
   };
 
   let _navDebounceTimer = null;
