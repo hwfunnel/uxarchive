@@ -591,7 +591,12 @@ async function renderCompanyView() {
     </div>`;
     state.companies.forEach((c,ci)=>{
       let cSets=byCompany[c.code]?.sets||[];
-      if(state.productOnly) cSets=cSets.filter(s=>s.is_product===true);
+      if(state.productOnly) {
+        cSets=cSets.filter(s=>{
+          const sub=state.subtypes.find(st=>st.code===s.subtype_code);
+          return sub?.is_product===true;
+        });
+      }
       if(!cSets.length)return;
       html+=`<div class="company-section">
         <div class="company-section-header">
@@ -650,7 +655,7 @@ async function openSetDetail(setId) {
 
 // ===================== SET DETAIL + DRAG & DROP ORDER =====================
 let dragSrcIdx=null;
-// state.productOnly → state.state.productOnly 로 통합됨
+// productOnly → state.productOnly 로 통합됨
 
 function renderSetDetail(set, allVersions) {
   const el=document.getElementById('company-view');
