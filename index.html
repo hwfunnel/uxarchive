@@ -616,7 +616,7 @@ async function renderCompanyView() {
             <div style="font-size: 14px;font-weight:600;letter-spacing:-0.01em;line-height:1.3">${subtypeName}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
               <span style="font-size: 14px;color:var(--text-tertiary);font-family:var(--font-mono)">${s.screens?.length||0}화면</span>
-              ${s.is_product?'<span class="badge badge-primary" style="background:var(--primary-light);color:var(--primary);margin-right:4px">상품</span>':''}
+              ${(()=>{const sub=state.subtypes.find(st=>st.code===s.subtype_code);return sub?.is_product?'<span class="badge badge-primary" style="background:var(--primary-light);color:var(--primary);margin-right:4px">상품</span>':''})()}
           <span class="badge ${hasChange?'badge-new':'badge-gray'}">${s.version}${hasChange?' · 변경':''}</span>
             </div>
           </div>
@@ -3392,18 +3392,6 @@ function renderUploadView(){
           </div>
           <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
-          <div class="form-group">
-            <label class="form-label">상품 여부</label>
-            <div style="display:flex;gap:8px;margin-top:4px">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-                <input type="radio" name="up-is-product" id="up-is-product-y" value="Y" style="accent-color:var(--primary)"> 상품 (Y)
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-                <input type="radio" name="up-is-product" id="up-is-product-n" value="N" checked style="accent-color:var(--primary)"> 비상품 (N)
-              </label>
-            </div>
-            <div class="form-hint">가입 가능한 보험 상품 플로우면 Y, 회원가입·마이페이지 등이면 N</div>
-          </div>
           <!-- 파일 미리 선택으로 자동 감지 -->
           <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px">
             <div style="font-size: 14px;color:var(--text-tertiary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
@@ -3669,8 +3657,7 @@ async function startUpload(){
     }
     if(!appendMode){
       const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
-      const isProductVal = document.querySelector('input[name="up-is-product"]:checked')?.value === 'Y';
-      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,is_product:isProductVal,screens:screenList});
+      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
       setId=newSet.id;
     }
   }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
@@ -3823,10 +3810,12 @@ function switchMasterTab(tab){masterActiveTab=tab;document.querySelectorAll('.ma
 function renderMasterTable(tab){
   const data={companies:state.companies,types:state.types,subtypes:state.subtypes,screen_types:state.screenTypes}[tab]||[];
   const isScreenType=tab==='screen_types',isCompany=tab==='companies';
-  const colHeaders=isScreenType?['코드','이름','카테고리','순서','']:isCompany?['코드','이름','URL','순서','활성','']:['코드','이름','순서',''];
+  const isSubtype=tab==='subtypes';
+  const colHeaders=isScreenType?['코드','이름','카테고리','순서','']:isCompany?['코드','이름','URL','순서','활성','']:isSubtype?['코드','이름','상품여부','순서','']:['코드','이름','순서',''];
   const rows=data.map(row=>{
     const cells=isScreenType?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td><span style="font-size: 14px;color:var(--text-tertiary)">${row.category||'-'}</span></td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td>`
       :isCompany?`<td><span class="badge badge-gray">${row.code}</span></td><td style="font-weight:500">${row.name}</td><td style="font-size: 14px">${row.url?`<a href="${row.url}" target="_blank" style="color:var(--primary);text-decoration:none">${row.url}</a>`:'<span style="color:var(--text-tertiary)">—</span>'}</td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td><td>${row.is_active?'<span class="badge badge-green">활성</span>':'<span class="badge badge-gray">비활성</span>'}</td>`
+      :isSubtype?`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td>${row.is_product?'<span class="badge badge-primary" style="background:var(--primary-light);color:var(--primary)">상품 Y</span>':'<span class="badge badge-gray">비상품 N</span>'}</td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td>`
       :`<td><span class="badge badge-gray">${row.code}</span></td><td>${row.name}</td><td style="font-family:var(--font-mono);font-size: 14px">${row.order_no}</td>`;
     return `<tr>${cells}<td style="text-align:right;width:160px"><button class="btn btn-ghost btn-sm" onclick='openMasterEditModal(${JSON.stringify(row)})'>수정</button><button class="btn btn-danger btn-sm" onclick='confirmMasterDelete("${tab}","${row.code}","${row.name}")'>삭제</button></td></tr>`;
   }).join('');
@@ -3841,6 +3830,7 @@ function openMasterAddModal(){
      <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" placeholder="표시될 이름"></div>
      ${isCompany?`<div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" placeholder="https://..."></div>`:''}
      ${isScreenType?`<div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" placeholder="예) 공통, 신규가입"></div>`:''}
+     ${tab==='subtypes'?`<div class="form-group"><label class="form-label">상품 여부</label><div style="display:flex;gap:12px;margin-top:4px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="mf-is-product" value="Y" style="accent-color:var(--primary)"> 상품 (Y)</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="mf-is-product" value="N" checked style="accent-color:var(--primary)"> 비상품 (N)</label></div><div class="form-hint">보험 상품 가입 플로우면 Y, 회원가입·마이페이지 등이면 N</div></div>`:''}
      <div class="form-group"><label class="form-label">순서</label><input class="input" type="number" id="mf-order" value="99"></div>`,
     async()=>{
       const code=document.getElementById('mf-code').value.trim().toUpperCase();
@@ -3850,6 +3840,7 @@ function openMasterAddModal(){
       const body={code,name,order_no};
       if(isCompany)body.url=document.getElementById('mf-url')?.value.trim();
       if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
+      if(tab==='subtypes')body.is_product=document.querySelector('input[name="mf-is-product"]:checked')?.value==='Y';
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
       try{const newItem=await api('POST',pathMap[tab],body);const stateKey={companies:'companies',types:'types',subtypes:'subtypes',screen_types:'screenTypes'}[tab];state[stateKey].push(newItem);state[stateKey].sort((a,b)=>a.order_no-b.order_no);closeModal();toast('추가되었습니다','success');renderMasterTable(tab);}catch(e){toast(e.message,'error');}
     }
@@ -3865,6 +3856,7 @@ function openMasterEditModal(row){
      <div class="form-group"><label class="form-label">이름</label><input class="input" id="mf-name" value="${row.name}"></div>
      ${isCompany?`<div class="form-group"><label class="form-label">URL</label><input class="input" id="mf-url" value="${row.url||''}" placeholder="https://..."></div><div class="form-group"><label class="form-label">활성 여부</label><select class="select" id="mf-active" style="width:100%"><option value="true" ${row.is_active?'selected':''}>활성</option><option value="false" ${!row.is_active?'selected':''}>비활성</option></select></div>`:''}
      ${isScreenType?`<div class="form-group"><label class="form-label">카테고리</label><input class="input" id="mf-category" value="${row.category||''}"></div>`:''}
+     ${tab==='subtypes'?`<div class="form-group"><label class="form-label">상품 여부</label><div style="display:flex;gap:12px;margin-top:4px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="mf-is-product" value="Y" ${row.is_product?'checked':''} style="accent-color:var(--primary)"> 상품 (Y)</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="radio" name="mf-is-product" value="N" ${!row.is_product?'checked':''} style="accent-color:var(--primary)"> 비상품 (N)</label></div></div>`:''}
      <div class="form-group"><label class="form-label">순서</label><input class="input" type="number" id="mf-order" value="${row.order_no}"></div>`,
     async()=>{
       const name=document.getElementById('mf-name').value.trim();const order_no=parseInt(document.getElementById('mf-order').value)||0;
@@ -3872,6 +3864,7 @@ function openMasterEditModal(row){
       const body={name,order_no};
       if(isCompany){body.url=document.getElementById('mf-url')?.value.trim();body.is_active=document.getElementById('mf-active')?.value==='true';}
       if(isScreenType)body.category=document.getElementById('mf-category')?.value.trim();
+      if(tab==='subtypes')body.is_product=document.querySelector('input[name="mf-is-product"]:checked')?.value==='Y';
       const pathMap={companies:'/companies',types:'/types',subtypes:'/subtypes',screen_types:'/screen-types'};
       try{await api('PATCH',`${pathMap[tab]}/${row.code}`,body);await reloadMasterData(tab);renderMasterTable(tab);closeModal();toast('수정되었습니다','success');}catch(e){toast(e.message,'error');}
     }
@@ -4010,7 +4003,7 @@ async function resizeImageToBase64(url) {
 
 // ===================== FILE RENAME VIEW =====================
 let renameFiles = [];
-let renameMeta = {company:'', type:'', subtype:'', version:'V1', isProduct: false};
+let renameMeta = {company:'', type:'', subtype:'', version:'V1'};
 let renameStep = 1;
 
 function renderRenameView() {
@@ -4060,19 +4053,6 @@ function renderRenameView() {
             <div class="form-group">
               <label class="form-label">버전</label>
               <input class="input" id="rn-version" value="V1" style="font-family:var(--font-mono)" oninput="renameMeta.version=this.value;renameUpdatePreview()">
-            </div>
-            <div class="form-group" style="grid-column:span 2">
-              <label class="form-label">상품 여부</label>
-              <div style="display:flex;gap:12px;margin-top:4px">
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-                  <input type="radio" name="rn-is-product" value="Y" style="accent-color:var(--primary)"
-                    onchange="renameMeta.isProduct=(this.value==='Y')"> 상품 (Y)
-                </label>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
-                  <input type="radio" name="rn-is-product" value="N" checked style="accent-color:var(--primary)"
-                    onchange="renameMeta.isProduct=(this.value==='Y')"> 비상품 (N)
-                </label>
-              </div>
             </div>
           </div>
           <div id="rn-preview" style="display:none;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-family:var(--font-mono);font-size: 14px;color:var(--primary);margin-bottom:16px;word-break:break-all"></div>
