@@ -2693,13 +2693,15 @@ function dpAddFiles(files) {
 
 function dpRenderPreview() {
   const files = state.dpFiles || [];
+  const screens = state.dpScreens || [];
+  const total = files.length + screens.length;
   const previewWrap = document.getElementById('dp-preview');
   const grid = document.getElementById('dp-preview-grid');
   const countEl = document.getElementById('dp-preview-count');
-  if (!files.length) { previewWrap.style.display = 'none'; return; }
+  if (!total) { previewWrap.style.display = 'none'; return; }
   previewWrap.style.display = 'block';
-  countEl.textContent = files.length + '장 업로드됨' + (files.length > 1 ? ' · 순서대로 플로우 분석' : ' · 단일 화면 분석');
-  grid.innerHTML = files.map((f, i) => {
+  countEl.textContent = total + '장 선택됨' + (total > 1 ? ' · 순서대로 플로우 분석' : ' · 단일 화면 분석');
+  const fileItems = files.map((f, i) => {
     const url = URL.createObjectURL(f);
     return `<div style="position:relative;width:80px;flex-shrink:0">
       <img src="${url}" style="width:80px;height:120px;object-fit:cover;border-radius:var(--radius-md);border:1px solid var(--border)">
@@ -2708,11 +2710,26 @@ function dpRenderPreview() {
         <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 1l6 6M7 1L1 7"/></svg>
       </button>
     </div>`;
-  }).join('');
+  });
+  const screenItems = screens.map((s, i) => {
+    return `<div style="position:relative;width:80px;flex-shrink:0">
+      <img src="${s.signed_url||''}" style="width:80px;height:120px;object-fit:cover;border-radius:var(--radius-md);border:1px solid var(--border)">
+      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.55);color:#fff;font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px">${files.length+i+1}</div>
+      <button onclick="dpRemoveScreen(${i})" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 1l6 6M7 1L1 7"/></svg>
+      </button>
+    </div>`;
+  });
+  grid.innerHTML = [...fileItems, ...screenItems].join('');
 }
 
 function dpRemoveFile(idx) {
   state.dpFiles.splice(idx, 1);
+  dpRenderPreview();
+}
+
+function dpRemoveScreen(idx) {
+  state.dpScreens.splice(idx, 1);
   dpRenderPreview();
 }
 
@@ -2740,6 +2757,7 @@ function applyDpPickerSelection() {
 
 function dpClearAll() {
   state.dpScreens = [];
+  state.dpFiles = [];
   dpRenderPreview();
 }
 
