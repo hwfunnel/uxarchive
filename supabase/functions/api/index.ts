@@ -4,6 +4,19 @@ import { createClient } from "jsr:@supabase/supabase-js@^2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const JWT_SECRET = Deno.env.get("JWT_SECRET")!;
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+// 이미지 분석을 지원하는 기본 Anthropic 모델 (env 우선)
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-sonnet-4-20250514";
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const AI_PROVIDER = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+// TODO: add GEMINI_MODEL support later
+// const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "";
+
+// Types for AI adapter
+type AITextBlock = { type: "text"; text: string };
+type AIImageBlock = { type: "image"; source: { type: "base64"; media_type?: string; data: string } };
+type AIContentBlock = AITextBlock | AIImageBlock | Record<string, unknown>;
+type AIMessage = AIContentBlock;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -103,6 +116,91 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return false;
 }
 
+// requestAnthropic removed: use provider-specific callAnthropicMessages(payload) instead
+
+// ---------------------
+// Provider adapter (extensible)
+// ---------------------
+
+function buildAnthropicPayload(messages: AIMessage[], system: string | undefined, max_tokens: number): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    model: ANTHROPIC_MODEL,
+    messages,
+    max_tokens,
+    temperature: 0.0,
+  };
+  if (system && typeof system === "string" && system.trim()) payload.system = system;
+  return payload;
+}
+
+async function callAnthropicMessages(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  if (!ANTHROPIC_API_KEY) throw new Error("Anthropic API 키가 구성되어 있지 않습니다.");
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const errMsg = data && typeof data === "object" && (data as Record<string, unknown>).error
+      ? String((data as Record<string, unknown>).error)
+      : `Anthropic API 오류 (${res.status})`;
+    throw new Error(errMsg);
+  }
+  return data as Record<string, unknown>;
+}
+
+function normalizeAIResponse(result: Record<string, unknown> | undefined): AITextBlock[] {
+  const out: AITextBlock[] = [];
+  const body = result;
+  if (!body) return out;
+
+  const content = body.content as unknown;
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      if (typeof item === "string") out.push({ type: "text", text: item });
+      else if (item && typeof item === "object") {
+        const it = item as Record<string, unknown>;
+        if ((it.type === "output_text" || it.type === "text") && typeof it.text === "string") {
+          out.push({ type: "text", text: it.text as string });
+        } else if (it.type === "image" && it.source) {
+          const src = it.source as Record<string, unknown>;
+          const mt = typeof src.media_type === "string" ? src.media_type : "image";
+          out.push({ type: "text", text: `[image: ${mt}]` });
+        } else {
+          try { out.push({ type: "text", text: JSON.stringify(it) }); } catch { out.push({ type: "text", text: String(it) }); }
+        }
+      }
+    }
+    return out;
+  }
+
+  if (Array.isArray(body.choices)) {
+    const choice = (body.choices as unknown[])[0] as Record<string, unknown> | undefined;
+    const msg = choice?.message as Record<string, unknown> | undefined;
+    const payload = msg?.content ?? choice?.content;
+    if (Array.isArray(payload)) return normalizeAIResponse({ content: payload });
+    if (typeof payload === "string") return [{ type: "text", text: payload }];
+  }
+
+  if (typeof body === "string") return [{ type: "text", text: body }];
+  if (typeof body.output === "string") return [{ type: "text", text: body.output as string }];
+  return out;
+}
+
+async function analyzeWithProvider(provider: string, messages: AIMessage[], system: string | undefined, max_tokens: number): Promise<AITextBlock[]> {
+  if (provider === "anthropic") {
+    const payload = buildAnthropicPayload(messages, system, max_tokens);
+    const raw = await callAnthropicMessages(payload);
+    return normalizeAIResponse(raw as Record<string, unknown> | undefined);
+  }
+  throw new Error(`지원하지 않는 AI provider: ${provider}`);
+}
+
 // =====================
 // 변경 감지
 // =====================
@@ -121,7 +219,8 @@ async function computeChangeSummary(
     .eq("set_id", prevSet.id).order("order_no");
   if (!prevScreens) return null;
 
-  const prevMap = new Map(prevScreens.map((s) => [s.screen_type_code, s.order_no]));
+  const prevScreensTyped = prevScreens as { screen_type_code: string; order_no: number }[];
+  const prevMap = new Map(prevScreensTyped.map((s) => [s.screen_type_code, s.order_no]));
   const newMap = new Map(newScreens.map((s) => [s.screen_type_code, s.order_no]));
 
   const order_changed: { screen_type: string; from: number; to: number }[] = [];
@@ -197,6 +296,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // =====================
       const user = await getAuthUser(req);
       if (!user) return err("인증이 필요합니다.", 401);
+
+      // AI 분석 엔드포인트
+      if (path === "/ai/analyze" && method === "POST") {
+        const requestBody = await req.json();
+        if (!requestBody || typeof requestBody !== "object") return err("요청 본문이 필요합니다.", 400);
+
+        const { system, messages, max_tokens } = requestBody as Record<string, unknown>;
+        if (!Array.isArray(messages)) return err("messages 배열이 필요합니다.", 400);
+
+        // buildAnthropicPayload will create provider-specific payloads
+
+        try {
+          const provider = AI_PROVIDER;
+          const maxTokensNum = typeof max_tokens === "number" ? (max_tokens as number) : Number(max_tokens || 3000);
+          const content = await analyzeWithProvider(provider, messages as AIMessage[], typeof system === "string" ? (system as string) : undefined, maxTokensNum);
+          return json({ content });
+        } catch (e) {
+          return err(String(e instanceof Error ? e.message : "AI 분석 중 오류가 발생했습니다."), 500);
+        }
+      }
 
       // 마스터 데이터 조회
       if (path === "/companies" && method === "GET") {
