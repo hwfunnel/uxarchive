@@ -389,6 +389,9 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
         <button class="nav-item" id="nav-darkpattern" onclick="navigate('darkpattern')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 10.5v.5"/></svg>다크패턴 검수
         </button>
+        <button class="nav-item" id="nav-analysis-history" onclick="navigate('analysis-history')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M5 8h6M7 4h2"/><path d="M2 14V2h12v12H2z"/></svg>분석 히스토리
+        </button>
       </div>
       <div class="nav-section" id="admin-nav" style="display:none">
         <div class="nav-section-label">관리자</div>
@@ -439,6 +442,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
       <div class="page" id="page-master"><div id="master-view"></div></div>
       <div class="page" id="page-rename"><div id="rename-view"></div></div>
       <div class="page" id="page-darkpattern"><div id="darkpattern-view"></div></div>
+      <div class="page" id="page-analysis-history"><div id="analysis-history-view"></div></div>
     </div>
   </div>
 </div>
@@ -475,6 +479,8 @@ let state = {
   sets:[], currentSet:null, currentSetVersions:[], compareA:null, compareB:null,
   uploadFiles:[], uploadMeta:{}, orderModalType:'fix',
   compareAOrder:null, compareBOrder:null, // 비교 섹션 임시 순서
+  currentHistoryTab:'all',
+  isPopping:false,
 };
 
 async function api(method, path, body) {
@@ -547,18 +553,45 @@ async function initApp() {
   ]);
   state.companies=companies||[]; state.types=types||[];
   state.subtypes=subtypes||[]; state.screenTypes=screenTypes||[];
-  navigate('company');
+  // initialize history state using hash (replaceState) and navigate without pushing
+  const initialPage = getPageFromHash();
+  try { history.replaceState({page: initialPage}, '', `#${initialPage}`); } catch(e) { /* ignore */ }
+  navigate(initialPage, false);
 }
 
-function navigate(page) {
+function getPageFromHash() {
+  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history'];
+  const h = (location.hash||'').replace('#','');
+  return allowed.includes(h)?h:'company';
+}
+
+function navigate(page, push=true) {
+  // normalize
+  if (!page) page = getPageFromHash();
+
+  // avoid duplicate history entries when clicking same top-level menu
+  if (page === state.currentPage) {
+    // still ensure active class correctness
+    document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+    document.getElementById(`nav-${page}`)?.classList.add('active');
+    return;
+  }
+
   state.currentPage=page;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById(`nav-${page}`)?.classList.add('active');
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
-  document.getElementById(`page-${page}`).classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수'};
+  const pageEl = document.getElementById(`page-${page}`);
+  if (pageEl) pageEl.classList.add('active');
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
+
+  // update history only for top-level navigations and not while handling popstate
+  if (push && !state.isPopping) {
+    try { history.pushState({page}, '', `#${page}`); } catch(e) { /* ignore */ }
+  }
+
   if (page==='company') renderCompanyView();
   if (page==='function') renderFunctionView();
   if (page==='compare') renderCompareView();
@@ -566,6 +599,59 @@ function navigate(page) {
   if (page==='master') renderMasterView();
   if (page==='rename') renderRenameView();
   if (page==='darkpattern') renderDarkpatternView();
+  if (page==='analysis-history') renderAnalysisHistoryView();
+}
+
+// handle browser back/forward
+window.addEventListener('popstate', (ev) => {
+  state.isPopping = true;
+  const s = ev.state || {};
+  const page = s.page || getPageFromHash();
+  // if deep state includes screen or set, prefer restoring that
+  if (s.screenId && s.setId) {
+    // ensure top-level page is set without pushing
+    navigate(page, false);
+    openSetDetail(s.setId, false);
+    openScreenDetail(s.screenId, s.setId, false);
+  } else if (s.setId) {
+    navigate(page, false);
+    openSetDetail(s.setId, false);
+  } else {
+    navigate(page, false);
+  }
+  // small timeout to avoid race pushing
+  setTimeout(()=>{ state.isPopping = false; }, 0);
+});
+
+function selectAnalysisHistoryTab(tab) {
+  state.currentHistoryTab = tab;
+  renderAnalysisHistoryView();
+}
+
+function renderAnalysisHistoryView() {
+  const el = document.getElementById('analysis-history-view');
+  const labels = {all:'전체', darkpattern:'다크패턴 체크', compare:'화면비교'};
+  const tabs = Object.keys(labels).map(key =>
+    `<button class="version-tab ${state.currentHistoryTab===key?'active':''}" onclick="selectAnalysisHistoryTab('${key}')">${labels[key]}</button>`
+  ).join('');
+  el.innerHTML = `
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="page-title">분석 히스토리</div>
+        <div class="page-desc">저장된 분석 결과를 확인하고, 나중에 재분석할 수 있습니다.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-secondary btn-sm" disabled>상세 보기</button>
+        <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+      </div>
+    </div>
+    <div class="version-tabs">${tabs}</div>
+    <div class="empty-state">
+      <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A8A49E" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+      <div class="empty-title">저장된 분석 결과가 없습니다.</div>
+      <div class="empty-desc">다른 분석을 실행하면 여기에 결과가 저장됩니다.</div>
+    </div>
+  `;
 }
 
 // ===================== COMPANY VIEW =====================
@@ -641,7 +727,7 @@ function toggleProductOnly() {
   renderCompanyView();
 }
 
-async function openSetDetail(setId) {
+async function openSetDetail(setId, push=true) {
   const el=document.getElementById('company-view');
   el.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   try {
@@ -649,6 +735,10 @@ async function openSetDetail(setId) {
     state.currentSet=set;
     const allVersions=await api('GET',`/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
     state.currentSetVersions=allVersions||[];
+    // push deep state for set detail
+    if (push && !state.isPopping) {
+      try { history.pushState({page:'company', setId}, '', `#company?set=${setId}`); } catch(e) {}
+    }
     renderSetDetail(set,state.currentSetVersions);
   } catch(e) { toast(e.message,'error'); renderCompanyView(); }
 }
@@ -815,11 +905,12 @@ function cancelOrderChange(){
   renderSetDetail(state.currentSet,state.currentSetVersions);
 }
 
-function openScreenDetail(screenId, setId) {
-  const set=state.currentSet;
-  if(!set)return;
+function openScreenDetail(screenId, setId, push=true) {
+  // ensure currentSet is set (if arriving via popstate, setId may be provided)
+  const set = state.currentSet || state.sets?.find(s=>s.id===setId) || state.currentSet;
+  if(!set) return;
   const screen=set.screens?.find(s=>s.id===screenId);
-  if(!screen)return;
+  if(!screen) return;
   const companyName=state.companies.find(c=>c.code===set.company_code)?.name||set.company_code;
   const subtypeName=state.subtypes.find(s=>s.code===set.subtype_code)?.name||set.subtype_code;
   const typeName=state.types.find(t=>t.code===set.type_code)?.name||set.type_code;
@@ -894,6 +985,10 @@ function openScreenDetail(screenId, setId) {
     </div>
     </div>`;
   // 연관 화면 비동기 로드
+  // push deep state for screen detail
+  if (push && !state.isPopping) {
+    try { history.pushState({page:'company', setId: set.id, screenId: screen.id}, '', `#company?set=${set.id}&screen=${screen.id}`); } catch(e) {}
+  }
   setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
 }
 
