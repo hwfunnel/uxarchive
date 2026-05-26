@@ -2651,13 +2651,13 @@ function renderDarkpatternView() {
 
     <!-- 분석 버튼 -->
     <div style="display:flex;gap:10px;margin-bottom:28px">
-      <button class="btn btn-primary" onclick="startDarkpatternAnalysis(4000)" id="dp-btn-detail">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M6.5 4v3M6.5 8.5v.5"/></svg>
-        다크패턴 검수 · 상세
+      <button class="btn btn-primary" onclick="startDarkpatternAnalysis('ui')" id="dp-btn-ui">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="10" height="10" rx="1.5"/><path d="M4 6.5h5M6.5 4v5"/></svg>
+        UI 기반 체크
       </button>
-      <button class="btn btn-secondary" onclick="startDarkpatternAnalysis(2000)" id="dp-btn-summary">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h9M2 7h6M2 10h7"/></svg>
-        다크패턴 검수 · 요약
+      <button class="btn btn-secondary" onclick="startDarkpatternAnalysis('flow')" id="dp-btn-flow">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h9M8 1.5l3 2.5-3 2.5M2 9h9M5 6.5l-3 2.5 3 2.5"/></svg>
+        플로우 기반 체크
       </button>
     </div>
 
@@ -2716,25 +2716,48 @@ function dpRemoveFile(idx) {
   dpRenderPreview();
 }
 
-function dpClearAll() {
-  state.dpFiles = [];
+function onPickerApply(btn) {
+  const slot = btn.getAttribute('data-slot');
+  if (slot === '__dp__') applyDpPickerSelection();
+  else applyComparePickerSelection(slot);
+}
+
+// 다크패턴 피커 선택 완료
+function applyDpPickerSelection() {
+  let selected = pickerScreens.filter(s => pickerSelected.has(s.id));
+  if (!selected.length && pickerScreens.length > 0) selected = [...pickerScreens];
+  selected = selected.sort((a,b) => (a.order_no||0) - (b.order_no||0));
+  if (!selected.length) { toast('화면을 선택해주세요', 'error'); return; }
+  if (!state.dpScreens) state.dpScreens = [];
+  const remaining = 20 - state.dpScreens.length;
+  const toAdd = selected.slice(0, remaining);
+  if (selected.length > remaining) toast('최대 20장까지 가능합니다', 'default');
+  const existingIds = new Set(state.dpScreens.map(s => s.id));
+  toAdd.forEach(s => { if (!existingIds.has(s.id)) state.dpScreens.push(s); });
+  document.getElementById('picker-overlay')?.remove();
   dpRenderPreview();
 }
 
-async function startDarkpatternAnalysis(maxTokens) {
+function dpClearAll() {
+  state.dpScreens = [];
+  dpRenderPreview();
+}
+
+async function startDarkpatternAnalysis(mode) {
   const screens = state.dpScreens || [];
   if (!screens.length) { toast('검수할 화면을 먼저 선택해주세요', 'error'); return; }
 
   const resultWrap = document.getElementById('dp-result-wrap');
   const extra = (document.getElementById('dp-extra') || {}).value || '';
-  const isMulti = screens.length > 1;
+  const isFlow = mode === 'flow';
+  const modeLabel = isFlow ? '플로우 기반 체크' : 'UI 기반 체크';
 
   resultWrap.style.display = 'block';
   resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <div class="spinner"></div>
-      <span style="font-size:14px;font-weight:500">다크패턴 검수 중... ${maxTokens >= 4000 ? '(상세)' : '(요약)'}</span>
-      <span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ${screens.length}장 분석</span>
+      <span style="font-size:14px;font-weight:500">다크패턴 검수 중... (${modeLabel})</span>
+      <span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ${screens.length}장</span>
     </div>
   </div>`;
   resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
@@ -2760,13 +2783,15 @@ async function startDarkpatternAnalysis(maxTokens) {
       img.src = url;
     });
 
-    // 유저 메시지 구성
+    // 이미지 메시지 구성
     const userContent = [];
-    let contextText = isMulti
-      ? `[분석 모드: 플로우 분석 (${screens.length}장)]\n이미지는 선택된 순서대로 정렬되었습니다. 전체 흐름을 고려하여 다크패턴을 분석해주세요.`
-      : `[분석 모드: 단일 화면 분석]`;
-    if (extra) contextText += '\n\n[추가 분석 요청]\n' + extra;
-    userContent.push({type:'text', text: contextText});
+    const context = extra || (isFlow ? '구독 서비스 중도 해지 여정 확인 및 결제 취소' : '디렉토리 탐색 및 서비스 가입/해지 테스트 단계');
+
+    if (isFlow) {
+      userContent.push({type:'text', text: `여정 목표(User Goal): ${context}\n여정 이미지 흐름: 아래 ${screens.length}장 이미지 순서대로 분석\n각 화면의 앞뒤 인과관계를 철저히 추적하여, 사용자의 주의를 의도적으로 분산시키는 전술 및 경제적 선택 침해 전술을 종단적(Longitudinal)으로 탐지하고 결과를 보고해주십시오.`});
+    } else {
+      userContent.push({type:'text', text: `분석 대상 이미지: 아래 화면\n이용자 현재 상황(Context): ${context}\n위의 가이드라인에 근거하여 기만적 UX 요소의 심층 거시 분석을 진행하고 JSON 결과를 반환해주십시오.`});
+    }
 
     for (let i = 0; i < screens.length; i++) {
       const s = screens[i];
@@ -2780,145 +2805,80 @@ async function startDarkpatternAnalysis(maxTokens) {
       }
     }
 
-    const systemPrompt = `당신은 금융·디지털 서비스 다크패턴 전문 검수 담당자입니다.
-아래 두 가지 공식 가이드라인을 기준으로 화면을 검수합니다:
+    // 시스템 프롬프트 분기
+    const systemPrompt = isFlow ? `당신은 가입부터 해지까지 이어지는 사용자의 연속된 가입 여정(User Journey Flow)을 추적하고 검사하는 디지털 서비스 행동 심리학 및 다크패턴 감사관입니다.
+단일 이미지를 넘어서, 제공된 여러 장의 연속된 이미지 순서와 전체 플로우 목표(User Goal)를 연계 분석하여 여정 흐름 상의 다크패턴을 잡아내십시오.
 
-[참고 가이드라인 1] 방송통신위원회 「디지털서비스 이용자보호를 위한 다크패턴 사례집」 (2025.01)
-- 6대 유형: 반복적 간섭(Nagging) / 경로 방해(Obstruction) / 규정 숨김(Sneaking) / 인터페이스 조작(Interface Interference) / 행동 강요(Forced Action) / 사회적 증거 조작(Social Proof)
+## 1. 여정(Flow)상 주요 감지 다크패턴 분석 관점
+- 순차적 가격 인상 (Drip Pricing): 1단계에서는 가격이 저렴해 보이나 결제 최종 단계에서 사전 고지되지 않은 추가 요금이 추가되는지 분석
+- 스위치와 미끼 (Bait and Switch): 첫 단계에서 무료/할인 유인 후 다음 단계에서 유료 서비스를 자연스레 연계 가입하게 만드는지 분석
+- 비대칭적 난이도 (Asymmetric Friction): 가입은 버튼 하나로 간단하지만 해지는 여러 단계를 거치는지 분석
+- 사전 선택 기본값의 고착 (Preselection Overrides): 마케팅 동의 등이 기본값(Checked)으로 세팅되어 인지 못하고 동의하게 만드는지 감지
 
-[참고 가이드라인 2] 금융위원회·금융감독원 「온라인 금융상품 판매 관련 다크패턴 가이드라인」 (2025.12)
-- 4대 범주 15개 유형:
-  · 오도형: 설명절차 과도한 축약 / 속임수 질문 / 잘못된 계층구조 / 특정옵션 사전선택 / 허위광고 및 기만적 유인행위
-  · 방해형: 취소·탈퇴 등의 방해 / 숨겨진 정보 / 가격비교 방해 / 클릭 피로감 유발
-  · 압박형: 계약과정 중 기습적 광고 / 반복간섭 / 감정적 언어사용 / 감각조작 / 다른 소비자의 활동 알림
-  · 편취유도형: 순차공개 가격책정
+## 2. 응답 포맷 (순수 JSON, 마크다운 없이)
+{
+  "journey_summary": "전체 여정 흐름 속에서 발견된 다크패턴의 악의성과 구조적 문제점 종합 요약 (한국어)",
+  "risk_level": "HIGH" | "MEDIUM" | "LOW",
+  "steps_analyzed": [
+    {
+      "step_number": number,
+      "screen_name": "화면 이름 및 단계 설명",
+      "finding": "이전/다음 화면 대비 의도적으로 노출/은닉 처리된 다크패턴 위반 정황 분석"
+    }
+  ],
+  "issues": [
+    {
+      "id": 1,
+      "flow_pattern_type": "순차적 가격 인상" | "비대칭적 경로 방해" | "미끼와 스위치" | "사전선택 고착" | "감정 조작 및 탈출 불가",
+      "case_name": "검출된 플로우 이슈 명칭",
+      "reason": "앞 단계와 뒤 단계 간의 연결성, 또는 시간 흐름 상 사용자에게 숨긴 기만 내용 상세 서술",
+      "policy_reference": "방통위 다크패턴 사례집 가이드 및 가입/취소 단계 비대칭성 근거",
+      "risk_level": "HIGH" | "MEDIUM" | "LOW"
+    }
+  ]
+}`
+    : `당신은 대한민국 방송통신위원회의 '디지털서비스 이용자보호를 위한 다크패턴 사례집(2025.01)' 및 금융위원회의 '온라인보험 가이드라인'을 완벽하게 숙지하고 심사하는 최고 권위의 디지털 서비스 이용자 보호 전문가입니다.
+제공된 서비스 화면 스크린샷과 사용자의 의도(Context)를 대조 분석하여, 사용자에게 기만적이거나 자율성을 침해하는 다크패턴(Deceptive Pattern) 요소를 엄밀히 감지하십시오.
 
-[한화손보 다크패턴 자체점검 체크리스트 기준]
-검수 결과는 아래 체크리스트 항목별로 O(해당) / X(해당없음) / △(보류·확인필요) 로 판정합니다.
+## 1. 분석 핵심 가이드라인
+- 거시적 맥락(Context) 분석: 사용자가 입력한 현재 상황에서 이 화면이 올바르게 설계되었는지 분석
+- 비즈니스 기만 및 편취: 숨겨진 자동 결제 갱신, 부가세 누락, 핵심 조건을 작은 글씨나 눈에 띄지 않는 색으로 숨겼는지 분석
+- 심리적 조작(Guilt-tripping): 정상적인 행동(해지 등)을 하려는 사용자에게 감정적 언어로 압박하는지 확인
+- 인터페이스 편향: 동의 버튼은 크고 강조하고, 취소/거절 버튼은 숨겨 사실상 선택을 강요하는지 포착
 
-I. 오도형
-1. 설명절차의 과도한 축약
-  - 주요 설명내용을 읽지 않고 다음 단계 진행 가능 여부
-  - 확인페이지 등 단계 축약 여부
-  - 이해여부 개별확인 없이 일괄처리 여부
-  - 중요사항 확인을 다른 화면과 통합·생략 여부
+## 2. 감지 대상 다크패턴 핵심 유형 (방통위 2025 기준)
+- 경로 방해 (Obstruction): 가입은 쉽고, 해지/탈퇴 경로는 복잡하게 숨겨놓은 행위
+- 규정 은닉 (Sneaking): 추가 수수료, 연간 구독 가격, 해지 환불 수수료 등의 주요 조건을 축소하거나 생략
+- 인터페이스 조작 (Interface Interference): 특정 버튼을 시각적으로 강조하거나 숨겨 자율 선택 방해
+- 반복적 간섭 (Nagging): 원치 않는 팝업을 반복 노출하고 닫기를 어렵게 만드는 행위
+- 강요된 행동 (Forced Action): 혜택을 핑계로 광고 수신 동의 등을 반강제적으로 진행
 
-2. 속임수 질문
-  - 두 가지 이상 질문 동시 제시로 착오 유발 여부
-  - 모호하거나 다의적 표현 사용 여부
-  - 이중부정문 등으로 의도치 않은 선택 유도 여부
-
-3. 잘못된 계층구조
-  - 사업자에게 유리한 항목이 색상·크기·위치에서 두드러지게 강조되어 있는가
-  - 선택사항이 필수인 것처럼 오인될 수 있는 화면 구성
-  - 동의/비동의가 동등한 시각적 수준으로 제공되지 않는가
-
-4. 특정 옵션의 사전선택
-  - 전체선택·전체취소 버튼 미제공 여부
-  - 사업자에게 유리한 옵션이 사전 선택(기본값)되어 있는가
-  - 금융소비자의 명시적 선택 없이 동의 효과 발생 여부
-
-5. 허위광고 및 기만적인 유인행위
-  - 객관적 근거 없이 유리한 혜택만 강조하거나 비교 기준 불명확
-  - 혜택 조건이 있음에도 제한 없이 주어지는 것처럼 표시
-  - 불확실한 사항에 단정적·확정적 표현 사용
-
-II. 방해형
-1. 취소·탈퇴 등의 방해
-  - 가입 절차 대비 취소·해지 절차가 더 복잡한가
-  - 취소·해지 경로가 다른 메뉴에 숨겨져 있거나 불명확한가
-  - 비대면 가입 상품임에도 해지 시 상담원 연결 필수 여부
-
-2. 숨겨진 정보
-  - 중요 정보가 '자세히 보기' 클릭 시에만 확인 가능한가
-  - 혜택 정보는 크고 명확하게, 유의사항은 흐리거나 작게 표시하는가
-  - 금융소비자에게 불이익이 될 수 있는 사항이 인지하기 어렵게 되어 있는가
-
-3. 가격비교 방해
-  - 동일 화면 내 상품별 금리 표시 기준에 일관성이 없는가
-  - 우대 조건 없이 최대 혜택만 강조하고 있는가
-
-4. 클릭 피로감 유발
-  - 계약해지·청약철회 메뉴 접근이 어렵게 구성되어 있는가
-  - 광고 팝업을 닫기 위해 여러 번 확인이 필요한가
-
-III. 압박형
-1. 계약과정 중 기습적 광고
-  - 계약 진행 중 거래 목적과 무관한 상품·서비스 광고 노출
-  - 부수적 서비스가 주된 상품 가입에 필수인 것처럼 오인 가능한가
-
-2. 반복간섭
-  - 거부·유보 의사를 표시했음에도 동일 요구를 2회 이상 반복하는가
-  - '다음에 하기' 선택 후에도 재확인 팝업이 뜨는가
-
-3. 감정적 언어사용
-  - 불안·부담·기회를 자극하는 감정적 표현으로 특정 선택 유도
-  - 감정적 언어로 금융상품 성격을 오인할 소지가 있는가
-
-4. 감각조작
-  - 특정 선택 유도를 위해 색상·깜빡임·강조 효과를 반복 사용하는가
-
-5. 다른 소비자의 활동 알림
-  - 다른 소비자의 활동 상태를 거짓으로 알리고 있는가
-
-IV. 편취유도형
-1. 순차공개 가격책정
-  - 첫 화면에서 실제 적용 어려운 최대 혜택만 표시하고 계약 진행 중 추가 비용·조건이 단계적으로 드러나는 구조인가
-  - 가격·이율이 변동될 수 있다는 사실을 불명확하게 고지하였는가
-
-[작성 원칙]
-- 화면에서 실제로 확인 가능한 사항만 판정. 확인 불가 항목은 반드시 △(보류)로 표시
-- 단일 화면: 해당 화면 기준으로 판정
-- 여러 화면(플로우): 전체 흐름을 고려하여 각 화면 번호를 명시하며 판정
-- 쉬운 말로 서술. 전문 용어 지양
-- 위험도: 높음 / 중간 / 낮음 으로 표시
-
-[응답 형식 — 반드시 아래 구조로 출력]
-
-## 검수 요약
-| 항목 | 결과 |
-|------|------|
-| 분석 화면 수 | N장 |
-| 다크패턴 감지 항목 | N개 |
-| 위험도 높음 | N개 |
-| 위험도 중간 | N개 |
-| 위험도 낮음 | N개 |
-
-## 체크리스트 판정 결과
-
-### I. 오도형
-| 유형 | 항목 | 판정 | 위험도 | 근거 |
-|------|------|------|--------|------|
-(O=해당 / X=해당없음 / △=보류)
-X 항목은 근거 생략 가능
-
-### II. 방해형
-(동일 구조)
-
-### III. 압박형
-(동일 구조)
-
-### IV. 편취유도형
-(동일 구조)
-
-## 추가 우려사항
-체크리스트에 없지만 가이드라인 정신상 우려되는 사항이 있으면 아래 형식으로 추가:
-| 항목 | 위험도 | 근거 및 개선 방향 |
-
-## 종합 의견
-전체적인 다크패턴 수준 평가 및 우선 개선 권고사항 (→ 로 시작, 3개 이상)
-
-한국어. 쉬운 말로. 화면에서 확인 가능한 것만.`;
+## 3. 응답 포맷 (순수 JSON, 마크다운 없이)
+{
+  "summary": "화면 내 다크패턴 위반 총평 2~3문장 (한국어)",
+  "risk_level": "HIGH" | "MEDIUM" | "LOW",
+  "issues": [
+    {
+      "id": 1,
+      "dark_pattern_type": "경로 방해" | "규정 은닉" | "인터페이스 조작" | "반복적 간섭" | "강요된 행동" | "사회적 증거 조작",
+      "case_name": "검출된 이슈의 직관적인 명칭",
+      "reason": "현재 이미지와 사용자의 맥락에 기인한 구체적인 문제점 설명",
+      "policy_reference": "방통위 다크패턴 사례집 내에 명시된 근거 기준 서술",
+      "source_guideline": "유형 - 상세패턴 - {질문항목}",
+      "risk_level": "HIGH" | "MEDIUM" | "LOW"
+    }
+  ]
+}`;
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
-      max_tokens: maxTokens
+      max_tokens: 4000
     });
 
     if (!res) throw new Error('분석 요청 실패');
-    const text = (res.content || []).find(b => b.type === 'text')?.text || '';
-    renderDarkpatternResult(resultWrap, text, files.length, maxTokens);
+    const rawText = (res.content || []).find(b => b.type === 'text')?.text || '';
+    renderDarkpatternResult(resultWrap, rawText, screens.length, mode);
 
   } catch(e) {
     resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
@@ -2927,180 +2887,96 @@ X 항목은 근거 생략 가능
   }
 }
 
-function renderDarkpatternResult(wrap, text, fileCount, maxTokens) {
 
-  function dpBadge(val) {
-    const v = (val||'').trim();
-    if (v === 'O' || v.includes('O(해당)')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">O 해당</span>';
-    if (v === 'X' || v.includes('X(')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">X 해당없음</span>';
-    if (v === '△' || v.includes('△') || v.includes('보류')) return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">△ 보류</span>';
-    return '<span style="font-size:12px;color:var(--text-secondary)">' + v + '</span>';
+function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
+  // JSON 파싱 시도
+  let data = null;
+  try {
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    data = JSON.parse(clean);
+  } catch(e) {
+    // JSON 파싱 실패 시 텍스트 그대로 표시
   }
 
-  function riskBadge(val) {
-    const v = (val||'').trim();
-    if (v.includes('높음')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">높음</span>';
-    if (v.includes('중간')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">중간</span>';
-    if (v.includes('낮음')) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">낮음</span>';
-    if (!v || v === '-') return '<span style="font-size:11px;color:var(--text-tertiary)">-</span>';
-    return '<span style="font-size:11px;color:var(--text-secondary)">' + v + '</span>';
-  }
+  const modeLabel = mode === 'flow' ? '플로우 기반 체크' : 'UI 기반 체크';
+  const riskColor = (level) => {
+    if (level === 'HIGH') return {bg:'#FCEBEB', color:'#A32D2D'};
+    if (level === 'MEDIUM') return {bg:'#FAEEDA', color:'#854F0B'};
+    return {bg:'#EAF3DE', color:'#3B6D11'};
+  };
 
-  function md2dpReport(t) {
-    const lines = t.split('\n');
-    let html = '';
-    let inTable = false, tableRows = [], tableHeaders = [];
-    let sectionIdx = 0;
-    let skipSummary = false;
-    const sectionColors = [
-      {bg:'#FCEBEB',txt:'#A32D2D'},
-      {bg:'#FAEEDA',txt:'#854F0B'},
-      {bg:'#E6F1FB',txt:'#185FA5'},
-      {bg:'#EEEDFE',txt:'#534AB7'},
-    ];
+  let bodyHtml = '';
 
-    function flushTable() {
-      if (!tableRows.length) return;
-      const isChecklist = tableHeaders.some(h => h.includes('판정') || h.includes('결과'));
-      const isRisk = tableHeaders.some(h => h.includes('위험도'));
-      let thtml = '<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">' +
-        '<table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto">' +
-        '<thead><tr style="background:var(--gray-50)">';
-      tableHeaders.forEach(h => {
-        thtml += '<th style="padding:8px 12px;text-align:left;font-weight:500;font-size:12px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">' + h + '</th>';
+  if (data) {
+    const isFlow = mode === 'flow';
+    const overallRisk = data.risk_level || 'LOW';
+    const rc = riskColor(overallRisk);
+
+    // 요약 카드
+    bodyHtml += `<div style="padding:16px 20px;background:${rc.bg};border-radius:var(--radius-md);margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
+      <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:3px;background:${rc.color};color:#fff;flex-shrink:0;margin-top:2px">${overallRisk}</span>
+      <div style="font-size:14px;color:${rc.color};font-weight:500;line-height:1.6">${data.summary || data.journey_summary || ''}</div>
+    </div>`;
+
+    // 플로우 단계 분석
+    if (isFlow && data.steps_analyzed?.length) {
+      bodyHtml += `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:10px">단계별 분석</div>`;
+      bodyHtml += `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);margin-bottom:20px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:var(--gray-50)">
+            <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border);width:60px">단계</th>
+            <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border)">화면</th>
+            <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border)">분석 내용</th>
+          </tr></thead><tbody>
+          ${data.steps_analyzed.map(s => `<tr>
+            <td style="padding:8px 12px;border-bottom:0.5px solid var(--border);color:var(--text-tertiary);font-family:var(--font-mono)">${s.step_number}</td>
+            <td style="padding:8px 12px;border-bottom:0.5px solid var(--border);font-weight:500;white-space:nowrap">${s.screen_name}</td>
+            <td style="padding:8px 12px;border-bottom:0.5px solid var(--border);color:var(--text-secondary);line-height:1.5">${s.finding}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>`;
+    }
+
+    // 이슈 목록
+    if (data.issues?.length) {
+      bodyHtml += `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:10px">감지된 이슈 (${data.issues.length}건)</div>`;
+      data.issues.forEach(issue => {
+        const ic = riskColor(issue.risk_level || 'LOW');
+        const typeName = issue.dark_pattern_type || issue.flow_pattern_type || '';
+        bodyHtml += `<div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:${ic.bg};color:${ic.color}">${issue.risk_level}</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:3px;background:var(--gray-100);color:var(--text-secondary)">${typeName}</span>
+            <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${issue.case_name}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px">${issue.reason}</div>
+          ${issue.policy_reference ? `<div style="font-size:12px;color:var(--text-tertiary);padding:6px 10px;background:var(--gray-50);border-radius:var(--radius-sm)">📋 ${issue.policy_reference}</div>` : ''}
+        </div>`;
       });
-      thtml += '</tr></thead><tbody>';
-      tableRows.forEach(row => {
-        thtml += '<tr>';
-        row.forEach((cell, ci) => {
-          const h = tableHeaders[ci] || '';
-          let cellHtml;
-          if (h.includes('판정')) cellHtml = dpBadge(cell);
-          else if (h.includes('위험도')) cellHtml = riskBadge(cell);
-          else if (h.includes('결과') && (cell === 'O' || cell === 'X' || cell === '△')) cellHtml = dpBadge(cell);
-          else cellHtml = '<span style="color:var(--text-primary);line-height:1.5">' + cell + '</span>';
-          thtml += '<td style="padding:8px 12px;border-bottom:0.5px solid var(--border);vertical-align:top">' + cellHtml + '</td>';
-        });
-        thtml += '</tr>';
-      });
-      thtml += '</tbody></table></div>';
-      html += thtml;
-      tableRows = []; tableHeaders = []; inTable = false;
+    } else {
+      bodyHtml += `<div style="text-align:center;padding:24px;color:var(--text-tertiary);font-size:14px">감지된 다크패턴 이슈가 없습니다</div>`;
     }
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.startsWith('## 검수 요약')) { skipSummary = true; continue; }
-      if (skipSummary && line.startsWith('## ')) skipSummary = false;
-      if (skipSummary) continue;
-
-      if (line.startsWith('## ')) {
-        flushTable();
-        const title = line.replace('## ', '').trim();
-        const sc = sectionColors[sectionIdx % sectionColors.length];
-        sectionIdx++;
-        html += '<div style="display:flex;align-items:center;gap:8px;margin:' + (sectionIdx > 1 ? '28px' : '0') + ' 0 14px">' +
-          '<div style="width:22px;height:22px;border-radius:50%;background:' + sc.bg + ';color:' + sc.txt + ';font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + sectionIdx + '</div>' +
-          '<div style="font-size:15px;font-weight:600;color:var(--text-primary)">' + title + '</div>' +
-          '</div>';
-        continue;
-      }
-
-      if (line.startsWith('### ')) {
-        flushTable();
-        html += '<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:12px 0 6px;padding:5px 10px;background:var(--gray-50);border-radius:var(--radius-sm)">' + line.replace('### ', '') + '</div>';
-        continue;
-      }
-
-      if (line.match(/^\|[-| :]+\|$/)) continue;
-
-      if (line.startsWith('|') && line.lastIndexOf('|') === line.length - 1) {
-        const cells = line.slice(1, -1).split('|').map(c => c.trim());
-        if (!inTable) { inTable = true; tableHeaders = cells; }
-        else { tableRows.push(cells); }
-        continue;
-      }
-
-      if (inTable && !line.startsWith('|')) flushTable();
-
-      if (line.startsWith('→ ')) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 14px;background:#EAF3DE;border-radius:var(--radius-md);margin-bottom:6px">' +
-          '<span style="color:#3B6D11;font-weight:700;flex-shrink:0">→</span>' +
-          '<span style="font-size:14px;color:#1F4D0A;font-weight:500">' + line.slice(2) + '</span>' +
-          '</div>';
-        continue;
-      }
-
-      if (line.match(/^[-•·] /)) {
-        html += '<div style="display:flex;gap:8px;font-size:13px;color:var(--text-secondary);padding:3px 14px;line-height:1.6">' +
-          '<span style="color:var(--text-tertiary);flex-shrink:0">·</span>' +
-          '<span>' + line.replace(/^[-•·] /, '') + '</span></div>';
-        continue;
-      }
-
-      if (line.trim()) {
-        html += '<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px">' +
-          line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-primary)">$1</strong>') + '</div>';
-      } else {
-        html += '<div style="height:6px"></div>';
-      }
-    }
-    flushTable();
-    return html;
+  } else {
+    // JSON 파싱 실패 시 텍스트 그대로
+    bodyHtml = `<pre style="font-size:13px;white-space:pre-wrap;color:var(--text-secondary);line-height:1.7">${rawText}</pre>`;
   }
 
-  // 요약 카드 파싱
-  function parseSummaryCards(text) {
-    const lines = text.split('\n');
-    const start = lines.findIndex(l => l.startsWith('## 검수 요약'));
-    if (start === -1) return '';
-    const rows = [];
-    for (let i = start + 1; i < lines.length; i++) {
-      const l = lines[i];
-      if (l.startsWith('## ')) break;
-      if (l.startsWith('|') && !l.match(/^\|[-| :]+\|$/) && !l.includes('항목')) {
-        const cells = l.slice(1,-1).split('|').map(c=>c.trim());
-        if (cells.length >= 2) rows.push(cells);
-      }
-    }
-    if (!rows.length) return '';
-    const colorMap = {
-      '위험도 높음': {bg:'#FCEBEB', txt:'#A32D2D'},
-      '위험도 중간': {bg:'#FAEEDA', txt:'#854F0B'},
-      '위험도 낮음': {bg:'#EAF3DE', txt:'#3B6D11'},
-      '다크패턴 감지 항목': {bg:'#E6F1FB', txt:'#185FA5'},
-    };
-    return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">' +
-      rows.slice(0,6).map(r => {
-        const col = colorMap[r[0]] || {bg:'var(--gray-50)', txt:'var(--text-primary)'};
-        return '<div style="background:' + col.bg + ';border-radius:var(--radius-md);padding:14px 16px">' +
-          '<div style="font-size:11px;color:' + col.txt + ';font-weight:600;margin-bottom:4px;opacity:0.8">' + (r[0]||'') + '</div>' +
-          '<div style="font-size:20px;font-weight:700;color:' + col.txt + '">' + (r[1]||'-') + '</div>' +
-          '</div>';
-      }).join('') +
-      '</div>';
-  }
-
-  const summaryCards = parseSummaryCards(text);
-  const reportBody = md2dpReport(text);
-
-  wrap.innerHTML = '<div id="dp-analysis-report" style="border-top:1px solid var(--border);padding-top:24px">' +
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">' +
-      '<div>' +
-        '<div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">다크패턴 검수 결과</div>' +
-        '<div style="font-size:14px;color:var(--text-tertiary)">' + fileCount + '장 · ' + (maxTokens >= 4000 ? '상세 분석' : '요약 분석') + ' · 금감원·방통위 가이드라인 기준</div>' +
-      '</div>' +
-      '<button class="btn btn-secondary btn-sm" onclick="downloadDpReport()">' +
-        '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg> 이미지 저장' +
-      '</button>' +
-    '</div>' +
-    summaryCards +
-    '<div id="dp-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">' +
-      reportBody +
-    '</div>' +
-  '</div>';
+  wrap.innerHTML = `<div id="dp-analysis-report" style="border-top:1px solid var(--border);padding-top:24px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">다크패턴 검수 결과</div>
+        <div style="font-size:14px;color:var(--text-tertiary)">${fileCount}장 · ${modeLabel} · 금감원·방통위 가이드라인 기준</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="downloadDpReport()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg> 이미지 저장
+      </button>
+    </div>
+    <div id="dp-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">
+      ${bodyHtml}
+    </div>
+  </div>`;
 }
+
 
 async function downloadDpReport() {
   const el = document.getElementById('dp-analysis-report');
