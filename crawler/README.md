@@ -4,6 +4,51 @@ Python + Playwright based local crawler for capturing public mobile web pages be
 
 This phase only captures screenshots locally and writes metadata JSON. It does not upload to Supabase Storage and does not insert DB rows.
 
+## 자동 실행 (macOS launchd)
+
+매월 **4일**과 **25일** 오전 **10:42 KST**에 자동으로 크롤링이 실행됩니다.
+
+> **주의:** Mac이 잠자기(sleep) 상태이면 실행되지 않습니다. 실행 예정 시간에 Mac이 켜져 있어야 합니다.
+
+### 등록 확인
+
+```bash
+launchctl list | grep uxarchive
+```
+
+`-  0  com.uxarchive.crawler` 가 보이면 정상 등록된 상태입니다.
+
+### 수동 실행
+
+```bash
+bash /Users/ranranoi/Downloads/uxarchive/run_crawler.sh
+```
+
+### 자동 실행 일시 중지
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.uxarchive.crawler.plist
+```
+
+### 자동 실행 재개
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.uxarchive.crawler.plist
+```
+
+### 로그 확인
+
+```bash
+# 실행 로그
+cat /Users/ranranoi/Downloads/uxarchive/crawler_output/launchd.log
+
+# 에러 로그
+cat /Users/ranranoi/Downloads/uxarchive/crawler_output/launchd_err.log
+
+# 크롤러 상세 로그 (가장 최근 실행)
+ls -t /Users/ranranoi/Downloads/uxarchive/crawler_output/runs/ | head -1 | xargs -I{} cat /Users/ranranoi/Downloads/uxarchive/crawler_output/runs/{}/logs/crawler.log
+```
+
 ## Current UX Archive Image Structure
 
 Code inspection shows this structure:

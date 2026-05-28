@@ -37,6 +37,13 @@ def build_metadata(
     error_message: str | None,
     http_status: int | None,
     full_page: bool,
+    capture_strategy: str | None = None,
+    document_scroll_height: int | None = None,
+    body_scroll_height: int | None = None,
+    selected_scroll_container: str | None = None,
+    stitched_segments_count: int | None = None,
+    final_screenshot_width: int | None = None,
+    final_screenshot_height: int | None = None,
 ) -> dict[str, Any]:
     company_code = target.get("company_code") or run_config.get("company_code")
     type_code = target.get("type_code") or run_config.get("type_code")
@@ -84,6 +91,13 @@ def build_metadata(
         "error_message": error_message,
         "content_hash": screenshot_hash,
         "screenshot_hash": screenshot_hash,
+        "capture_strategy": capture_strategy,
+        "document_scroll_height": document_scroll_height,
+        "body_scroll_height": body_scroll_height,
+        "selected_scroll_container": selected_scroll_container,
+        "stitched_segments_count": stitched_segments_count,
+        "final_screenshot_width": final_screenshot_width,
+        "final_screenshot_height": final_screenshot_height,
         "supabase_candidate": {
             "storage_bucket": "screens",
             "storage_path": storage_path,

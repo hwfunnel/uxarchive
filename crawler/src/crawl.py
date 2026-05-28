@@ -91,6 +91,7 @@ async def run() -> int:
                     screenshot_path=screenshot_path,
                     timeout_ms=timeout_ms,
                     full_page=full_page,
+                    logger=logger,
                 )
 
                 if result.status != "success":
@@ -112,6 +113,13 @@ async def run() -> int:
                     error_message=result.error_message,
                     http_status=result.http_status,
                     full_page=full_page,
+                    capture_strategy=result.capture_strategy,
+                    document_scroll_height=result.document_scroll_height,
+                    body_scroll_height=result.body_scroll_height,
+                    selected_scroll_container=result.selected_scroll_container,
+                    stitched_segments_count=result.stitched_segments_count,
+                    final_screenshot_width=result.final_screenshot_width,
+                    final_screenshot_height=result.final_screenshot_height,
                 )
                 write_metadata(metadata_path, metadata)
                 logger.info("Metadata written for %s: %s", screen_id, metadata_path)
