@@ -119,6 +119,24 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
 // requestAnthropic removed: use provider-specific callAnthropicMessages(payload) instead
 
 // ---------------------
+// Safe error message extraction
+// ---------------------
+function safeErrorMessage(data: unknown, status: number): string {
+  if (typeof data !== "object" || data === null) return `Anthropic API 오류 (${status})`;
+  const obj = data as Record<string, unknown>;
+  // Try data.error.message
+  if (obj.error && typeof obj.error === "object") {
+    const err = obj.error as Record<string, unknown>;
+    if (typeof err.message === "string") return `Anthropic API 오류 (${status}): ${err.message}`;
+    if (typeof err.type === "string" && typeof err.message === "string") return `Anthropic API 오류 (${status}, ${err.type}): ${err.message}`;
+  }
+  // Try data.message
+  if (typeof obj.message === "string") return `Anthropic API 오류 (${status}): ${obj.message}`;
+  // Fallback
+  return `Anthropic API 오류 (${status})`;
+}
+
+// ---------------------
 // Provider adapter (extensible)
 // ---------------------
 
@@ -146,9 +164,7 @@ async function callAnthropicMessages(payload: Record<string, unknown>): Promise<
   });
   const data = await res.json();
   if (!res.ok) {
-    const errMsg = data && typeof data === "object" && (data as Record<string, unknown>).error
-      ? String((data as Record<string, unknown>).error)
-      : `Anthropic API 오류 (${res.status})`;
+    const errMsg = safeErrorMessage(data, res.status);
     throw new Error(errMsg);
   }
   return data as Record<string, unknown>;
@@ -313,7 +329,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
           const content = await analyzeWithProvider(provider, messages as AIMessage[], typeof system === "string" ? (system as string) : undefined, maxTokensNum);
           return json({ content });
         } catch (e) {
-          return err(String(e instanceof Error ? e.message : "AI 분석 중 오류가 발생했습니다."), 500);
+          const errorMsg = e instanceof Error ? e.message : typeof e === "string" ? e : "AI 분석 중 오류가 발생했습니다.";
+          return err(errorMsg, 500);
         }
       }
 
