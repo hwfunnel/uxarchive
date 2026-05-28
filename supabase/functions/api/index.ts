@@ -116,6 +116,34 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return false;
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function buildReportKey(analysisType: string, createdBy: string): string {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `${analysisType}_${createdBy}_${Date.now()}_${suffix}`;
+}
+
+async function buildPromptHash(system: string | undefined, messages: unknown): Promise<string> {
+  return await sha256Hex(JSON.stringify({ system: system || "", messages }));
+}
+
+function joinResponseText(content: AITextBlock[]): string {
+  return content.map((item) => item.text.trim()).filter(Boolean).join("\n");
+}
+
+function parseJSONIfPossible(text: string): unknown | null {
+  const trimmed = text.trim();
+  if (!trimmed || !(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+}
+
 // requestAnthropic removed: use provider-specific callAnthropicMessages(payload) instead
 
 // ---------------------
@@ -208,11 +236,11 @@ function normalizeAIResponse(result: Record<string, unknown> | undefined): AITex
   return out;
 }
 
-async function analyzeWithProvider(provider: string, messages: AIMessage[], system: string | undefined, max_tokens: number): Promise<AITextBlock[]> {
+async function analyzeWithProvider(provider: string, messages: AIMessage[], system: string | undefined, max_tokens: number): Promise<{ content: AITextBlock[]; raw: Record<string, unknown> }> {
   if (provider === "anthropic") {
     const payload = buildAnthropicPayload(messages, system, max_tokens);
     const raw = await callAnthropicMessages(payload);
-    return normalizeAIResponse(raw as Record<string, unknown> | undefined);
+    return { content: normalizeAIResponse(raw as Record<string, unknown> | undefined), raw };
   }
   throw new Error(`지원하지 않는 AI provider: ${provider}`);
 }
@@ -318,16 +346,59 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const requestBody = await req.json();
         if (!requestBody || typeof requestBody !== "object") return err("요청 본문이 필요합니다.", 400);
 
-        const { system, messages, max_tokens } = requestBody as Record<string, unknown>;
+        const { system, messages, max_tokens, analysis_type } = requestBody as Record<string, unknown>;
         if (!Array.isArray(messages)) return err("messages 배열이 필요합니다.", 400);
 
-        // buildAnthropicPayload will create provider-specific payloads
+        const analysisType = typeof analysis_type === "string" && analysis_type.trim() ? analysis_type : "ai_analyze";
+        const promptVersion = "v1";
+        const provider = AI_PROVIDER;
+        const maxTokensNum = typeof max_tokens === "number" ? (max_tokens as number) : Number(max_tokens || 3000);
+        const systemValue = typeof system === "string" ? system : undefined;
 
         try {
-          const provider = AI_PROVIDER;
-          const maxTokensNum = typeof max_tokens === "number" ? (max_tokens as number) : Number(max_tokens || 3000);
-          const content = await analyzeWithProvider(provider, messages as AIMessage[], typeof system === "string" ? (system as string) : undefined, maxTokensNum);
-          return json({ content });
+          const { content, raw } = await analyzeWithProvider(provider, messages as AIMessage[], systemValue, maxTokensNum);
+          const responseText = joinResponseText(content);
+          const promptHash = await buildPromptHash(systemValue, messages);
+          const resultJson = parseJSONIfPossible(responseText);
+          const summary = responseText.slice(0, 200);
+          const reportKey = buildReportKey(analysisType, String(user.sub));
+          const reportPayload = {
+            analysis_type: analysisType,
+            report_key: reportKey,
+            prompt_hash: promptHash,
+            prompt_version: promptVersion,
+            model: ANTHROPIC_MODEL,
+            summary,
+            result_json: resultJson,
+            result_markdown: responseText,
+            raw_response: raw,
+            status: "completed",
+            created_by: user.sub,
+          } as Record<string, unknown>;
+
+          let reportSaved = false;
+          let reportId: number | null = null;
+          let reportError: string | undefined;
+          try {
+            const { data: insertData, error: insertError } = await supabase
+              .from("analysis_reports")
+              .insert(reportPayload)
+              .select("id")
+              .single();
+            if (insertError) {
+              reportError = insertError.message;
+            } else if (insertData && typeof insertData.id === "number") {
+              reportSaved = true;
+              reportId = insertData.id;
+            }
+          } catch (saveErr) {
+            reportError = saveErr instanceof Error ? saveErr.message : String(saveErr);
+          }
+
+          const responseBody: Record<string, unknown> = { content, report_saved: reportSaved };
+          if (reportSaved) responseBody.report_id = reportId;
+          if (!reportSaved) responseBody.report_error = reportError ?? "analysis_reports 저장에 실패했습니다.";
+          return json(responseBody);
         } catch (e) {
           const errorMsg = e instanceof Error ? e.message : typeof e === "string" ? e : "AI 분석 중 오류가 발생했습니다.";
           return err(errorMsg, 500);
