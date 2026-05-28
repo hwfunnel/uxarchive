@@ -1,0 +1,27 @@
+{
+  "run": {
+    "name": "dbl-car-pilot",
+    "company_code": "DBL",
+    "company_name": "DB손해보험",
+    "type_code": "NEW",
+    "subtype_code": "CM-CAR",
+    "version": "V2",
+    "device_type": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "full_page": true,
+    "wait_after_load_ms": 3000,
+    "rate_limit_seconds": 3
+  },
+  "targets": [
+    {
+      "screen_id": "DBL-CAR-PRD-DESC-Y-01",
+      "screen_type_code": "PRD_DESC_Y",
+      "order_no": 1,
+      "label": "DB손해보험 자동차보험 상품설명(인트로-연납)",
+      "source_url": "https://m.directdb.co.kr/at/prd/atarc/step1/formStepPreView.do?partner_code=C088"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+crawler_output/
+crawler/__pycache__/
+crawler/src/__pycache__/
+supabase/.temp/
+*.pyc
+.env

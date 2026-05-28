@@ -1,0 +1,27 @@
+{
+  "run": {
+    "name": "ssl-car-pilot",
+    "company_code": "SSL",
+    "company_name": "삼성화재",
+    "type_code": "NEW",
+    "subtype_code": "CM-CAR",
+    "version": "V2",
+    "device_type": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "full_page": true,
+    "wait_after_load_ms": 3000,
+    "rate_limit_seconds": 3
+  },
+  "targets": [
+    {
+      "screen_id": "SSL-CAR-MAIN-01",
+      "screen_type_code": "MAIN",
+      "order_no": 1,
+      "label": "삼성화재 다이렉트 자동차보험 공개 랜딩",
+      "source_url": "https://direct.samsungfire.com/ria/fw/index.html?state=Front&product=car&ver=606"
+    }
+  ]
+}
