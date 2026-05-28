@@ -419,6 +419,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json(data || []);
       }
 
+      if (path.match(/^\/analysis-reports\/\d+$/) && method === "GET") {
+        const reportId = parseInt(path.split("/")[2]);
+        if (isNaN(reportId)) return err("유효하지 않은 ID입니다.", 400);
+        const { data, error } = await supabase
+          .from("analysis_reports")
+          .select("id, analysis_type, summary, model, status, created_at, result_markdown, result_json")
+          .eq("id", reportId)
+          .eq("created_by", user.sub)
+          .single();
+        if (error || !data) return err("분석 결과를 찾을 수 없습니다.", 404);
+        return json(data);
+      }
+
       // 마스터 데이터 조회
       if (path === "/companies" && method === "GET") {
         const { data } = await supabase.from("companies").select("*").eq("is_active", true).order("order_no");

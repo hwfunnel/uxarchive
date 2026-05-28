@@ -694,7 +694,7 @@ function renderAnalysisHistoryView() {
               <span>생성일: ${createdAtEscaped}</span>
             </div>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-secondary btn-sm" disabled>상세 보기</button>
+              <button class="btn btn-secondary btn-sm" onclick="openAnalysisReportDetail(${item.id}, '${item.analysis_type || 'ai_analyze'}')">상세 보기</button>
               <button class="btn btn-secondary btn-sm" disabled>재분석</button>
             </div>
           </div>
@@ -715,6 +715,89 @@ function renderAnalysisHistoryView() {
       }
       toast(error.message || '히스토리 로드 중 오류가 발생했습니다.', 'error');
     });
+}
+
+// 분석 히스토리 상세 보기
+async function openAnalysisReportDetail(id, analysisType) {
+  const existing = document.getElementById('report-detail-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'report-detail-overlay';
+  overlay.style.cssText = 'align-items:flex-start;overflow-y:auto;padding:24px';
+  overlay.innerHTML = `
+    <div class="picker-modal" style="max-width:820px;margin:auto">
+      <div class="modal-header" style="position:sticky;top:0;background:var(--gray-0);z-index:10;border-radius:var(--radius-lg) var(--radius-lg) 0 0">
+        <div class="modal-title">분석 결과 상세</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+          <button class="modal-close" onclick="document.getElementById('report-detail-overlay').remove()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body" id="report-detail-body" style="max-height:80vh;overflow-y:auto;padding:20px 24px">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
+  try {
+    const report = await api('GET', `/analysis-reports/${id}`);
+    const body = document.getElementById('report-detail-body');
+    if (!body) return;
+
+    const createdAt = report.created_at
+      ? new Date(report.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '';
+
+    const typeLabel = { darkpattern:'다크패턴 검수', compare:'화면 비교', ai_analyze:'AI 분석' };
+    const typeName = escapeHtml(typeLabel[report.analysis_type] || report.analysis_type || '');
+
+    const metaHtml = `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--text-tertiary);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <span>유형: <strong style="color:var(--text-secondary)">${typeName}</strong></span>
+        <span>모델: <strong style="color:var(--text-secondary)">${escapeHtml(report.model || '')}</strong></span>
+        <span>생성일: <strong style="color:var(--text-secondary)">${escapeHtml(createdAt)}</strong></span>
+        <span>상태: <strong style="color:var(--text-secondary)">${escapeHtml(report.status || '')}</strong></span>
+      </div>
+    `;
+
+    const resultWrap = document.createElement('div');
+
+    if (report.analysis_type === 'darkpattern') {
+      const rawText = report.result_markdown || '';
+      let resultJson = null;
+      if (report.result_json && typeof report.result_json === 'object') {
+        resultJson = report.result_json;
+      } else if (typeof report.result_json === 'string') {
+        try { resultJson = JSON.parse(report.result_json); } catch { /* ignore */ }
+      }
+      const mode = (resultJson?.steps_analyzed?.length) ? 'flow' : 'ui';
+      renderDarkpatternResult(resultWrap, rawText, '-', mode);
+    } else {
+      const text = report.result_markdown || '';
+      resultWrap.innerHTML = `
+        <div style="border-top:1px solid var(--border);padding-top:20px">
+          <div style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">
+            ${md2report(text)}
+          </div>
+        </div>
+      `;
+    }
+
+    body.innerHTML = metaHtml;
+    body.appendChild(resultWrap);
+  } catch(e) {
+    const body = document.getElementById('report-detail-body');
+    if (body) {
+      body.innerHTML = `<div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">불러오기 오류: ${escapeHtml(e.message)}</div>`;
+    }
+  }
 }
 
 // ===================== COMPANY VIEW =====================
@@ -2121,6 +2204,110 @@ ${commonAnalysisFramework}
       <div style="color:#C0392B;font-size: 14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}</div>
     </div>`;
   }
+}
+
+// 변화 방향 뱃지 변환 (전역)
+function changeBadge(val) {
+  const v = val.trim();
+  if (v.includes('↑') || v.includes('상향') || v.includes('강화') || v.includes('추가')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#EAF3DE;color:#3B6D11">${v}</span>`;
+  if (v.includes('↓') || v.includes('하향') || v.includes('축소') || v.includes('감소')) return `<span style="display:inline-flex;align-items:center;gap:2px;font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FCEBEB;color:#A32D2D">${v}</span>`;
+  if (v.includes('신규') || v.includes('추가') || v.includes('NEW')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#E6F1FB;color:#185FA5">${v}</span>`;
+  if (v.includes('제거') || v.includes('삭제') || v.includes('없음')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#5F5E5A">${v}</span>`;
+  if (v.includes('⚠') || v.includes('주의') || v.includes('조건')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#FAEEDA;color:#854F0B">${v}</span>`;
+  if (v.includes('유지') || v.includes('동일')) return `<span style="font-size: 14px;font-weight:500;padding:2px 7px;border-radius:3px;background:#F1EFE8;color:#888780">${v}</span>`;
+  return `<span style="font-size: 14px;color:var(--text-secondary)">${v}</span>`;
+}
+
+// 마크다운 → 보고서 HTML 변환 (전역)
+function md2report(t) {
+  const lines = t.split('\n');
+  let html = '';
+  let inTable = false;
+  let tableRows = [];
+  let tableHeaders = [];
+  let sectionIdx = 0;
+  const sectionColors = [
+    {num:'#FFF0EB',txt:'#FF4600'},
+    {num:'#E6F1FB',txt:'#185FA5'},
+    {num:'#EAF3DE',txt:'#3B6D11'},
+    {num:'#EEEDFE',txt:'#534AB7'},
+  ];
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    const isChangeTable = tableHeaders.some(h => h.includes('변화') || h.includes('유형'));
+    let thtml = `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">
+      <table style="width:100%;border-collapse:collapse;font-size: 14px;table-layout:auto">
+        <thead><tr style="background:var(--gray-50)">`;
+    tableHeaders.forEach(h => {
+      thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size: 14px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
+    });
+    thtml += `</tr></thead><tbody>`;
+    tableRows.forEach(row => {
+      thtml += `<tr>`;
+      row.forEach((cell, ci) => {
+        const isChangeCol = isChangeTable && (tableHeaders[ci]?.includes('변화') || tableHeaders[ci]?.includes('유형') || tableHeaders[ci]?.includes('방향'));
+        const cellHtml = isChangeCol ? changeBadge(cell) : `<span style="color:var(--text-primary)">${cell}</span>`;
+        thtml += `<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5">${cellHtml}</td>`;
+      });
+      thtml += `</tr>`;
+    });
+    thtml += `</tbody></table></div>`;
+    html += thtml;
+    tableRows = []; tableHeaders = []; inTable = false;
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('## ')) {
+      flushTable();
+      const title = line.replace('## ', '').trim();
+      const sc = sectionColors[sectionIdx % sectionColors.length];
+      sectionIdx++;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin:${sectionIdx>1?'24px':'0'} 0 12px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size: 14px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
+        <div style="font-size:14px;font-weight:500">${title}</div>
+      </div>`;
+      continue;
+    }
+    if (line.startsWith('### ')) {
+      flushTable();
+      html += `<div style="font-size: 14px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
+      continue;
+    }
+    if (line.match(/^\|[-| :]+\|$/)) continue;
+    if (line.startsWith('|') && line.endsWith('|')) {
+      const cells = line.slice(1,-1).split('|').map(c=>c.trim());
+      if (!inTable) { inTable = true; tableHeaders = cells; }
+      else { tableRows.push(cells); }
+      continue;
+    }
+    if (inTable && !line.startsWith('|')) { flushTable(); }
+    if (line.startsWith('◆ ')) {
+      const rest = line.replace('◆ ','');
+      const isGood = rest.includes('잘한') || rest.includes('긍정') || rest.includes('강점');
+      const isRisk = rest.includes('리스크') || rest.includes('위험') || rest.includes('문제');
+      const isInsight = rest.includes('인사이트') || rest.includes('제안') || rest.includes('개선');
+      const dotColor = isGood ? '#639922' : isRisk ? '#E24B4A' : isInsight ? '#378ADD' : '#888780';
+      html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
+        <div style="font-size: 14px;font-weight:500;color:var(--text-primary)">${rest}</div>
+      </div>`;
+      continue;
+    }
+    if (line.match(/^[-•·] /)) {
+      html += `<div style="display:flex;gap:8px;font-size: 14px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
+        <span style="color:var(--text-tertiary);flex-shrink:0">→</span>
+        <span>${line.replace(/^[-•·] /,'')}</span>
+      </div>`;
+      continue;
+    }
+    if (line.trim()) {
+      html += `<div style="font-size: 14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
+    } else {
+      html += `<div style="height:8px"></div>`;
+    }
+  }
+  flushTable();
+  return html;
 }
 
 // 결과 렌더 - 보고서 스타일
