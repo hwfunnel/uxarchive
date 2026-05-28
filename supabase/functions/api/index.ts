@@ -405,6 +405,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
         }
       }
 
+      if (path === "/analysis-reports" && method === "GET") {
+        const type = url.searchParams.get("type");
+        let query = supabase
+          .from("analysis_reports")
+          .select("id, analysis_type, summary, model, status, created_at")
+          .eq("created_by", user.sub)
+          .order("created_at", { ascending: false });
+        if (type === "darkpattern") query = query.eq("analysis_type", "darkpattern");
+        else if (type === "compare") query = query.eq("analysis_type", "compare");
+        const { data, error } = await query;
+        if (error) return err(error.message, 500);
+        return json(data || []);
+      }
+
       // 마스터 데이터 조회
       if (path === "/companies" && method === "GET") {
         const { data } = await supabase.from("companies").select("*").eq("is_active", true).order("order_no");

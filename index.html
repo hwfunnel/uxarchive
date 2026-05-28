@@ -623,6 +623,15 @@ window.addEventListener('popstate', (ev) => {
   setTimeout(()=>{ state.isPopping = false; }, 0);
 });
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function selectAnalysisHistoryTab(tab) {
   state.currentHistoryTab = tab;
   renderAnalysisHistoryView();
@@ -646,12 +655,66 @@ function renderAnalysisHistoryView() {
       </div>
     </div>
     <div class="version-tabs">${tabs}</div>
-    <div class="empty-state">
-      <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A8A49E" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
-      <div class="empty-title">저장된 분석 결과가 없습니다.</div>
-      <div class="empty-desc">다른 분석을 실행하면 여기에 결과가 저장됩니다.</div>
+    <div id="analysis-history-list" class="analysis-history-list">
+      <div class="loading"><div class="spinner"></div></div>
     </div>
   `;
+
+  const typeParam = state.currentHistoryTab === 'all' ? '' : `?type=${state.currentHistoryTab}`;
+  api('GET', `/analysis-reports${typeParam}`)
+    .then((data) => {
+      const listEl = document.getElementById('analysis-history-list');
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A8A49E" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+            <div class="empty-title">저장된 분석 결과가 없습니다.</div>
+            <div class="empty-desc">다른 분석을 실행하면 여기에 결과가 저장됩니다.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = data.map(item => {
+        const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        const analysisType = escapeHtml(item.analysis_type || 'ai_analyze');
+        const summary = escapeHtml(item.summary || '');
+        const model = escapeHtml(item.model || '');
+        const status = escapeHtml(item.status || '');
+        const createdAtEscaped = escapeHtml(createdAt);
+        return `
+          <div class="history-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:16px;margin-bottom:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+              <div style="font-size:14px;color:#5e5b53;font-weight:600;">${analysisType}</div>
+              <span style="font-size:12px;color:#8f8a84;border:1px solid rgba(0,0,0,0.08);padding:4px 8px;border-radius:999px;">${status}</span>
+            </div>
+            <div style="font-size:16px;color:#25221f;line-height:1.6;margin-bottom:12px;min-height:44px;">${summary}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:#7f7a73;margin-bottom:12px;">
+              <span>모델: ${model}</span>
+              <span>생성일: ${createdAtEscaped}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary btn-sm" disabled>상세 보기</button>
+              <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      listEl.innerHTML = `<div>${rows}</div>`;
+    })
+    .catch((error) => {
+      const listEl = document.getElementById('analysis-history-list');
+      if (listEl) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A8A49E" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+            <div class="empty-title">히스토리를 불러오는 중 오류가 발생했습니다.</div>
+            <div class="empty-desc">잠시 후 다시 시도해주세요.</div>
+          </div>
+        `;
+      }
+      toast(error.message || '히스토리 로드 중 오류가 발생했습니다.', 'error');
+    });
 }
 
 // ===================== COMPANY VIEW =====================
@@ -2045,7 +2108,8 @@ ${commonAnalysisFramework}
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
+      analysis_type: 'compare'
     });
 
     if (!res) throw new Error('분석 요청 실패');
@@ -2473,7 +2537,8 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
+      analysis_type: 'compare'
     });
 
     if (!res) throw new Error('분석 요청 실패');
@@ -2986,7 +3051,8 @@ async function startDarkpatternAnalysis(mode) {
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
-      max_tokens: 4000
+      max_tokens: 4000,
+      analysis_type: 'darkpattern'
     });
 
     if (!res) throw new Error('분석 요청 실패');
