@@ -474,6 +474,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 <script>
 const API = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
+const AI_MODEL_LABEL = 'Gemini 2.5 Flash';
 let state = {
   token:null, user:null, companies:[], types:[], subtypes:[], screenTypes:[],
   sets:[], currentSet:null, currentSetVersions:[], compareA:null, compareB:null,
@@ -1782,7 +1783,7 @@ function renderCompareView() {
           <div style="display:flex;align-items:center;gap:6px;font-size: 14px">
             <span style="color:var(--text-tertiary)">예상 비용</span>
             <span id="cost-estimate" style="font-weight:600;color:var(--primary);font-family:var(--font-mono)">₩0</span>
-            <span style="color:var(--text-tertiary)">(Sonnet 4.6 · 3관점 통합)</span>
+            <span style="color:var(--text-tertiary)">(${AI_MODEL_LABEL} · 3관점 통합)</span>
           </div>
           <!-- 분석 기준 툴팁 -->
           <div style="position:relative" id="analysis-info-wrap">
@@ -1859,7 +1860,7 @@ let compareCompany={A:null,B:null};
 // 섹션 화면 목록 (screen_type_code + url + id 포함)
 let compareSections={A:[],B:[]};
 
-// 예상 비용 계산 (Sonnet 4.6 기준)
+// 예상 비용 계산 (${AI_MODEL_LABEL} 기준)
 function calcCostEstimate() {
   const totalImgs = compareSections.A.length + compareSections.B.length;
   if (totalImgs === 0) return 0;
@@ -2362,7 +2363,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
         <div class="spinner"></div>
         <span style="font-size:14px;font-weight:500">AI 분석 중... ${maxTokens>=3000?'(상세)':('(요약)')}</span>
-        <span style="font-size: 14px;color:var(--text-tertiary)">Sonnet 4.6 · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
+        <span style="font-size: 14px;color:var(--text-tertiary)">${AI_MODEL_LABEL} · 예상 ${Math.round(calcCostEstimate()/1330*100)/100}$ (₩${calcCostEstimate().toLocaleString()})</span>
       </div>
     </div>`;
 
@@ -2842,7 +2843,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
     '<div class="spinner"></div>' +
     '<span style="font-size:14px;font-weight:500">플로우 분석 중... ' + (maxTokens >= 4000 ? '(상세)' : '(요약)') + '</span>' +
-    '<span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ' + (resolvedFlowA.length + resolvedFlowB.length) + '장 전송</span>' +
+    '<span style="font-size:14px;color:var(--text-tertiary)">' + AI_MODEL_LABEL + ' · ' + (resolvedFlowA.length + resolvedFlowB.length) + '장 전송</span>' +
     '</div></div>';
   resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
 
@@ -3306,7 +3307,7 @@ async function startDarkpatternAnalysis(mode) {
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <div class="spinner"></div>
       <span style="font-size:14px;font-weight:500">다크패턴 검수 중... (${modeLabel})</span>
-      <span style="font-size:14px;color:var(--text-tertiary)">Sonnet 4.6 · ${screens.length}장</span>
+      <span style="font-size:14px;color:var(--text-tertiary)">${AI_MODEL_LABEL} · ${screens.length}장</span>
     </div>
   </div>`;
   resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
