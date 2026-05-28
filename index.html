@@ -909,6 +909,40 @@ function selectAnalysisHistoryTab(tab) {
   renderAnalysisHistoryView();
 }
 
+// ── 분석 히스토리 공통 유틸 ──
+function extractOverallRisk(item) {
+  const rj = item.result_json;
+  if (!rj || typeof rj !== 'object') return null;
+  if (rj.overall_risk) return rj.overall_risk;
+  const order = ['높음','의심','주의','낮음','없음'];
+  if (Array.isArray(rj.issues)) {
+    for (const lvl of order) {
+      if (rj.issues.some(i => i.risk_level === lvl)) return lvl;
+    }
+  }
+  return null;
+}
+
+function riskBadgeHtml(risk) {
+  if (!risk) return '';
+  const colorMap = { '없음':'#8f8a84', '낮음':'#3b82f6', '주의':'#d97706', '의심':'#f97316', '높음':'#dc2626' };
+  const bgMap   = { '없음':'#f5f4f2', '낮음':'#eff6ff', '주의':'#fffbeb', '의심':'#fff7ed', '높음':'#fef2f2' };
+  const c = colorMap[risk] || '#8f8a84';
+  const bg = bgMap[risk] || '#f5f4f2';
+  return `<span style="font-size:11px;font-weight:600;color:${c};background:${bg};border:1px solid ${c}30;padding:2px 7px;border-radius:999px">${escapeHtml(risk)}</span>`;
+}
+
+function cleanSummaryText(text) {
+  if (!text) return '';
+  return text.replace(/```[\s\S]*?```/g,'').replace(/[{}"]/g,'').replace(/\s+/g,' ').trim().slice(0, 60);
+}
+
+function historyTypeLabel(analysisType) {
+  if (analysisType === 'darkpattern') return '다크패턴 검사';
+  if (analysisType === 'compare') return '화면 비교 분석';
+  return 'AI 분석';
+}
+
 function renderAnalysisHistoryView() {
   const el = document.getElementById('analysis-history-view');
   const labels = {all:'전체', darkpattern:'다크패턴 체크', compare:'화면비교'};
@@ -949,25 +983,31 @@ function renderAnalysisHistoryView() {
 
       const rows = data.map(item => {
         const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-        const analysisType = escapeHtml(item.analysis_type || 'ai_analyze');
-        const summary = escapeHtml(item.summary || '');
+        const typeLabel = escapeHtml(historyTypeLabel(item.analysis_type));
+        const summary = cleanSummaryText(item.summary || '');
         const model = escapeHtml(item.model || '');
-        const status = escapeHtml(item.status || '');
-        const createdAtEscaped = escapeHtml(createdAt);
+        const risk = extractOverallRisk(item);
+        const badge = riskBadgeHtml(risk);
+        const thumbUrl = Array.isArray(item.image_paths) && item.image_paths[0] ? item.image_paths[0] : null;
+        const thumbHtml = thumbUrl
+          ? `<div style="width:56px;height:80px;flex-shrink:0;border-radius:6px;overflow:hidden;background:#f0ede9;border:1px solid rgba(0,0,0,0.08)"><img src="${escapeHtml(thumbUrl)}" style="width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.parentElement.style.display='none'"></div>`
+          : '';
         return `
           <div class="history-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:16px;margin-bottom:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
-              <div style="font-size:14px;color:#5e5b53;font-weight:600;">${analysisType}</div>
-              <span style="font-size:12px;color:#8f8a84;border:1px solid rgba(0,0,0,0.08);padding:4px 8px;border-radius:999px;">${status}</span>
-            </div>
-            <div style="font-size:16px;color:#25221f;line-height:1.6;margin-bottom:12px;min-height:44px;">${summary}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:#7f7a73;margin-bottom:12px;">
-              <span>모델: ${model}</span>
-              <span>생성일: ${createdAtEscaped}</span>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-secondary btn-sm" onclick="openAnalysisReportDetail(${item.id}, '${item.analysis_type || 'ai_analyze'}')">상세 보기</button>
-              <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              ${thumbHtml}
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+                  <span style="font-size:13px;font-weight:600;color:#5e5b53">${typeLabel}</span>
+                  ${badge}
+                </div>
+                <div style="font-size:14px;color:#25221f;line-height:1.55;margin-bottom:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(summary) || '<span style="color:#aaa">요약 없음</span>'}</div>
+                <div style="font-size:12px;color:#9f9b95;margin-bottom:10px">${escapeHtml(createdAt)} · ${model}</div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-secondary btn-sm" onclick="openAnalysisReportDetail(${item.id}, '${item.analysis_type || 'ai_analyze'}')">상세 보기</button>
+                  <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -1003,6 +1043,8 @@ async function openAnalysisReportDetail(id, analysisType) {
       <div class="modal-header" style="position:sticky;top:0;background:var(--gray-0);z-index:10;border-radius:var(--radius-lg) var(--radius-lg) 0 0">
         <div class="modal-title">분석 결과 상세</div>
         <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn btn-secondary btn-sm" disabled title="준비 중" onclick="toast('이미지 저장은 다음 버전에서 지원됩니다.','default')">이미지 저장</button>
+          <button class="btn btn-secondary btn-sm" disabled title="준비 중" onclick="toast('CSV 저장은 다음 버전에서 지원됩니다.','default')">CSV 저장</button>
           <button class="btn btn-secondary btn-sm" disabled>재분석</button>
           <button class="modal-close" onclick="document.getElementById('report-detail-overlay').remove()">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
@@ -1029,15 +1071,34 @@ async function openAnalysisReportDetail(id, analysisType) {
 
     const typeLabel = { darkpattern:'다크패턴 검수', compare:'화면 비교', ai_analyze:'AI 분석' };
     const typeName = escapeHtml(typeLabel[report.analysis_type] || report.analysis_type || '');
+    const risk = extractOverallRisk(report);
 
     const metaHtml = `
-      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--text-tertiary);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--text-tertiary);margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
         <span>유형: <strong style="color:var(--text-secondary)">${typeName}</strong></span>
+        ${risk ? riskBadgeHtml(risk) : ''}
         <span>모델: <strong style="color:var(--text-secondary)">${escapeHtml(report.model || '')}</strong></span>
         <span>생성일: <strong style="color:var(--text-secondary)">${escapeHtml(createdAt)}</strong></span>
         <span>상태: <strong style="color:var(--text-secondary)">${escapeHtml(report.status || '')}</strong></span>
       </div>
     `;
+
+    // 분석 대상 이미지 섹션
+    const imagePaths = Array.isArray(report.image_paths) ? report.image_paths : [];
+    let imageHtml = '';
+    if (imagePaths.length > 0) {
+      const thumbs = imagePaths.map(url =>
+        `<div style="flex-shrink:0;width:72px;height:104px;border-radius:6px;overflow:hidden;background:#f0ede9;border:1px solid rgba(0,0,0,0.08)">
+          <img src="${escapeHtml(url)}" style="width:100%;height:100%;object-fit:cover;object-position:top;cursor:zoom-in" onclick="openLightbox('${escapeHtml(url)}')" onerror="this.parentElement.style.display='none'">
+        </div>`
+      ).join('');
+      imageHtml = `
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px">분석 대상 화면 (${imagePaths.length}장)</div>
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">${thumbs}</div>
+        </div>
+      `;
+    }
 
     const resultWrap = document.createElement('div');
 
@@ -1062,7 +1123,7 @@ async function openAnalysisReportDetail(id, analysisType) {
       `;
     }
 
-    body.innerHTML = metaHtml;
+    body.innerHTML = metaHtml + imageHtml;
     body.appendChild(resultWrap);
   } catch(e) {
     const body = document.getElementById('report-detail-body');
@@ -3291,11 +3352,16 @@ async function startDarkpatternAnalysis(mode) {
 
     const systemPrompt = isFlow ? PROMPTS.DARKPATTERN_FLOW : PROMPTS.DARKPATTERN_UI;
 
+    const imagePaths = screens.map(s => s.signed_url || s.file_path).filter(Boolean);
+    const imageIds = screens.map(s => s.id).filter(Boolean);
+
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
       max_tokens: 4000,
-      analysis_type: 'darkpattern'
+      analysis_type: 'darkpattern',
+      image_paths: imagePaths,
+      image_ids: imageIds,
     });
 
     if (!res) throw new Error('분석 요청 실패');

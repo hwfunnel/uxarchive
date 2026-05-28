@@ -346,7 +346,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const requestBody = await req.json();
         if (!requestBody || typeof requestBody !== "object") return err("요청 본문이 필요합니다.", 400);
 
-        const { system, messages, max_tokens, analysis_type } = requestBody as Record<string, unknown>;
+        const { system, messages, max_tokens, analysis_type, image_paths, image_ids } = requestBody as Record<string, unknown>;
         if (!Array.isArray(messages)) return err("messages 배열이 필요합니다.", 400);
 
         const analysisType = typeof analysis_type === "string" && analysis_type.trim() ? analysis_type : "ai_analyze";
@@ -354,13 +354,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const provider = AI_PROVIDER;
         const maxTokensNum = typeof max_tokens === "number" ? (max_tokens as number) : Number(max_tokens || 3000);
         const systemValue = typeof system === "string" ? system : undefined;
+        const imagePaths = Array.isArray(image_paths) ? image_paths : [];
+        const imageIds = Array.isArray(image_ids) ? image_ids : [];
 
         try {
           const { content, raw } = await analyzeWithProvider(provider, messages as AIMessage[], systemValue, maxTokensNum);
           const responseText = joinResponseText(content);
           const promptHash = await buildPromptHash(systemValue, messages);
           const resultJson = parseJSONIfPossible(responseText);
-          const summary = responseText.slice(0, 200);
+
+          // 다크패턴 분석은 JSON 결과에서 사용자용 summary 추출
+          let summary: string;
+          if (analysisType === "darkpattern" && resultJson && typeof resultJson === "object") {
+            const rj = resultJson as Record<string, unknown>;
+            const textSummary =
+              (typeof rj.summary === "string" && rj.summary) ||
+              (typeof rj.journey_summary === "string" && rj.journey_summary) ||
+              (typeof rj.overall_summary === "string" && rj.overall_summary) ||
+              "";
+            if (textSummary) {
+              summary = textSummary.slice(0, 100);
+            } else {
+              const issues = Array.isArray(rj.issues) ? rj.issues as Record<string, unknown>[] : [];
+              const firstTitle = typeof issues[0]?.title === "string" ? issues[0].title : "";
+              if (firstTitle) {
+                summary = issues.length > 1 ? `${firstTitle} 등 ${issues.length}건` : firstTitle;
+              } else {
+                summary = responseText.replace(/```[\s\S]*?```/g, "").replace(/[{}"]/g, "").replace(/\s+/g, " ").trim().slice(0, 80);
+              }
+            }
+          } else {
+            summary = responseText.slice(0, 200);
+          }
+
           const reportKey = buildReportKey(analysisType, String(user.sub));
           const reportPayload = {
             analysis_type: analysisType,
@@ -374,6 +400,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
             raw_response: raw,
             status: "completed",
             created_by: user.sub,
+            ...(imagePaths.length ? { image_paths: imagePaths } : {}),
+            ...(imageIds.length ? { image_ids: imageIds } : {}),
           } as Record<string, unknown>;
 
           let reportSaved = false;
@@ -409,7 +437,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const type = url.searchParams.get("type");
         let query = supabase
           .from("analysis_reports")
-          .select("id, analysis_type, summary, model, status, created_at")
+          .select("id, analysis_type, summary, model, status, created_at, result_json, image_paths, image_ids")
           .eq("created_by", user.sub)
           .order("created_at", { ascending: false });
         if (type === "darkpattern") query = query.eq("analysis_type", "darkpattern");
@@ -424,7 +452,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (isNaN(reportId)) return err("유효하지 않은 ID입니다.", 400);
         const { data, error } = await supabase
           .from("analysis_reports")
-          .select("id, analysis_type, summary, model, status, created_at, result_markdown, result_json")
+          .select("id, analysis_type, summary, model, status, created_at, result_markdown, result_json, image_paths, image_ids")
           .eq("id", reportId)
           .eq("created_by", user.sub)
           .single();
