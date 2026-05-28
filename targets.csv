@@ -1,2 +1,7 @@
 screen_id,url,company_code,company_name,type_code,subtype_code,screen_type_code,order_no,version,label
 SSL-CAR-MAIN-01,https://direct.samsungfire.com/ria/fw/index.html?state=Front&product=car&ver=606,SSL,삼성화재,NEW,CM-CAR,MAIN,1,V1,삼성화재 다이렉트 자동차보험 랜딩
+SSL_CMN_MAIN_MAIN,https://www.samsungfire.com/,SSL,삼성화재,CMN,MAIN,MAIN,1,V1,메인화면
+SSL_INSURANCE-CLAIM_DETAIL_CLAIM_METHOD,https://www.samsungfire.com/vh/page/VH.HPCLA001.do,SSL,삼성화재,INSURANCE-CLAIM,DETAIL,CLAIM_METHOD,1,V1,보험금청구
+SSL_CMN_PRD_TAB_TAB,https://www.samsungfire.com/v2/html/product/03/B_030_010_001.html?root-adclass=foot-doc-state2,SSL,삼성화재,CMN,PRD_TAB,TAB,1,V1,상품리스트
+SSL_NEW_TM-CAR_PRD_DESC_Y,https://www.samsungfire.com/vh/page/VH.HPPD0100.do?hannun=see,SSL,삼성화재,NEW,TM-CAR,PRD_DESC_Y,1,V1,애니카보험
+SSL_NEW_TM-HEALTH_PRD_DESC_Y,https://www.samsungfire.com/vh/page/VH.HPPD0119.do?hannun=see,SSL,삼성화재,NEW,TM-HEALTH,PRD_DESC_Y,1,V1,마이핏
