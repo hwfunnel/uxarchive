@@ -5,12 +5,15 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const JWT_SECRET = Deno.env.get("JWT_SECRET")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-// 이미지 분석을 지원하는 기본 Anthropic 모델 (env 우선)
 const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-sonnet-4-20250514";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const AI_PROVIDER = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
-// TODO: add GEMINI_MODEL support later
-// const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "";
+
+function getActiveModelName(): string {
+  return AI_PROVIDER === "gemini" ? GEMINI_MODEL : ANTHROPIC_MODEL;
+}
 
 // Types for AI adapter
 type AITextBlock = { type: "text"; text: string };
@@ -164,6 +167,17 @@ function safeErrorMessage(data: unknown, status: number): string {
   return `Anthropic API 오류 (${status})`;
 }
 
+function safeGeminiErrorMessage(data: unknown, status: number): string {
+  if (typeof data !== "object" || data === null) return `Gemini API 오류 (${status})`;
+  const obj = data as Record<string, unknown>;
+  if (obj.error && typeof obj.error === "object") {
+    const err = obj.error as Record<string, unknown>;
+    if (typeof err.message === "string") return `Gemini API 오류 (${status}): ${err.message}`;
+  }
+  if (typeof obj.message === "string") return `Gemini API 오류 (${status}): ${obj.message}`;
+  return `Gemini API 오류 (${status})`;
+}
+
 // ---------------------
 // Provider adapter (extensible)
 // ---------------------
@@ -236,11 +250,72 @@ function normalizeAIResponse(result: Record<string, unknown> | undefined): AITex
   return out;
 }
 
+// ---------------------
+// Gemini provider
+// ---------------------
+
+function buildGeminiPayload(messages: AIMessage[], system: string | undefined, max_tokens: number): Record<string, unknown> {
+  type MsgWithContent = { role: string; content: Record<string, unknown>[] };
+  const contents = (messages as unknown as MsgWithContent[]).map((msg) => {
+    const parts = (msg.content || []).map((block) => {
+      if (block.type === "text") return { text: block.text as string };
+      if (block.type === "image") {
+        const src = block.source as Record<string, unknown>;
+        return { inline_data: { mime_type: (src.media_type as string) || "image/png", data: src.data as string } };
+      }
+      if (typeof block.text === "string") return { text: block.text };
+      return { text: JSON.stringify(block) };
+    });
+    return { role: msg.role === "assistant" ? "model" : "user", parts };
+  });
+
+  const payload: Record<string, unknown> = {
+    contents,
+    generationConfig: { temperature: 0.0, maxOutputTokens: max_tokens },
+  };
+  if (system && system.trim()) {
+    payload.system_instruction = { parts: [{ text: system }] };
+  }
+  return payload;
+}
+
+async function callGeminiMessages(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("Gemini API 키가 구성되어 있지 않습니다.");
+  const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(safeGeminiErrorMessage(data, res.status));
+  return data as Record<string, unknown>;
+}
+
+function normalizeGeminiResponse(result: Record<string, unknown>): AITextBlock[] {
+  const candidates = result.candidates as unknown[] | undefined;
+  if (!Array.isArray(candidates) || candidates.length === 0) return [];
+  const candidate = candidates[0] as Record<string, unknown>;
+  const content = candidate.content as Record<string, unknown> | undefined;
+  if (!content) return [];
+  const parts = content.parts as unknown[] | undefined;
+  if (!Array.isArray(parts)) return [];
+  return parts
+    .filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null && typeof (p as Record<string, unknown>).text === "string")
+    .map((p) => ({ type: "text" as const, text: (p as Record<string, unknown>).text as string }));
+}
+
 async function analyzeWithProvider(provider: string, messages: AIMessage[], system: string | undefined, max_tokens: number): Promise<{ content: AITextBlock[]; raw: Record<string, unknown> }> {
   if (provider === "anthropic") {
     const payload = buildAnthropicPayload(messages, system, max_tokens);
     const raw = await callAnthropicMessages(payload);
     return { content: normalizeAIResponse(raw as Record<string, unknown> | undefined), raw };
+  }
+  if (provider === "gemini") {
+    const payload = buildGeminiPayload(messages, system, max_tokens);
+    const raw = await callGeminiMessages(payload);
+    return { content: normalizeGeminiResponse(raw), raw };
   }
   throw new Error(`지원하지 않는 AI provider: ${provider}`);
 }
@@ -393,7 +468,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             report_key: reportKey,
             prompt_hash: promptHash,
             prompt_version: promptVersion,
-            model: ANTHROPIC_MODEL,
+            model: getActiveModelName(),
             summary,
             result_json: resultJson,
             result_markdown: responseText,
