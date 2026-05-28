@@ -489,7 +489,7 @@ let state = {
 const PROMPTS = {
 
   // 화면 비교 분석 (runAIAnalysis)
-  SCREEN_COMPARE: (nameA, nameB, isSame) => {
+  SCREEN_COMPARE_DETAIL: (nameA, nameB, isSame) => {
     const baseRole = `당신은 10년 이상 경력의 인터넷 보험사 전략팀 겸 UX 디자이너입니다.
 보험 상품 가입 퍼널 최적화, 특약 경쟁력 분석, 전환율 개선을 전문으로 합니다.
 금융감독원 다크패턴 가이드라인에 정통하며, 보험업 디지털 채널 UX 트렌드를 깊이 이해합니다.
@@ -592,8 +592,11 @@ ${commonAnalysisFramework}
 한국어. 쉬운 말로. 항목별 빠짐없이.`;
   },
 
+  // 화면 비교 분석 — 요약 (runAIAnalysis, maxTokens < 3000)
+  SCREEN_COMPARE_SUMMARY: (nameA, nameB, isSame) => PROMPTS.SCREEN_COMPARE_DETAIL(nameA, nameB, isSame),
+
   // 플로우 비교 분석 (runAIFlowAnalysis)
-  FLOW_COMPARE: (nameA, nameB, covACount, covBCount) =>
+  FLOW_COMPARE_DETAIL: (nameA, nameB, covACount, covBCount) =>
     '당신은 10년 이상 경력의 자동차보험 가입 퍼널 전문가입니다.\n' +
     '보험사 디지털 채널의 가입 흐름 설계, 이탈 구간 분석, 정보 수집 전략 최적화를 전문으로 합니다.\n' +
     '보험을 어려워하는 일반 사용자의 시점과 전문가의 전략적 시점을 동시에 갖고 분석합니다.\n\n' +
@@ -653,6 +656,9 @@ ${commonAnalysisFramework}
     '◆ 두 회사 공통 개선 필요 사항\n' +
     '→ 바로 적용할 수 있는 것 (→ 로 시작, 3개 이상, 구체적으로)\n\n' +
     '한국어. 쉬운 말로. 빠짐없이.',
+
+  // 플로우 비교 분석 — 요약 (runAIFlowAnalysis, maxTokens < 4000)
+  FLOW_COMPARE_SUMMARY: (nameA, nameB, covACount, covBCount) => PROMPTS.FLOW_COMPARE_DETAIL(nameA, nameB, covACount, covBCount),
 
   // 다크패턴 플로우 분석 (startDarkpatternAnalysis — isFlow)
   DARKPATTERN_FLOW: `당신은 사용자의 연속된 가입·해지 여정(User Journey)을 추적하며 플로우 관점에서 다크패턴을 분석하는 전문가입니다.
@@ -2353,7 +2359,9 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
       }
     }
 
-    const systemPrompt = PROMPTS.SCREEN_COMPARE(companyNameA, companyNameB, isSameCompany);
+    const systemPrompt = maxTokens >= 3000
+      ? PROMPTS.SCREEN_COMPARE_DETAIL(companyNameA, companyNameB, isSameCompany)
+      : PROMPTS.SCREEN_COMPARE_SUMMARY(companyNameA, companyNameB, isSameCompany);
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
@@ -2828,7 +2836,9 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       }
     }
 
-    const systemPrompt = PROMPTS.FLOW_COMPARE(nameA, nameB, covA.count, covB.count);
+    const systemPrompt = maxTokens >= 4000
+      ? PROMPTS.FLOW_COMPARE_DETAIL(nameA, nameB, covA.count, covB.count)
+      : PROMPTS.FLOW_COMPARE_SUMMARY(nameA, nameB, covA.count, covB.count);
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
