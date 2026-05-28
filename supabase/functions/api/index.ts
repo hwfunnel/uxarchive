@@ -383,7 +383,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // =====================
       if (path === "/auth/login" && method === "POST") {
         const { employee_id, password, remember } = await req.json();
-        const { data: user } = await supabase.from("users").select("*").eq("employee_id", employee_id).single();
+        const { data: user, error: userError } = await supabase.from("users").select("*").eq("employee_id", employee_id).single();
+        if (userError && userError.code !== "PGRST116") {
+          console.error("login db error:", userError.code, userError.message);
+          return err("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 500);
+        }
         if (!user || !user.is_active) return err("아이디 또는 비밀번호가 올바르지 않습니다.", 401);
         const ok = await verifyPassword(password, user.password_hash);
         if (!ok) return err("아이디 또는 비밀번호가 올바르지 않습니다.", 401);
