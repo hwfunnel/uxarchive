@@ -269,9 +269,16 @@ function buildGeminiPayload(messages: AIMessage[], system: string | undefined, m
     return { role: msg.role === "assistant" ? "model" : "user", parts };
   });
 
+  // thinking budget: Gemini 2.5 Flash thinks before output.
+  // Reserve at most half of max_tokens for thinking so output tokens are predictable.
+  const thinkingBudget = Math.min(Math.floor(max_tokens / 2), 8192);
   const payload: Record<string, unknown> = {
     contents,
-    generationConfig: { temperature: 0.0, maxOutputTokens: max_tokens },
+    generationConfig: {
+      temperature: 0.0,
+      maxOutputTokens: max_tokens,
+      thinkingConfig: { thinkingBudget },
+    },
   };
   if (system && system.trim()) {
     payload.system_instruction = { parts: [{ text: system }] };
