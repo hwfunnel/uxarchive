@@ -1021,8 +1021,7 @@ function renderAnalysisHistoryView() {
         const risk = extractOverallRisk(item);
         const badge = riskBadgeHtml(risk);
         const thumbUrl = (Array.isArray(item.display_image_urls) && item.display_image_urls[0]) || item.thumbnail_url || null;
-        const thumbImgHtml = thumbUrl ? `<img src="${escapeHtml(thumbUrl)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.style.display='none'">` : '';
-        const thumbHtml = `<div style="width:64px;height:96px;flex-shrink:0;border-radius:8px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>${thumbImgHtml}</div>`;
+        const thumbHtml = thumbUrl ? `<div style="width:64px;height:96px;flex-shrink:0;border-radius:8px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;overflow:hidden"><img src="${escapeHtml(thumbUrl)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.parentElement.style.display='none'"></div>` : '';
         const badgesHtml = [company, subtype].filter(Boolean).map(b =>
           `<span style="font-size:11px;font-weight:500;color:#6b6862;background:#f0ede9;border-radius:4px;padding:2px 6px">${b}</span>`
         ).join('');
@@ -1319,6 +1318,7 @@ async function renderCompanyView() {
         </div>
         <div class="screen-grid-5">`;
       cSets.forEach(s=>{
+        if(!s.screens?.length)return;
         const firstScreen=s.screens?.[0];
         const subtypeName=state.subtypes.find(st=>st.code===s.subtype_code)?.name||s.subtype_code;
         const typeName=state.types.find(t=>t.code===s.type_code)?.name||s.type_code;
