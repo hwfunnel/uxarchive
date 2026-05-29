@@ -4,6 +4,52 @@ Python + Playwright based local crawler for capturing public mobile web pages be
 
 This phase only captures screenshots locally and writes metadata JSON. It does not upload to Supabase Storage and does not insert DB rows.
 
+## Phase 2 업로더 (Supabase 업로드)
+
+### dry-run (기본값 — Supabase에 아무것도 쓰지 않음)
+
+```bash
+# 최신 run 자동 선택
+python3 -m crawler.src.upload
+
+# 특정 run 지정
+python3 -m crawler.src.upload --run-id csv-run_2026-05-28_165915
+```
+
+업로드 예정 목록(bucket, storage_path, screen_type, order_no 등)을 출력합니다.
+
+### 실제 업로드 (명시적 승인 후에만 실행)
+
+`.env` 파일에 Supabase 값을 먼저 설정하세요:
+
+```
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJh...
+SUPABASE_STORAGE_BUCKET=screens
+```
+
+```bash
+python3 -m crawler.src.upload --execute
+python3 -m crawler.src.upload --run-id csv-run_2026-05-28_165915 --execute
+```
+
+실제 업로드 시 처리 순서:
+1. 기존 동일 subtype 세트 `is_latest → false`
+2. 새 `screen_sets` row insert (`is_latest=true`)
+3. PNG → Supabase Storage 업로드
+4. `screens` row insert
+5. 같은 `imgsrc`가 이미 존재하면 자동 스킵 (중복 방지)
+
+> **Secret 주의:** SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY는 절대 로그/콘솔에 출력되지 않습니다.
+
+### 업로드 로그 확인
+
+```bash
+cat crawler_output/runs/{run_id}/logs/uploader.log
+```
+
+---
+
 ## 자동 실행 (macOS launchd)
 
 매월 **4일**과 **25일** 오전 **10:42 KST**에 자동으로 크롤링이 실행됩니다.
