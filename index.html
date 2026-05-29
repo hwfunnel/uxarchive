@@ -1192,13 +1192,24 @@ async function openAnalysisReportDetail(id, analysisType) {
 async function navigateToScreenFromHistory(screenId, setId) {
   const overlay = document.getElementById('report-detail-overlay');
   if (overlay) overlay.remove();
-  navigate('company');
   try {
     const set = await api('GET', `/screen-sets/${setId}`);
     if (!set) { toast('화면 데이터를 불러올 수 없습니다.', 'error'); return; }
     state.currentSet = set;
-    if (!state.sets) state.sets = [];
+    if (!Array.isArray(state.sets)) state.sets = [];
     if (!state.sets.find(s => s.id === setId)) state.sets.push(set);
+    // renderCompanyView()를 호출하지 않고 수동으로 페이지만 전환
+    // navigate('company')를 쓰면 renderCompanyView가 비동기로 화면을 덮어씀
+    if (state.currentPage !== 'company') {
+      state.currentPage = 'company';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-company')?.classList.add('active');
+      document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+      document.getElementById('page-company')?.classList.add('active');
+      document.getElementById('topbar-title').textContent = '기업별 조회';
+      document.getElementById('topbar-actions').innerHTML = '';
+      try { history.pushState({page:'company'}, '', '#company'); } catch(e) { /* ignore */ }
+    }
     openScreenDetail(screenId, setId);
   } catch(e) {
     toast('화면을 불러오는 중 오류가 발생했습니다.', 'error');
