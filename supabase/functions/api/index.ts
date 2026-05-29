@@ -321,6 +321,157 @@ async function analyzeWithProvider(provider: string, messages: AIMessage[], syst
 }
 
 // =====================
+// 분석 리포트 메타 보강
+// =====================
+function computeOverallRisk(resultJson: unknown): string | null {
+  if (!resultJson || typeof resultJson !== "object") return null;
+  const rj = resultJson as Record<string, unknown>;
+  const normalize = (r: unknown): string | null => {
+    if (typeof r !== "string") return null;
+    const map: Record<string, string> = {
+      HIGH: "높음", "높음": "높음",
+      MEDIUM: "의심", "의심": "의심",
+      LOW: "낮음", "낮음": "낮음",
+      "주의": "주의", "없음": "없음", NONE: "없음",
+    };
+    return map[r] || null;
+  };
+  if (rj.overall_risk) { const n = normalize(rj.overall_risk); if (n) return n; }
+  if (rj.risk_level) { const n = normalize(rj.risk_level); if (n) return n; }
+  const order = ["높음", "의심", "주의", "낮음", "없음"];
+  if (Array.isArray(rj.issues)) {
+    for (const lvl of order) {
+      if ((rj.issues as Record<string, unknown>[]).some((i) => normalize((i as Record<string, unknown>).risk_level) === lvl)) return lvl;
+    }
+  }
+  return null;
+}
+
+function cleanReportText(text: string, maxLen: number): string {
+  let t = text.trim();
+  // Remove complete code blocks
+  t = t.replace(/```[\s\S]*?```/g, "");
+  // Remove incomplete code block opener (no matching close)
+  t = t.replace(/^```\w*\s*/im, "");
+  // Try to extract the human-readable part after "summary:"
+  const sumMatch = t.match(/\bsummary\s*:\s*([^,{}\[\]"`\n]+)/i);
+  if (sumMatch && sumMatch[1].trim()) {
+    return sumMatch[1].replace(/\s+/g, " ").trim().slice(0, maxLen);
+  }
+  // Generic cleanup: remove JSON-ish patterns
+  t = t
+    .replace(/overall_risk\s*[:\s,]+["'`]?\S+["'`]?\s*,?\s*/gi, "")
+    .replace(/\b\w+\s*:\s*/g, "")
+    .replace(/[{}"'`\[\]]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return t.slice(0, maxLen);
+}
+
+function buildDisplaySubtitle(r: Record<string, unknown>): string {
+  const rj = r.result_json;
+  if (rj && typeof rj === "object") {
+    const obj = rj as Record<string, unknown>;
+    for (const key of ["summary", "journey_summary", "overall_summary"]) {
+      const val = obj[key];
+      if (typeof val === "string" && val.trim()) return cleanReportText(val, 30);
+    }
+    if (Array.isArray(obj.issues) && obj.issues.length > 0) {
+      const first = obj.issues[0] as Record<string, unknown>;
+      const name = first.case_name || first.title || first.name;
+      if (typeof name === "string") {
+        return obj.issues.length > 1 ? `${name} 등 ${obj.issues.length}건` : name;
+      }
+    }
+  }
+  return cleanReportText(typeof r.summary === "string" ? r.summary : "", 30);
+}
+
+function buildDisplayTitle(analysisType: string, screenTypeName: string | null): string {
+  if (analysisType === "darkpattern") return screenTypeName ? `${screenTypeName} 다크패턴 검사` : "다크패턴 검사";
+  if (analysisType === "compare") return "화면 비교 분석";
+  return "AI 분석";
+}
+
+async function enrichReportsWithMeta(
+  reports: Record<string, unknown>[],
+  includeScreenMeta = false
+): Promise<Record<string, unknown>[]> {
+  const allImageIds = reports
+    .flatMap((r) => (Array.isArray(r.image_ids) ? (r.image_ids as string[]) : []))
+    .filter(Boolean);
+
+  type ScreenMeta = { imgsrc: string; signed_url: string; company_name: string; subtype_name: string; screen_type_name: string; set_id: string };
+  const screenMetaMap = new Map<string, ScreenMeta>();
+
+  if (allImageIds.length > 0) {
+    const { data: screenData } = await supabase
+      .from("screens")
+      .select("id, imgsrc, set_id, screen_type:screen_types(name), set:screen_sets(id, company:companies(name), subtype:subtypes(name))")
+      .in("id", allImageIds);
+
+    if (screenData && Array.isArray(screenData)) {
+      const uniqueImgsrcs = [
+        ...new Set((screenData as Record<string, unknown>[]).map((s) => s.imgsrc as string).filter(Boolean)),
+      ];
+      const urlMap = new Map<string, string>();
+      if (uniqueImgsrcs.length > 0) {
+        const { data: signed } = await supabase.storage.from("screens").createSignedUrls(uniqueImgsrcs, 3600);
+        if (signed) {
+          for (const item of signed as { path: string; signedUrl: string }[]) {
+            if (item.signedUrl) urlMap.set(item.path, item.signedUrl);
+          }
+        }
+      }
+      for (const s of screenData as Record<string, unknown>[]) {
+        const setObj = s.set as Record<string, unknown> | null;
+        const stObj = s["screen_type"] as Record<string, unknown> | null;
+        const compObj = setObj?.company as Record<string, unknown> | null;
+        const subObj = setObj?.subtype as Record<string, unknown> | null;
+        const imgsrc = (s.imgsrc as string) || "";
+        screenMetaMap.set(s.id as string, {
+          imgsrc,
+          signed_url: urlMap.get(imgsrc) || "",
+          company_name: (compObj?.name as string) || "",
+          subtype_name: (subObj?.name as string) || "",
+          screen_type_name: (stObj?.name as string) || "",
+          set_id: (setObj?.id as string) || (s.set_id as string) || "",
+        });
+      }
+    }
+  }
+
+  return reports.map((r) => {
+    const ids = Array.isArray(r.image_ids) ? (r.image_ids as string[]) : [];
+    const firstMeta = ids[0] ? screenMetaMap.get(ids[0]) : null;
+    const overall_risk = computeOverallRisk(r.result_json);
+    // Fresh signed URLs for all image_ids in order
+    const display_image_urls = ids
+      .map((id) => screenMetaMap.get(id)?.signed_url || "")
+      .filter(Boolean);
+    // thumbnail: only fresh signed URL — no image_paths fallback (those may be expired)
+    const thumbnail_url = display_image_urls[0] || null;
+    const display_company = firstMeta?.company_name || null;
+    const display_subtype = firstMeta?.subtype_name || null;
+    const display_screen_type = firstMeta?.screen_type_name || null;
+    const display_title = buildDisplayTitle(r.analysis_type as string, display_screen_type);
+    const display_subtitle = buildDisplaySubtitle(r);
+    const enriched: Record<string, unknown> = {
+      ...r, overall_risk, thumbnail_url,
+      display_image_urls: display_image_urls.length > 0 ? display_image_urls : null,
+      display_company, display_subtype, display_screen_type, display_title, display_subtitle,
+    };
+    if (includeScreenMeta) {
+      enriched.screen_meta = ids.map((id) => {
+        const meta = screenMetaMap.get(id);
+        return { screen_id: id, set_id: meta?.set_id || null, signed_url: meta?.signed_url || null };
+      });
+    }
+    return enriched;
+  });
+}
+
+// =====================
 // 변경 감지
 // =====================
 async function computeChangeSummary(
@@ -523,7 +674,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         else if (type === "compare") query = query.eq("analysis_type", "compare");
         const { data, error } = await query;
         if (error) return err(error.message, 500);
-        return json(data || []);
+        const enriched = await enrichReportsWithMeta((data || []) as Record<string, unknown>[]);
+        return json(enriched);
       }
 
       if (path.match(/^\/analysis-reports\/\d+$/) && method === "GET") {
@@ -536,7 +688,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
           .eq("created_by", user.sub)
           .single();
         if (error || !data) return err("분석 결과를 찾을 수 없습니다.", 404);
-        return json(data);
+        const [enrichedDetail] = await enrichReportsWithMeta([data as Record<string, unknown>], true);
+        return json(enrichedDetail);
       }
 
       // 마스터 데이터 조회
