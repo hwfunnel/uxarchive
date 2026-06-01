@@ -993,40 +993,95 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json(data);
       }
 
-      // screens 삭제
+      // screens 삭제 (FK cascade 처리 포함)
       if (path.match(/^\/screens\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const id = path.split("/")[2];
         const { data: screen } = await supabase.from("screens").select("imgsrc").eq("id", id).single();
+        // storage 파일 삭제 (다른 record가 같은 imgsrc 참조하지 않는 경우만)
         if (screen) {
           const imgsrc = (screen as Record<string, unknown>).imgsrc as string;
-          const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc);
-          if ((count ?? 0) <= 1) await supabase.storage.from("screens").remove([imgsrc]);
+          if (imgsrc) {
+            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc);
+            if ((count ?? 0) <= 1) await supabase.storage.from("screens").remove([imgsrc]);
+          }
         }
+        // FK 제약 cascade: screen_revision_checks → screen_revisions → screens
+        const { data: revs } = await supabase.from("screen_revisions").select("id").eq("screen_id", id);
+        const revIds = (revs || []).map((r: Record<string, unknown>) => r.id as string);
+        if (revIds.length) {
+          await supabase.from("screen_revision_checks").delete().in("revision_id", revIds);
+          await supabase.from("screen_revisions").delete().eq("screen_id", id);
+        }
+        await supabase.from("screen_revision_checks").delete().eq("screen_id", id);
         await supabase.from("screens").delete().eq("id", id);
         return json({ message: "삭제 완료" });
       }
 
       // bulk delete
+      if (path === "/screens/bulk-delete" && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const { ids } = await req.json();
+        if (!ids?.length) return json({ message: "0개 삭제 완료" });
+        // storage 파일 삭제 (공유 imgsrc 제외)
+        const { data: screenList } = await supabase.from("screens").select("imgsrc").in("id", ids);
+        if (screenList?.length) {
+          const imgsrcs = screenList.map((s: Record<string, unknown>) => s.imgsrc as string).filter(Boolean);
+          const toDelete: string[] = [];
+          for (const imgsrc of imgsrcs) {
+            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${ids.join(",")})`);
+            if ((count ?? 0) === 0) toDelete.push(imgsrc);
+          }
+          if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
+        }
+        // FK cascade
+        const { data: revs } = await supabase.from("screen_revisions").select("id").in("screen_id", ids);
+        const revIds = (revs || []).map((r: Record<string, unknown>) => r.id as string);
+        if (revIds.length) {
+          await supabase.from("screen_revision_checks").delete().in("revision_id", revIds);
+          await supabase.from("screen_revisions").delete().in("screen_id", ids);
+        }
+        await supabase.from("screen_revision_checks").delete().in("screen_id", ids);
+        await supabase.from("screens").delete().in("id", ids);
+        return json({ message: `${ids.length}개 삭제 완료` });
+      }
+
       if (path === "/screens/cleanup-missing" && method === "POST") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        // imgsrc가 null인 screen 레코드 삭제
-        const { data: broken } = await supabase.from("screens").select("id").is("imgsrc", null);
-        const brokenIds = (broken || []).map((s: Record<string, unknown>) => s.id as string);
+        // 전체 screen 조회
+        const { data: allScreens } = await supabase.from("screens").select("id, imgsrc");
+        const nullIds = (allScreens || []).filter((s: Record<string, unknown>) => !s.imgsrc).map((s: Record<string, unknown>) => s.id as string);
+        const nonNull = (allScreens || []).filter((s: Record<string, unknown>) => s.imgsrc) as Record<string, unknown>[];
+        // storage에 실제로 없는 파일 탐지 (createSignedUrls 오류 기준)
+        const uniquePaths = [...new Set(nonNull.map((s) => s.imgsrc as string))];
+        const missingPathSet = new Set<string>();
+        if (uniquePaths.length) {
+          const { data: signed } = await supabase.storage.from("screens").createSignedUrls(uniquePaths, 60);
+          for (const item of (signed || [])) {
+            if (!item.signedUrl) missingPathSet.add(item.path);
+          }
+        }
+        const missingStorageIds = nonNull.filter((s) => missingPathSet.has(s.imgsrc as string)).map((s) => s.id as string);
+        const brokenIds = [...new Set([...nullIds, ...missingStorageIds])];
+        // FK cascade 후 삭제
         if (brokenIds.length) {
+          const { data: revs } = await supabase.from("screen_revisions").select("id").in("screen_id", brokenIds);
+          const revIds = (revs || []).map((r: Record<string, unknown>) => r.id as string);
+          if (revIds.length) {
+            await supabase.from("screen_revision_checks").delete().in("revision_id", revIds);
+            await supabase.from("screen_revisions").delete().in("screen_id", brokenIds);
+          }
+          await supabase.from("screen_revision_checks").delete().in("screen_id", brokenIds);
           await supabase.from("screens").delete().in("id", brokenIds);
         }
-        // 전체 set 조회 후 screens 수가 0인 것 찾기
+        // 비어버린 set 삭제
         const { data: allSets } = await supabase.from("screen_sets").select("id");
         const emptySetIds: string[] = [];
         for (const set of (allSets || []) as Record<string, unknown>[]) {
-          const setId = set.id as string;
-          const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("set_id", setId);
-          if ((count ?? 1) === 0) emptySetIds.push(setId);
+          const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("set_id", set.id as string);
+          if ((count ?? 1) === 0) emptySetIds.push(set.id as string);
         }
-        if (emptySetIds.length) {
-          await supabase.from("screen_sets").delete().in("id", emptySetIds);
-        }
+        if (emptySetIds.length) await supabase.from("screen_sets").delete().in("id", emptySetIds);
         return json({ deleted_screens: brokenIds.length, deleted_sets: emptySetIds.length });
       }
 
