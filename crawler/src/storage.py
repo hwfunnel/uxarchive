@@ -20,13 +20,18 @@ def build_supabase_storage_path(
     type_code: str,
     subtype_code: str,
     screen_type_code: str,
-    version: str,
+    content_hash: str,
     order_no: int,
     ext: str = "png",
 ) -> str:
+    """content-addressed storage path.
+    같은 content_hash → 항상 같은 경로 (idempotent 업로드).
+    다른 content_hash → 다른 경로 (기존 파일 덮어쓰기 없음).
+    """
     order = str(order_no).zfill(3)
+    hash_prefix = content_hash[:8] if content_hash else "00000000"
     filename = (
         f"{company_code}_{type_code}_{subtype_code}_"
-        f"{screen_type_code}_{version}_{order}.{ext}"
+        f"{screen_type_code}_{order}_{hash_prefix}.{ext}"
     )
     return f"{company_code}/{type_code}/{subtype_code}/{filename}"

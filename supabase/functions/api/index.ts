@@ -408,13 +408,13 @@ async function enrichReportsWithMeta(
     .flatMap((r) => (Array.isArray(r.image_ids) ? (r.image_ids as string[]) : []))
     .filter(Boolean);
 
-  type ScreenMeta = { imgsrc: string; signed_url: string; company_name: string; subtype_name: string; screen_type_name: string; set_id: string };
+  type ScreenMeta = { imgsrc: string; signed_url: string; company_name: string; subtype_name: string; screen_type_name: string; version: string; set_id: string };
   const screenMetaMap = new Map<string, ScreenMeta>();
 
   if (allImageIds.length > 0) {
     const { data: screenData } = await supabase
       .from("screens")
-      .select("id, imgsrc, set_id, screen_type:screen_types(name), set:screen_sets(id, company:companies(name), subtype:subtypes(name))")
+      .select("id, imgsrc, set_id, screen_type:screen_types(name), set:screen_sets(id, version, company:companies(name), subtype:subtypes(name))")
       .in("id", allImageIds);
 
     if (screenData && Array.isArray(screenData)) {
@@ -442,6 +442,7 @@ async function enrichReportsWithMeta(
           company_name: (compObj?.name as string) || "",
           subtype_name: (subObj?.name as string) || "",
           screen_type_name: (stObj?.name as string) || "",
+          version: (setObj?.version as string) || "",
           set_id: (setObj?.id as string) || (s.set_id as string) || "",
         });
       }
@@ -463,15 +464,30 @@ async function enrichReportsWithMeta(
     const display_screen_type = firstMeta?.screen_type_name || null;
     const display_title = buildDisplayTitle(r.analysis_type as string, display_screen_type);
     const display_subtitle = buildDisplaySubtitle(r);
+    // compare 타입: A/B 첫 이미지들의 company/type/version을 노출
+    const compare_screens_meta = (r.analysis_type as string) === "compare"
+      ? ids.slice(0, 4).map((id) => {
+          const m = screenMetaMap.get(id);
+          return m ? { company_name: m.company_name, screen_type_name: m.screen_type_name, version: m.version } : null;
+        }).filter(Boolean)
+      : undefined;
     const enriched: Record<string, unknown> = {
       ...r, overall_risk, thumbnail_url,
       display_image_urls: display_image_urls.length > 0 ? display_image_urls : null,
       display_company, display_subtype, display_screen_type, display_title, display_subtitle,
+      ...(compare_screens_meta !== undefined ? { compare_screens_meta } : {}),
     };
     if (includeScreenMeta) {
       enriched.screen_meta = ids.map((id) => {
         const meta = screenMetaMap.get(id);
-        return { screen_id: id, set_id: meta?.set_id || null, signed_url: meta?.signed_url || null };
+        return {
+          screen_id: id,
+          set_id: meta?.set_id || null,
+          signed_url: meta?.signed_url || null,
+          company_name: meta?.company_name || null,
+          screen_type_name: meta?.screen_type_name || null,
+          version: meta?.version || null,
+        };
       });
     }
     return enriched;
@@ -908,13 +924,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
         // 해당 세트의 screens 조회
         const { data: screenList } = await supabase.from("screens").select("id, imgsrc").eq("set_id", id);
         const screenIds = (screenList || []).map((s: Record<string, unknown>) => s.id as string);
-        // storage 파일 삭제 (다른 record가 같은 imgsrc를 참조하지 않는 경우만)
+        // storage 파일 삭제: 이 세트 외의 screens 또는 screen_revisions가 참조하지 않을 때만
         if (screenList?.length) {
           const imgsrcs = (screenList as Record<string, unknown>[]).map((s) => s.imgsrc as string).filter(Boolean);
           const toDelete: string[] = [];
           for (const imgsrc of imgsrcs) {
-            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${screenIds.join(",")})`);
-            if ((count ?? 0) === 0) toDelete.push(imgsrc);
+            const { count: otherS } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${screenIds.join(",")})`);
+            const { count: otherR } = await supabase.from("screen_revisions").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("screen_id", "in", `(${screenIds.join(",")})`);
+            if ((otherS ?? 0) + (otherR ?? 0) === 0) toDelete.push(imgsrc);
           }
           if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
         }
@@ -1022,12 +1039,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const id = path.split("/")[2];
         const { data: screen } = await supabase.from("screens").select("imgsrc").eq("id", id).single();
-        // storage 파일 삭제 (다른 record가 같은 imgsrc 참조하지 않는 경우만)
+        // storage 파일 삭제: 다른 screens 또는 screen_revisions(다른 screen_id)가 같은 imgsrc를 참조하지 않을 때만
         if (screen) {
           const imgsrc = (screen as Record<string, unknown>).imgsrc as string;
           if (imgsrc) {
-            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc);
-            if ((count ?? 0) <= 1) await supabase.storage.from("screens").remove([imgsrc]);
+            const { count: otherScreens } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).neq("id", id);
+            const { count: otherRevisions } = await supabase.from("screen_revisions").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).neq("screen_id", id);
+            if ((otherScreens ?? 0) + (otherRevisions ?? 0) === 0) await supabase.storage.from("screens").remove([imgsrc]);
           }
         }
         // FK 제약 cascade: screen_revision_checks → screen_revisions → screens
@@ -1047,14 +1065,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const { ids } = await req.json();
         if (!ids?.length) return json({ message: "0개 삭제 완료" });
-        // storage 파일 삭제 (공유 imgsrc 제외)
+        // storage 파일 삭제: 삭제 대상 외의 screens 또는 screen_revisions가 참조하지 않을 때만
         const { data: screenList } = await supabase.from("screens").select("imgsrc").in("id", ids);
         if (screenList?.length) {
           const imgsrcs = screenList.map((s: Record<string, unknown>) => s.imgsrc as string).filter(Boolean);
           const toDelete: string[] = [];
           for (const imgsrc of imgsrcs) {
-            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${ids.join(",")})`);
-            if ((count ?? 0) === 0) toDelete.push(imgsrc);
+            const { count: otherS } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${ids.join(",")})`);
+            const { count: otherR } = await supabase.from("screen_revisions").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("screen_id", "in", `(${ids.join(",")})`);
+            if ((otherS ?? 0) + (otherR ?? 0) === 0) toDelete.push(imgsrc);
           }
           if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
         }

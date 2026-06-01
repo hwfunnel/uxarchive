@@ -953,29 +953,78 @@ function riskBadgeHtml(risk) {
 function cleanSummaryText(text) {
   if (!text) return '';
   let t = text.trim();
-  // Remove complete code blocks
-  t = t.replace(/```[\s\S]*?```/g, '');
-  // Remove incomplete code block opener
-  t = t.replace(/^```\w*\s*/im, '');
-  // Extract human-readable part after "summary:"
+  t = t.replace(/```[\s\S]*?```/g, '').replace(/^```\w*\s*/im, '');
+  // 우선순위 1: "한 줄 인사이트:" 뒤 실제 문장
+  const insightMatch = t.match(/한\s*줄\s*인사이트\s*[:：]\s*\**\s*([^\n#|*]+)/);
+  if (insightMatch && insightMatch[1].trim()) {
+    return insightMatch[1].replace(/\*+/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  }
+  // 우선순위 2: "summary:" 뒤 문장
   const sumMatch = t.match(/\bsummary\s*:\s*([^,{}\[\]"`\n]+)/i);
   if (sumMatch && sumMatch[1].trim()) {
-    return sumMatch[1].replace(/\s+/g, ' ').trim().slice(0, 60);
+    return sumMatch[1].replace(/\s+/g, ' ').trim().slice(0, 40);
   }
-  // Generic cleanup
-  t = t
-    .replace(/overall_risk\s*[:\s,]+["'`]?\S+["'`]?\s*,?\s*/gi, '')
-    .replace(/\b\w+\s*:\s*/g, '')
-    .replace(/[{}"'`\[\]]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return t.slice(0, 60);
+  // 마크다운 헤더·테이블·라벨 제거 후 첫 문장
+  t = t.replace(/^#{1,6}\s+.*/gm, '').replace(/\|[^\n]+\|/g, '').replace(/^[-|: ]+$/gm, '');
+  t = t.replace(/핵심\s*요약|한\s*줄\s*인사이트|수치\s*비교|UX\s*인사이트|실무\s*제안|핵심\s*차이/g, '');
+  t = t.replace(/overall_risk\s*[:\s,]+["'`]?\S+["'`]?\s*,?\s*/gi, '').replace(/\b\w+\s*:\s*/g, '').replace(/[{}"'`\[\]]/g, '');
+  const sentences = t.split(/[.\n]/).map(s => s.trim()).filter(s => s.length > 5);
+  if (sentences.length) return sentences[0].slice(0, 40);
+  return t.replace(/\s+/g, ' ').trim().slice(0, 40);
 }
 
 function historyTypeLabel(analysisType) {
   if (analysisType === 'darkpattern') return '다크패턴 검사';
   if (analysisType === 'compare') return '화면 비교 분석';
   return 'AI 분석';
+}
+
+function renderCompareHistoryCard(item) {
+  const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+  const model = escapeHtml(item.model || '');
+  const urls = Array.isArray(item.display_image_urls) ? item.display_image_urls : [];
+  const thumbA = urls[0] || null;
+  const thumbB = urls[1] || null;
+  const meta = Array.isArray(item.compare_screens_meta) ? item.compare_screens_meta : [];
+  const mA = meta[0] || null;
+  const mB = meta[1] || null;
+  let compareLabel = '';
+  if (mA) {
+    const lA = [mA.company_name, mA.screen_type_name].filter(Boolean).join(' · ') + (mA.version ? ` ${mA.version}` : '');
+    const lB = mB ? [mB.company_name, mB.screen_type_name].filter(Boolean).join(' · ') + (mB.version ? ` ${mB.version}` : '') : '';
+    const sep = (mA.company_name && mB && mA.company_name === mB.company_name) ? ' → ' : ' vs ';
+    compareLabel = lB ? lA + sep + lB : lA;
+  }
+  const subtitle = cleanSummaryText(item.summary || '');
+  const makeThumb = (url, label) => {
+    const inner = url
+      ? `<img src="${escapeHtml(url)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.style.display='none'">`
+      : `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>`;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">
+      <div style="width:50px;height:70px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">${inner}</div>
+      <span style="font-size:10px;font-weight:600;color:#9f9b95;letter-spacing:0.04em">${label}</span>
+    </div>`;
+  };
+  return `
+    <div class="history-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:16px;margin-bottom:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          ${makeThumb(thumbA, 'A')}
+          ${makeThumb(thumbB, 'B')}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--primary);margin-bottom:4px;letter-spacing:0.03em">화면 비교 분석</div>
+          ${compareLabel ? `<div style="font-size:13px;font-weight:600;color:#25221f;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${escapeHtml(compareLabel)}">${escapeHtml(compareLabel)}</div>` : ''}
+          <div style="font-size:13px;color:#6b6862;margin-bottom:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${subtitle ? escapeHtml(subtitle) : '<span style="color:#aaa">요약 없음</span>'}</div>
+          <div style="font-size:12px;color:#9f9b95;margin-bottom:10px">${escapeHtml(createdAt)} · ${model}</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="openAnalysisReportDetail(${item.id}, 'compare')">상세 보기</button>
+            <button class="btn btn-secondary btn-sm" disabled>재분석</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderAnalysisHistoryView() {
@@ -1017,6 +1066,7 @@ function renderAnalysisHistoryView() {
       }
 
       const rows = data.map(item => {
+        if (item.analysis_type === 'compare') return renderCompareHistoryCard(item);
         const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
         const title = escapeHtml(item.display_title || historyTypeLabel(item.analysis_type));
         const subtitle = escapeHtml(item.display_subtitle || cleanSummaryText(item.summary || ''));
@@ -1137,27 +1187,69 @@ async function openAnalysisReportDetail(id, analysisType) {
     const screenMeta = Array.isArray(report.screen_meta) ? report.screen_meta : [];
     let imageHtml = '';
     if (displayImageUrls.length > 0) {
-      const thumbs = displayImageUrls.map((url, i) => {
-        const meta = screenMeta[i] || null;
-        const hasNav = meta && meta.screen_id && meta.set_id;
-        const navBtn = hasNav
-          ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;margin-top:4px;width:100%;white-space:nowrap" onclick="navigateToScreenFromHistory('${escapeHtml(String(meta.screen_id))}','${escapeHtml(String(meta.set_id))}')">화면 보기</button>`
-          : '';
-        const safeUrl = escapeHtml(url);
-        return `<div style="flex-shrink:0;width:72px">
-          <div style="height:104px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>
-            <img src="${safeUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;cursor:zoom-in" onclick="openLightbox('${safeUrl}')" onerror="this.style.display='none'">
+      if (report.analysis_type === 'compare') {
+        // A/B 두 칸 레이아웃: 앞 절반 = A, 뒤 절반 = B
+        const midpoint = Math.ceil(displayImageUrls.length / 2);
+        const renderCompareSide = (urls, metas) => urls.map((url, i) => {
+          const meta = metas[i] || null;
+          const hasNav = meta && meta.screen_id && meta.set_id;
+          const navBtn = hasNav
+            ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;margin-top:4px;width:100%;white-space:nowrap" onclick="navigateToScreenFromHistory('${escapeHtml(String(meta.screen_id))}','${escapeHtml(String(meta.set_id))}')">화면 보기</button>`
+            : '';
+          const safeUrl = escapeHtml(url);
+          const metaLine = [meta?.company_name, meta?.screen_type_name, meta?.version].filter(Boolean).join(' · ');
+          return `<div style="flex-shrink:0;width:80px">
+            <div style="height:120px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>
+              <img src="${safeUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;cursor:zoom-in" onclick="openLightbox('${safeUrl}')" onerror="this.style.display='none'">
+            </div>
+            ${metaLine ? `<div style="font-size:10px;color:var(--text-tertiary);margin-top:3px;line-height:1.3;word-break:break-all">${escapeHtml(metaLine)}</div>` : ''}
+            ${navBtn}
+          </div>`;
+        }).join('');
+        const aUrls = displayImageUrls.slice(0, midpoint);
+        const bUrls = displayImageUrls.slice(midpoint);
+        const aMetas = screenMeta.slice(0, midpoint);
+        const bMetas = screenMeta.slice(midpoint);
+        const aLabel = escapeHtml(aMetas[0]?.company_name || 'A');
+        const bLabel = escapeHtml(bMetas[0]?.company_name || 'B');
+        imageHtml = `
+          <div style="margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-md);padding:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--primary);letter-spacing:0.05em;margin-bottom:6px">A — ${aLabel}</div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${renderCompareSide(aUrls, aMetas)}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#6d5cf0;letter-spacing:0.05em;margin-bottom:6px">B — ${bLabel}</div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${renderCompareSide(bUrls, bMetas)}</div>
+              </div>
+            </div>
           </div>
-          ${navBtn}
-        </div>`;
-      }).join('');
-      imageHtml = `
-        <div style="margin-bottom:16px">
-          <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px">분석 대상 화면 (${displayImageUrls.length}장)</div>
-          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">${thumbs}</div>
-        </div>
-      `;
+        `;
+      } else {
+        const thumbs = displayImageUrls.map((url, i) => {
+          const meta = screenMeta[i] || null;
+          const hasNav = meta && meta.screen_id && meta.set_id;
+          const navBtn = hasNav
+            ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 8px;margin-top:4px;width:100%;white-space:nowrap" onclick="navigateToScreenFromHistory('${escapeHtml(String(meta.screen_id))}','${escapeHtml(String(meta.set_id))}')">화면 보기</button>`
+            : '';
+          const safeUrl = escapeHtml(url);
+          return `<div style="flex-shrink:0;width:72px">
+            <div style="height:104px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>
+              <img src="${safeUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;cursor:zoom-in" onclick="openLightbox('${safeUrl}')" onerror="this.style.display='none'">
+            </div>
+            ${navBtn}
+          </div>`;
+        }).join('');
+        imageHtml = `
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px">분석 대상 화면 (${displayImageUrls.length}장)</div>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">${thumbs}</div>
+          </div>
+        `;
+      }
     }
 
     const resultWrap = document.createElement('div');
@@ -2562,11 +2654,16 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
 
     const systemPrompt = PROMPTS.SCREEN_COMPARE_DETAIL(companyNameA, companyNameB, isSameCompany, screenName, versionA, versionB);
 
+    // A 화면 ID 먼저, B 화면 ID 나중 (display_image_urls 순서와 일치)
+    const aIds = matchedPairs.flatMap(p => p.screensA.map(s => s.id)).filter(Boolean);
+    const bIds = matchedPairs.flatMap(p => p.screensB.map(s => s.id)).filter(Boolean);
+
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
       max_tokens: maxTokens,
-      analysis_type: 'compare'
+      analysis_type: 'compare',
+      image_ids: [...aIds, ...bIds],
     });
 
     if (!res) throw new Error('분석 요청 실패');
