@@ -1000,6 +1000,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       // bulk delete
+      if (path === "/screens/cleanup-missing" && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        // imgsrc가 null이거나 빈 screen 레코드 조회
+        const { data: broken } = await supabase.from("screens").select("id, set_id").is("imgsrc", null);
+        const brokenIds = (broken || []).map((s: Record<string, unknown>) => s.id as string);
+        if (brokenIds.length) {
+          await supabase.from("screens").delete().in("id", brokenIds);
+        }
+        // 이제 비어버린 set 조회 후 삭제
+        const { data: emptySets } = await supabase
+          .from("screen_sets")
+          .select("id, screens(id)")
+          .filter("screens.id", "is", null);
+        // 실제로 screens 수가 0인 set만 걸러냄
+        const emptySetIds = ((emptySets || []) as Record<string, unknown>[])
+          .filter((s) => Array.isArray(s.screens) && (s.screens as unknown[]).length === 0)
+          .map((s) => s.id as string);
+        if (emptySetIds.length) {
+          await supabase.from("screen_sets").delete().in("id", emptySetIds);
+        }
+        return json({ deleted_screens: brokenIds.length, deleted_sets: emptySetIds.length });
+      }
+
       if (path === "/screens/count-by-type" && method === "GET") {
         const { data, error } = await supabase
           .from("screens")

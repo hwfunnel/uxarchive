@@ -1429,6 +1429,10 @@ function renderSetDetail(set, allVersions) {
         <div class="page-desc">${typeName} · ${set.uploaded_at} 업로드</div>
       </div>
       ${isAdmin?`<div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="cleanupMissingScreens()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+          없는 화면 정리
+        </button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteSet('${set.id}','${companyName} · ${subtypeName} ${set.version}')">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h8M5 3V2h2v1M4 9V5M8 9V5M3 3l.5 7h5L9 3"/></svg>
           세트 삭제
@@ -4481,6 +4485,28 @@ function confirmMasterDelete(tab,code,name){
   );
 }
 
+
+// ── 없는 화면 일괄 정리 ──────────────────────────────────────
+async function cleanupMissingScreens() {
+  showModal('없는 화면 정리',
+    `<div style="font-size:14px;color:var(--text-secondary);line-height:1.7">
+      imgsrc(이미지 경로)가 없는 화면 레코드를 전체 삭제합니다.<br>
+      삭제 후 비어버린 세트도 함께 제거됩니다.
+    </div>`,
+    async () => {
+      closeModal();
+      try {
+        const res = await api('POST', '/screens/cleanup-missing', {});
+        toast(`정리 완료 — 화면 ${res.deleted_screens}개, 세트 ${res.deleted_sets}개 삭제`, 'success');
+        renderCompanyView();
+      } catch(e) { toast('정리 실패: ' + e.message, 'error'); }
+    }
+  );
+  setTimeout(() => {
+    const btn = document.querySelector('#generic-modal #modal-confirm-btn');
+    if (btn) btn.textContent = '정리 실행';
+  }, 50);
+}
 
 // ── 세트 삭제 ────────────────────────────────────────────────
 async function confirmDeleteSet(setId, label) {
