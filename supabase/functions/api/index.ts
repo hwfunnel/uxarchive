@@ -905,7 +905,31 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (path.match(/^\/screen-sets\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const id = path.split("/")[2];
-        const { data, error } = await supabase.from("screen_sets").delete().eq("id", id);
+        // 해당 세트의 screens 조회
+        const { data: screenList } = await supabase.from("screens").select("id, imgsrc").eq("set_id", id);
+        const screenIds = (screenList || []).map((s: Record<string, unknown>) => s.id as string);
+        // storage 파일 삭제 (다른 record가 같은 imgsrc를 참조하지 않는 경우만)
+        if (screenList?.length) {
+          const imgsrcs = (screenList as Record<string, unknown>[]).map((s) => s.imgsrc as string).filter(Boolean);
+          const toDelete: string[] = [];
+          for (const imgsrc of imgsrcs) {
+            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${screenIds.join(",")})`);
+            if ((count ?? 0) === 0) toDelete.push(imgsrc);
+          }
+          if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
+        }
+        // FK cascade: screen_revision_checks → screen_revisions → screens → screen_sets
+        if (screenIds.length) {
+          const { data: revs } = await supabase.from("screen_revisions").select("id").in("screen_id", screenIds);
+          const revIds = (revs || []).map((r: Record<string, unknown>) => r.id as string);
+          if (revIds.length) {
+            await supabase.from("screen_revision_checks").delete().in("revision_id", revIds);
+            await supabase.from("screen_revisions").delete().in("screen_id", screenIds);
+          }
+          await supabase.from("screen_revision_checks").delete().in("screen_id", screenIds);
+          await supabase.from("screens").delete().in("id", screenIds);
+        }
+        const { error } = await supabase.from("screen_sets").delete().eq("id", id);
         if (error) return err(error.message);
         return json({ message: "세트 삭제 완료" });
       }
@@ -1097,24 +1121,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
           if (code) counts[code] = (counts[code] || 0) + 1;
         }
         return json(counts);
-      }
-
-      if (path === "/screens/bulk-delete" && method === "POST") {
-        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        const { ids } = await req.json();
-        const { data: screenList } = await supabase.from("screens").select("imgsrc").in("id", ids);
-        if (screenList?.length) {
-          const imgsrcs = screenList.map((s: Record<string, unknown>) => s.imgsrc as string).filter(Boolean);
-          // 다른 set에서 같은 imgsrc를 참조하는 경우 파일 삭제 제외
-          const toDelete: string[] = [];
-          for (const imgsrc of imgsrcs) {
-            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${ids.join(",")})`);
-            if ((count ?? 0) === 0) toDelete.push(imgsrc);
-          }
-          if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
-        }
-        await supabase.from("screens").delete().in("id", ids);
-        return json({ message: `${ids.length}개 삭제 완료` });
       }
 
       // 업로드 Signed URL
