@@ -1790,7 +1790,7 @@ function renderVersionHistoryList() {
     const memoSection = isAdmin
       ? `<div style="margin-top:4px;display:flex;align-items:flex-start;gap:4px">
            <span style="font-size:11px;color:var(--text-tertiary);flex:1;white-space:pre-wrap">${memoText || '<span style="color:var(--text-tertiary);opacity:0.5">메모 없음</span>'}</span>
-           <button class="btn btn-secondary btn-sm" style="font-size:10px;padding:1px 6px;flex-shrink:0" onclick="openMemoEdit('${r.id}',${JSON.stringify(r.memo||'')})">편집</button>
+           <button class="btn btn-secondary btn-sm" style="font-size:10px;padding:1px 6px;flex-shrink:0" onclick="openMemoEdit('${r.id}')">편집</button>
          </div>`
       : (memoText ? `<div style="margin-top:4px;font-size:11px;color:var(--text-tertiary);white-space:pre-wrap">${memoText}</div>` : '');
     return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
@@ -1816,8 +1816,9 @@ function switchVersionImage(signedUrl, revisionId, versionNo) {
   renderVersionHistoryList();
 }
 
-async function openMemoEdit(revisionId, currentMemo) {
-  const newMemo = prompt('버전 메모 (최대 500자):', currentMemo || '');
+async function openMemoEdit(revisionId) {
+  const rev = state.currentScreenRevisions.find(r => r.id === revisionId);
+  const newMemo = prompt('버전 메모 (최대 500자):', rev?.memo || '');
   if (newMemo === null) return; // 취소
   try {
     await api('PATCH', `/screen-revisions/${revisionId}/memo`, { memo: newMemo.trim() || null });
