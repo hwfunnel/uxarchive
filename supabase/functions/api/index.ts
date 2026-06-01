@@ -902,6 +902,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json(data);
       }
 
+      if (path.match(/^\/screen-sets\/[\w-]+$/) && method === "DELETE") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const id = path.split("/")[2];
+        const { data, error } = await supabase.from("screen_sets").delete().eq("id", id);
+        if (error) return err(error.message);
+        return json({ message: "세트 삭제 완료" });
+      }
+
       // screens 전체 조회 (기능별)
       if (path === "/screens" && method === "GET") {
         const screen_type = url.searchParams.get("screen_type");
@@ -1002,21 +1010,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // bulk delete
       if (path === "/screens/cleanup-missing" && method === "POST") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        // imgsrc가 null이거나 빈 screen 레코드 조회
-        const { data: broken } = await supabase.from("screens").select("id, set_id").is("imgsrc", null);
+        // imgsrc가 null인 screen 레코드 삭제
+        const { data: broken } = await supabase.from("screens").select("id").is("imgsrc", null);
         const brokenIds = (broken || []).map((s: Record<string, unknown>) => s.id as string);
         if (brokenIds.length) {
           await supabase.from("screens").delete().in("id", brokenIds);
         }
-        // 이제 비어버린 set 조회 후 삭제
-        const { data: emptySets } = await supabase
-          .from("screen_sets")
-          .select("id, screens(id)")
-          .filter("screens.id", "is", null);
-        // 실제로 screens 수가 0인 set만 걸러냄
-        const emptySetIds = ((emptySets || []) as Record<string, unknown>[])
-          .filter((s) => Array.isArray(s.screens) && (s.screens as unknown[]).length === 0)
-          .map((s) => s.id as string);
+        // 전체 set 조회 후 screens 수가 0인 것 찾기
+        const { data: allSets } = await supabase.from("screen_sets").select("id");
+        const emptySetIds: string[] = [];
+        for (const set of (allSets || []) as Record<string, unknown>[]) {
+          const setId = set.id as string;
+          const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("set_id", setId);
+          if ((count ?? 1) === 0) emptySetIds.push(setId);
+        }
         if (emptySetIds.length) {
           await supabase.from("screen_sets").delete().in("id", emptySetIds);
         }
