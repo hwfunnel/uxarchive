@@ -534,6 +534,13 @@ const PROMPTS = {
 - 다크패턴 분석은 하지 마세요.
 - 법적 판단은 하지 마세요.
 
+[정량 정보 분석 원칙]
+- 화면에 보이는 할인율, 보험료, 금액, %, 특별 조건을 반드시 비교하세요.
+- 수치와 %는 UI 레이아웃보다 우선하여 분석하세요.
+- 작은 글씨로 표시된 수치도 빠짐없이 확인하세요.
+- 수치를 읽을 수 없는 경우 "수치 판독 불가"라고 명시하세요.
+- 두 화면 간 수치 차이가 있는 경우 "## 3-1. 정량 정보 변동" 섹션에 별도 정리하세요.
+
 [분석 기준]
 아래 관점에서만 비교하세요.
 1. 보험료와 할인 정보
@@ -588,6 +595,11 @@ ${comparisonMode === 'same_company_version' ? `comparisonMode가 same_company_ve
 ## 3. 주요 항목·수치 차이
 
 | 항목 | ${screenALabel} | ${screenBLabel} | 차이 |
+| --- | --- | --- | --- |
+
+## 3-1. 정량 정보 변동 (수치 차이가 있을 때만 작성)
+
+| 항목 | ${screenALabel} | ${screenBLabel} | 변동 |
 | --- | --- | --- | --- |
 
 ## 4. UX 인사이트
@@ -983,8 +995,9 @@ function renderCompareHistoryCard(item) {
   const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
   const model = escapeHtml(item.model || '');
   const urls = Array.isArray(item.display_image_urls) ? item.display_image_urls : [];
-  const thumbA = urls[0] || null;
-  const thumbB = urls[1] || null;
+  const imagePaths = Array.isArray(item.image_paths) ? item.image_paths : [];
+  const thumbA = urls[0] || imagePaths[0] || null;
+  const thumbB = urls[1] || imagePaths[1] || null;
   const meta = Array.isArray(item.compare_screens_meta) ? item.compare_screens_meta : [];
   const mA = meta[0] || null;
   const mB = meta[1] || null;
@@ -997,11 +1010,14 @@ function renderCompareHistoryCard(item) {
   }
   const subtitle = cleanSummaryText(item.summary || '');
   const makeThumb = (url, label) => {
-    const inner = url
+    const imgEl = url
       ? `<img src="${escapeHtml(url)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.style.display='none'">`
-      : `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>`;
+      : '';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">
-      <div style="width:50px;height:70px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">${inner}</div>
+      <div style="width:50px;height:70px;border-radius:6px;background:#f0ede9;border:1px solid rgba(0,0,0,0.08);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#c4bfb8" stroke-width="1.5"><rect x="2" y="2" width="16" height="16" rx="3"/><path d="M2 13l4-4 4 4 3-3 5 5"/></svg>
+        ${imgEl}
+      </div>
       <span style="font-size:10px;font-weight:600;color:#9f9b95;letter-spacing:0.04em">${label}</span>
     </div>`;
   };
@@ -1317,6 +1333,7 @@ async function exportDetailReportImage() {
   if (!el) return;
   const btn = document.getElementById('detail-export-img-btn');
   if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
+  let clone = null;
   try {
     if (!window.html2canvas) {
       await new Promise((resolve, reject) => {
@@ -1326,7 +1343,16 @@ async function exportDetailReportImage() {
         document.head.appendChild(s);
       });
     }
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    clone = el.cloneNode(true);
+    clone.style.cssText = `position:fixed;left:-99999px;top:0;width:${el.offsetWidth}px;max-height:none;height:auto;overflow:visible;background:#fff;z-index:-1`;
+    document.body.appendChild(clone);
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      windowWidth: clone.scrollWidth,
+      windowHeight: clone.scrollHeight,
+    });
     const a = document.createElement('a');
     a.download = `analysis_report_${Date.now()}.png`;
     a.href = canvas.toDataURL('image/png');
@@ -1334,6 +1360,7 @@ async function exportDetailReportImage() {
   } catch(e) {
     toast('이미지 저장에 실패했습니다.', 'error');
   } finally {
+    if (clone) clone.remove();
     if (btn) { btn.disabled = false; btn.textContent = '이미지 저장'; }
   }
 }
@@ -1697,6 +1724,11 @@ function openScreenDetail(screenId, setId, push=true) {
           <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
       </div>
+      <!-- 버전 히스토리 -->
+      <div id="version-history-section">
+        <div style="font-size:14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">버전 히스토리</div>
+        <div id="version-history-list" style="font-size:12px;color:var(--text-tertiary);padding:4px 0">불러오는 중...</div>
+      </div>
       <!-- 연관 화면 -->
       <div id="related-screens-section">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1715,6 +1747,42 @@ function openScreenDetail(screenId, setId, push=true) {
     try { history.pushState({page:'company', setId: set.id, screenId: screen.id}, '', `#company?set=${set.id}&screen=${screen.id}`); } catch(e) {}
   }
   setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
+  loadVersionHistory(screen.id);
+}
+
+async function loadVersionHistory(screenId) {
+  const listEl = document.getElementById('version-history-list');
+  if (!listEl) return;
+  try {
+    const revs = await api('GET', `/screens/${screenId}/revisions`);
+    if (!revs?.length) {
+      listEl.innerHTML = '<div style="color:var(--text-tertiary)">버전 정보 없음</div>';
+      return;
+    }
+    listEl.innerHTML = revs.map(r => {
+      const date = r.captured_at ? new Date(r.captured_at).toLocaleDateString('ko-KR') : '';
+      const badge = r.is_current ? '<span class="badge badge-orange" style="font-size:10px;padding:1px 5px">현재</span>' : '';
+      const viewBtn = r.signed_url
+        ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}')">보기</button>`
+        : '<span style="color:var(--text-tertiary)">—</span>';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="color:var(--text-secondary);font-weight:500">V${r.version_no}</span>
+          ${badge}
+          <span style="color:var(--text-tertiary)">${date}</span>
+        </div>
+        ${viewBtn}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    const el = document.getElementById('version-history-list');
+    if (el) el.innerHTML = '<div style="color:var(--text-tertiary)">불러오기 실패</div>';
+  }
+}
+
+function switchVersionImage(signedUrl) {
+  const img = document.querySelector('.detail-img-viewport img');
+  if (img) img.src = signedUrl;
 }
 
 // ===================== FUNCTION VIEW =====================
@@ -4699,6 +4767,7 @@ async function resizeImageToBase64(url) {
       try {
         let {width: w, height: h} = img;
         // 세로만 7500px 제한 (가로 원본 유지 - 텍스트 판독 품질 보장)
+        // TODO: 7500px 초과 긴 화면은 상단/중간/하단으로 분할 전송하여 수치 판독 정확도 향상
         if (h > 7500) {
           const ratio = 7500 / h;
           w = Math.round(w * ratio);

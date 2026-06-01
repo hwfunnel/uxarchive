@@ -1034,6 +1034,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json(data);
       }
 
+      // 화면 버전 히스토리 조회
+      if (path.match(/^\/screens\/[\w-]+\/revisions$/) && method === "GET") {
+        const screenId = path.split("/")[2];
+        const { data: revs, error: revErr } = await supabase
+          .from("screen_revisions")
+          .select("id, version_no, imgsrc, content_hash, captured_at, is_current, status")
+          .eq("screen_id", screenId)
+          .order("version_no", { ascending: false });
+        if (revErr) return err(revErr.message);
+        if (!revs?.length) return json([]);
+        const imgsrcs = (revs as Record<string, unknown>[]).map((r) => r.imgsrc as string).filter(Boolean);
+        const signedMap: Record<string, string> = {};
+        if (imgsrcs.length) {
+          const { data: signed } = await supabase.storage.from("screens").createSignedUrls(imgsrcs, 3600);
+          for (const item of (signed || [])) {
+            if (item.signedUrl) signedMap[item.path] = item.signedUrl;
+          }
+        }
+        return json((revs as Record<string, unknown>[]).map((r) => ({
+          ...r,
+          signed_url: signedMap[r.imgsrc as string] || null,
+        })));
+      }
+
       // screens 삭제 (FK cascade 처리 포함)
       if (path.match(/^\/screens\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
