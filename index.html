@@ -1481,13 +1481,12 @@ async function openSetDetail(setId, push=true) {
   try {
     const set=await api('GET',`/screen-sets/${setId}`);
     state.currentSet=set;
-    const allVersions=await api('GET',`/screen-sets?company=${set.company_code}&type=${set.type_code}&subtype=${set.subtype_code}&latest_only=false`);
-    state.currentSetVersions=allVersions||[];
+    state.currentSetVersions=[];
     // push deep state for set detail
     if (push && !state.isPopping) {
       try { history.pushState({page:'company', setId}, '', `#company?set=${setId}`); } catch(e) {}
     }
-    renderSetDetail(set,state.currentSetVersions);
+    renderSetDetail(set);
   } catch(e) { toast(e.message,'error'); renderCompanyView(); }
 }
 
@@ -1495,17 +1494,13 @@ async function openSetDetail(setId, push=true) {
 let dragSrcIdx=null;
 // productOnly → state.productOnly 로 통합됨
 
-function renderSetDetail(set, allVersions) {
+function renderSetDetail(set) {
   const el=document.getElementById('company-view');
   const companyName=state.companies.find(c=>c.code===set.company_code)?.name||set.company_code;
   const subtypeName=state.subtypes.find(s=>s.code===set.subtype_code)?.name||set.subtype_code;
   const typeName=state.types.find(t=>t.code===set.type_code)?.name||set.type_code;
   const isAdmin=state.user?.role==='admin';
   const hasChange=set.change_summary&&(set.change_summary.order_changed?.length||set.change_summary.added?.length||set.change_summary.removed?.length);
-
-  const versionTabs=(allVersions.length?allVersions:[set]).map(v=>
-    `<button class="version-tab ${v.id===set.id?'active':''}" onclick="openSetDetail('${v.id}')">${v.version}</button>`
-  ).join('');
 
   let changeSummaryHtml='';
   if(hasChange&&set.change_summary){
@@ -1533,7 +1528,7 @@ function renderSetDetail(set, allVersions) {
       <div class="screen-card-thumb">${thumbHtml}</div>
       <div class="screen-card-info">
         <div class="screen-card-order">${String(s.order_no).padStart(3,'0')}</div>
-        <div class="screen-card-name">${stName}</div>
+        <div class="screen-card-name">${stName}${s.current_version_no>1?` <span style="font-size:10px;font-weight:600;color:var(--primary);background:var(--primary-subtle);padding:1px 4px;border-radius:3px">V${s.current_version_no}</span>`:''}</div>
       </div>
     </div>`;
   }).join('');
@@ -1545,20 +1540,19 @@ function renderSetDetail(set, allVersions) {
     <div class="page-header">
       <div>
         <div class="page-title">${companyName} · ${subtypeName}</div>
-        <div class="page-desc">${typeName} · ${set.uploaded_at} 업로드</div>
+        <div class="page-desc">${typeName} · 최근 업데이트: ${set.uploaded_at}</div>
       </div>
       ${isAdmin?`<div style="display:flex;gap:8px">
         <button class="btn btn-secondary btn-sm" onclick="cleanupMissingScreens()">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
           없는 화면 정리
         </button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteSet('${set.id}','${companyName} · ${subtypeName} ${set.version}')">
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteSet('${set.id}','${companyName} · ${subtypeName}')">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h8M5 3V2h2v1M4 9V5M8 9V5M3 3l.5 7h5L9 3"/></svg>
           세트 삭제
         </button>
       </div>`:''}
     </div>
-    <div class="version-tabs">${versionTabs}</div>
     ${changeSummaryHtml}
     ${isAdmin?`<div style="font-size:13px;color:var(--text-tertiary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 4v2.5M6 8v.5"/></svg>드래그로 순서 변경 · 화면 우상단 🗑️ 클릭으로 개별 삭제</div>
@@ -1644,17 +1638,17 @@ async function saveOrderNow(){
     state.currentSet.screens=savedOrder;
     setDragOrder=null;
     toast('순서가 저장되었습니다','success');
-    renderSetDetail(state.currentSet,[]);
+    renderSetDetail(state.currentSet);
   }catch(e){
     toast('저장 실패: '+e.message,'error');
-    renderSetDetail(state.currentSet,state.currentSetVersions);
+    renderSetDetail(state.currentSet);
   }
 }
 
 function cancelOrderChange(){
   setDragOrder=null;
   showOrderSaveBar(false);
-  renderSetDetail(state.currentSet,state.currentSetVersions);
+  renderSetDetail(state.currentSet);
 }
 
 function openScreenDetail(screenId, setId, push=true) {
@@ -1681,7 +1675,7 @@ function openScreenDetail(screenId, setId, push=true) {
   const isAdmin = state.user?.role === 'admin';
 
   el.innerHTML=`
-    <button class="back-btn" onclick="renderSetDetail(state.currentSet,state.currentSetVersions)">
+    <button class="back-btn" onclick="renderSetDetail(state.currentSet)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>${companyName} · ${subtypeName}
     </button>
     <div style="display:flex;gap:16px;align-items:flex-start">
@@ -1720,8 +1714,8 @@ function openScreenDetail(screenId, setId, push=true) {
           <div class="detail-meta-row"><div class="detail-meta-label">유형상세</div><div class="detail-meta-value">${subtypeName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value" id="screen-order-display">${screen.order_no}</div></div>
-          <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${set.version}</span></div></div>
-          <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange" id="screen-version-display">V${screen.current_version_no||1}</span></div></div>
+          <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업데이트</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
       </div>
       <!-- 버전 히스토리 -->
@@ -1759,17 +1753,26 @@ async function loadVersionHistory(screenId) {
       listEl.innerHTML = '<div style="color:var(--text-tertiary)">버전 정보 없음</div>';
       return;
     }
+    // 현재 버전 표시 업데이트
+    const current = revs.find(r => r.is_current);
+    if (current) {
+      const vd = document.getElementById('screen-version-display');
+      if (vd) vd.textContent = `V${current.version_no}`;
+    }
     listEl.innerHTML = revs.map(r => {
       const date = r.captured_at ? new Date(r.captured_at).toLocaleDateString('ko-KR') : '';
-      const badge = r.is_current ? '<span class="badge badge-orange" style="font-size:10px;padding:1px 5px">현재</span>' : '';
+      const isCurrent = r.is_current;
+      const badge = isCurrent ? '<span style="font-size:10px;font-weight:600;color:var(--primary)">현재</span>' : '';
       const viewBtn = r.signed_url
-        ? `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}')">보기</button>`
+        ? (isCurrent
+          ? `<span style="font-size:11px;color:var(--text-tertiary)">표시 중</span>`
+          : `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}',${r.version_no})">보기</button>`)
         : '<span style="color:var(--text-tertiary)">—</span>';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:5px">
-          <span style="color:var(--text-secondary);font-weight:500">V${r.version_no}</span>
+          <span style="color:var(--text-secondary);font-weight:600">V${r.version_no}</span>
           ${badge}
-          <span style="color:var(--text-tertiary)">${date}</span>
+          <span style="color:var(--text-tertiary);font-size:11px">${date}</span>
         </div>
         ${viewBtn}
       </div>`;
@@ -1780,9 +1783,11 @@ async function loadVersionHistory(screenId) {
   }
 }
 
-function switchVersionImage(signedUrl) {
+function switchVersionImage(signedUrl, versionNo) {
   const img = document.querySelector('.detail-img-viewport img');
   if (img) img.src = signedUrl;
+  const vd = document.getElementById('screen-version-display');
+  if (vd && versionNo) vd.textContent = `V${versionNo}`;
 }
 
 // ===================== FUNCTION VIEW =====================
@@ -4717,7 +4722,7 @@ async function confirmDeleteScreen(screenId, screenName) {
         }
         closeModal();
         toast('화면이 삭제되었습니다', 'success');
-        renderSetDetail(state.currentSet, state.currentSetVersions);
+        renderSetDetail(state.currentSet);
       } catch(e) { toast(e.message, 'error'); }
     }, true
   );

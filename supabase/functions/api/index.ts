@@ -870,18 +870,37 @@ Deno.serve(async (req: Request): Promise<Response> => {
           company:companies(code, name),
           type:types(code, name),
           subtype:subtypes(code, name),
-          screens(id, screen_type_code, order_no, imgsrc, screen_type:screen_types(code, name))
+          screens(id, screen_type_code, order_no, imgsrc, content_hash, screen_type:screen_types(code, name))
         `).eq("id", id).single();
         if (error) return err(error.message, 404);
 
-        const screens = ((data as Record<string, unknown>).screens as { id: string; screen_type_code: string; order_no: number; imgsrc: string; screen_type: unknown }[]) || [];
+        const screens = ((data as Record<string, unknown>).screens as { id: string; screen_type_code: string; order_no: number; imgsrc: string; content_hash: string; screen_type: unknown }[]) || [];
         const screensWithUrl = await Promise.all(
           screens.sort((a, b) => a.order_no - b.order_no).map(async (s) => {
             const { data: urlData } = await supabase.storage.from("screens").createSignedUrl(s.imgsrc, 3600);
             return { ...s, signed_url: urlData?.signedUrl };
           })
         );
-        return json({ ...data, screens: screensWithUrl });
+
+        // 각 화면의 현재 revision 버전 번호 일괄 조회
+        const screenIds = screensWithUrl.map((s) => s.id);
+        const currentVersionMap: Record<string, number> = {};
+        if (screenIds.length) {
+          const { data: revs } = await supabase
+            .from("screen_revisions")
+            .select("screen_id, version_no")
+            .in("screen_id", screenIds)
+            .eq("is_current", true);
+          for (const r of (revs || []) as { screen_id: string; version_no: number }[]) {
+            currentVersionMap[r.screen_id] = r.version_no;
+          }
+        }
+        const screensWithVersion = screensWithUrl.map((s) => ({
+          ...s,
+          current_version_no: currentVersionMap[s.id] || 1,
+        }));
+
+        return json({ ...data, screens: screensWithVersion });
       }
 
       // diff
