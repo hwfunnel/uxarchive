@@ -990,7 +990,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const id = path.split("/")[2];
         const { data: screen } = await supabase.from("screens").select("imgsrc").eq("id", id).single();
-        if (screen) await supabase.storage.from("screens").remove([(screen as Record<string, unknown>).imgsrc as string]);
+        if (screen) {
+          const imgsrc = (screen as Record<string, unknown>).imgsrc as string;
+          const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc);
+          if ((count ?? 0) <= 1) await supabase.storage.from("screens").remove([imgsrc]);
+        }
         await supabase.from("screens").delete().eq("id", id);
         return json({ message: "삭제 완료" });
       }
@@ -1014,7 +1018,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const { ids } = await req.json();
         const { data: screenList } = await supabase.from("screens").select("imgsrc").in("id", ids);
-        if (screenList?.length) await supabase.storage.from("screens").remove(screenList.map((s: Record<string, unknown>) => s.imgsrc as string));
+        if (screenList?.length) {
+          const imgsrcs = screenList.map((s: Record<string, unknown>) => s.imgsrc as string).filter(Boolean);
+          // 다른 set에서 같은 imgsrc를 참조하는 경우 파일 삭제 제외
+          const toDelete: string[] = [];
+          for (const imgsrc of imgsrcs) {
+            const { count } = await supabase.from("screens").select("id", { count: "exact", head: true }).eq("imgsrc", imgsrc).not("id", "in", `(${ids.join(",")})`);
+            if ((count ?? 0) === 0) toDelete.push(imgsrc);
+          }
+          if (toDelete.length) await supabase.storage.from("screens").remove(toDelete);
+        }
         await supabase.from("screens").delete().in("id", ids);
         return json({ message: `${ids.length}개 삭제 완료` });
       }
