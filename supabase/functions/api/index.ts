@@ -1225,11 +1225,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
           if (currentRev) {
             await supabase.from("screen_revisions").update({ is_current: false }).eq("id", (currentRev as Record<string, unknown>).id as string);
           }
-          await supabase.from("screen_revisions").insert({
+          const revUploadedAt = uploaded_at || new Date().toISOString().split("T")[0];
+          const { error: revInsertErr } = await supabase.from("screen_revisions").insert({
             screen_id: existing.id as string, version_no: nextVersion, imgsrc,
-            content_hash: content_hash || null, captured_at: new Date().toISOString(),
-            is_current: true, status: "changed",
+            content_hash: content_hash || "", uploaded_at: revUploadedAt,
+            captured_at: new Date().toISOString(), is_current: true, status: "changed",
           });
+          if (revInsertErr) return err(`revision 생성 실패: ${revInsertErr.message}`);
           await supabase.from("screens").update({ imgsrc, content_hash: content_hash || null }).eq("id", existing.id as string);
           await supabase.from("screen_sets").update({ uploaded_at: uploaded_at || new Date().toISOString().split("T")[0] }).eq("id", setId);
           return json({ action: "updated", screen_id: existing.id, set_id: setId, version_no: nextVersion, message: `V${nextVersion}으로 업데이트되었습니다.` });
@@ -1240,10 +1242,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
             .select("id").single();
           if (screenErr) return err(screenErr.message);
           const screenId = (newScreen as Record<string, unknown>).id as string;
-          await supabase.from("screen_revisions").insert({
-            screen_id: screenId, version_no: 1, imgsrc, content_hash: content_hash || null,
+          const { error: v1Err } = await supabase.from("screen_revisions").insert({
+            screen_id: screenId, version_no: 1, imgsrc,
+            content_hash: content_hash || "",
+            uploaded_at: uploaded_at || new Date().toISOString().split("T")[0],
             captured_at: new Date().toISOString(), is_current: true, status: "new",
           });
+          if (v1Err) return err(`V1 revision 생성 실패: ${v1Err.message}`);
           return json({ action: "created", screen_id: screenId, set_id: setId, version_no: 1, message: "새 화면이 추가되었습니다." });
         }
       }
