@@ -482,6 +482,8 @@ let state = {
   compareAOrder:null, compareBOrder:null, // 비교 섹션 임시 순서
   currentHistoryTab:'all',
   isPopping:false,
+  currentViewingRevisionId:null,
+  currentScreenRevisions:[],
 };
 
 // =====================
@@ -1741,6 +1743,8 @@ function openScreenDetail(screenId, setId, push=true) {
     try { history.pushState({page:'company', setId: set.id, screenId: screen.id}, '', `#company?set=${set.id}&screen=${screen.id}`); } catch(e) {}
   }
   setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
+  state.currentViewingRevisionId = null;
+  state.currentScreenRevisions = [];
   loadVersionHistory(screen.id);
 }
 
@@ -1753,41 +1757,76 @@ async function loadVersionHistory(screenId) {
       listEl.innerHTML = '<div style="color:var(--text-tertiary)">버전 정보 없음</div>';
       return;
     }
-    // 현재 버전 표시 업데이트
+    state.currentScreenRevisions = revs;
     const current = revs.find(r => r.is_current);
     if (current) {
+      // 아직 특정 버전을 선택하지 않은 경우 is_current 버전을 기본 표시
+      if (!state.currentViewingRevisionId) state.currentViewingRevisionId = current.id;
       const vd = document.getElementById('screen-version-display');
       if (vd) vd.textContent = `V${current.version_no}`;
     }
-    listEl.innerHTML = revs.map(r => {
-      const date = r.captured_at ? new Date(r.captured_at).toLocaleDateString('ko-KR') : '';
-      const isCurrent = r.is_current;
-      const badge = isCurrent ? '<span style="font-size:10px;font-weight:600;color:var(--primary)">현재</span>' : '';
-      const viewBtn = r.signed_url
-        ? (isCurrent
-          ? `<span style="font-size:11px;color:var(--text-tertiary)">표시 중</span>`
-          : `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}',${r.version_no})">보기</button>`)
-        : '<span style="color:var(--text-tertiary)">—</span>';
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:5px">
-          <span style="color:var(--text-secondary);font-weight:600">V${r.version_no}</span>
-          ${badge}
-          <span style="color:var(--text-tertiary);font-size:11px">${date}</span>
-        </div>
-        ${viewBtn}
-      </div>`;
-    }).join('');
+    renderVersionHistoryList();
   } catch(e) {
     const el = document.getElementById('version-history-list');
     if (el) el.innerHTML = '<div style="color:var(--text-tertiary)">불러오기 실패</div>';
   }
 }
 
-function switchVersionImage(signedUrl, versionNo) {
+function renderVersionHistoryList() {
+  const listEl = document.getElementById('version-history-list');
+  if (!listEl) return;
+  const revs = state.currentScreenRevisions;
+  const isAdmin = state.user?.role === 'admin';
+  listEl.innerHTML = revs.map(r => {
+    const date = r.captured_at ? new Date(r.captured_at).toLocaleDateString('ko-KR') : '';
+    const isViewing = r.id === state.currentViewingRevisionId;
+    const badge = r.is_current ? '<span style="font-size:10px;font-weight:600;color:var(--primary)">현재</span>' : '';
+    const viewBtn = r.signed_url
+      ? (isViewing
+        ? `<span style="font-size:11px;color:var(--text-tertiary)">표시 중</span>`
+        : `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}','${r.id}',${r.version_no})">보기</button>`)
+      : '<span style="color:var(--text-tertiary)">—</span>';
+    const memoText = r.memo ? escapeHtml(r.memo) : '';
+    const memoSection = isAdmin
+      ? `<div style="margin-top:4px;display:flex;align-items:flex-start;gap:4px">
+           <span style="font-size:11px;color:var(--text-tertiary);flex:1;white-space:pre-wrap">${memoText || '<span style="color:var(--text-tertiary);opacity:0.5">메모 없음</span>'}</span>
+           <button class="btn btn-secondary btn-sm" style="font-size:10px;padding:1px 6px;flex-shrink:0" onclick="openMemoEdit('${r.id}',${JSON.stringify(r.memo||'')})">편집</button>
+         </div>`
+      : (memoText ? `<div style="margin-top:4px;font-size:11px;color:var(--text-tertiary);white-space:pre-wrap">${memoText}</div>` : '');
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="color:var(--text-secondary);font-weight:600">V${r.version_no}</span>
+          ${badge}
+          <span style="color:var(--text-tertiary);font-size:11px">${date}</span>
+        </div>
+        ${viewBtn}
+      </div>
+      ${memoSection}
+    </div>`;
+  }).join('');
+}
+
+function switchVersionImage(signedUrl, revisionId, versionNo) {
   const img = document.querySelector('.detail-img-viewport img');
   if (img) img.src = signedUrl;
   const vd = document.getElementById('screen-version-display');
   if (vd && versionNo) vd.textContent = `V${versionNo}`;
+  state.currentViewingRevisionId = revisionId;
+  renderVersionHistoryList();
+}
+
+async function openMemoEdit(revisionId, currentMemo) {
+  const newMemo = prompt('버전 메모 (최대 500자):', currentMemo || '');
+  if (newMemo === null) return; // 취소
+  try {
+    await api('PATCH', `/screen-revisions/${revisionId}/memo`, { memo: newMemo.trim() || null });
+    const rev = state.currentScreenRevisions.find(r => r.id === revisionId);
+    if (rev) rev.memo = newMemo.trim() || null;
+    renderVersionHistoryList();
+  } catch(e) {
+    alert('메모 저장 실패: ' + (e?.message || e));
+  }
 }
 
 // ===================== FUNCTION VIEW =====================

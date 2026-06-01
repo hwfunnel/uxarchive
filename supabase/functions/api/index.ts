@@ -1058,7 +1058,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const screenId = path.split("/")[2];
         const { data: revs, error: revErr } = await supabase
           .from("screen_revisions")
-          .select("id, version_no, imgsrc, content_hash, captured_at, is_current, status")
+          .select("id, version_no, imgsrc, content_hash, captured_at, is_current, status, memo")
           .eq("screen_id", screenId)
           .order("version_no", { ascending: false });
         if (revErr) return err(revErr.message);
@@ -1251,6 +1251,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
           if (v1Err) return err(`V1 revision 생성 실패: ${v1Err.message}`);
           return json({ action: "created", screen_id: screenId, set_id: setId, version_no: 1, message: "새 화면이 추가되었습니다." });
         }
+      }
+
+      // 버전 메모 수정 (admin only)
+      if (path.match(/^\/screen-revisions\/[\w-]+\/memo$/) && method === "PATCH") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const revisionId = path.split("/")[2];
+        const { memo } = await req.json();
+        if (memo !== null && memo !== undefined && String(memo).length > 500) {
+          return err("메모는 최대 500자까지 입력할 수 있습니다.", 400);
+        }
+        const { data, error } = await supabase
+          .from("screen_revisions")
+          .update({ memo: memo ?? null })
+          .eq("id", revisionId)
+          .select("id, memo")
+          .single();
+        if (error) return err(error.message);
+        return json(data);
       }
 
       if (path === "/storage/upload-url" && method === "POST") {
