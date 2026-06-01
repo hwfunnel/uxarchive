@@ -1318,7 +1318,7 @@ async function renderCompanyView() {
         </div>
         <div class="screen-grid-5">`;
       cSets.forEach(s=>{
-        if(!s.screens?.length)return;
+        if(Array.isArray(s.screens) && s.screens.length === 0)return;
         const firstScreen=s.screens?.[0];
         const subtypeName=state.subtypes.find(st=>st.code===s.subtype_code)?.name||s.subtype_code;
         const typeName=state.types.find(t=>t.code===s.type_code)?.name||s.type_code;
