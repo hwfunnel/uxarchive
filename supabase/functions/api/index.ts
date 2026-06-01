@@ -996,6 +996,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       // bulk delete
+      if (path === "/screens/count-by-type" && method === "GET") {
+        const { data, error } = await supabase
+          .from("screens")
+          .select("screen_type_code, set:screen_sets!inner(is_latest)")
+          .eq("set.is_latest", true);
+        if (error) return err(error.message);
+        const counts: Record<string, number> = {};
+        for (const row of (data || [])) {
+          const code = (row as Record<string, unknown>).screen_type_code as string;
+          if (code) counts[code] = (counts[code] || 0) + 1;
+        }
+        return json(counts);
+      }
+
       if (path === "/screens/bulk-delete" && method === "POST") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const { ids } = await req.json();
