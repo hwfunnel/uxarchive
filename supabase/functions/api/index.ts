@@ -1186,11 +1186,74 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       // 업로드 Signed URL
+      // 화면 단위 upsert: 기존 화면 revision 추가 or 신규 화면 생성
+      if (path === "/screens/upsert" && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const { company_code, type_code, subtype_code, screen_type_code, order_no, imgsrc, content_hash, uploaded_at } = await req.json();
+
+        // is_latest=true 세트 조회 or 생성
+        let setId: string;
+        const { data: existingSet } = await supabase.from("screen_sets")
+          .select("id").eq("company_code", company_code).eq("type_code", type_code)
+          .eq("subtype_code", subtype_code).eq("is_latest", true).single();
+        if (existingSet) {
+          setId = (existingSet as Record<string, unknown>).id as string;
+        } else {
+          const { data: newSet, error: setErr } = await supabase.from("screen_sets").insert({
+            company_code, type_code, subtype_code, version: "V1",
+            uploaded_at: uploaded_at || new Date().toISOString().split("T")[0], is_latest: true,
+          }).select("id").single();
+          if (setErr) return err(setErr.message);
+          setId = (newSet as Record<string, unknown>).id as string;
+        }
+
+        // 동일 키 화면 조회
+        const { data: existingScreen } = await supabase.from("screens")
+          .select("id, imgsrc, content_hash").eq("set_id", setId)
+          .eq("screen_type_code", screen_type_code).eq("order_no", order_no).single();
+
+        if (existingScreen) {
+          const existing = existingScreen as Record<string, unknown>;
+          // 동일 hash → 변경 없음
+          if (content_hash && content_hash === existing.content_hash) {
+            return json({ action: "unchanged", screen_id: existing.id, set_id: setId, message: "동일한 이미지라 변경 없이 유지되었습니다." });
+          }
+          // 새 revision 추가
+          const { data: currentRev } = await supabase.from("screen_revisions")
+            .select("id, version_no").eq("screen_id", existing.id as string).eq("is_current", true).single();
+          const nextVersion = currentRev ? (currentRev as Record<string, unknown>).version_no as number + 1 : 2;
+          if (currentRev) {
+            await supabase.from("screen_revisions").update({ is_current: false }).eq("id", (currentRev as Record<string, unknown>).id as string);
+          }
+          await supabase.from("screen_revisions").insert({
+            screen_id: existing.id as string, version_no: nextVersion, imgsrc,
+            content_hash: content_hash || null, captured_at: new Date().toISOString(),
+            is_current: true, status: "changed",
+          });
+          await supabase.from("screens").update({ imgsrc, content_hash: content_hash || null }).eq("id", existing.id as string);
+          await supabase.from("screen_sets").update({ uploaded_at: uploaded_at || new Date().toISOString().split("T")[0] }).eq("id", setId);
+          return json({ action: "updated", screen_id: existing.id, set_id: setId, version_no: nextVersion, message: `V${nextVersion}으로 업데이트되었습니다.` });
+        } else {
+          // 신규 화면 생성
+          const { data: newScreen, error: screenErr } = await supabase.from("screens")
+            .insert({ set_id: setId, screen_type_code, order_no, imgsrc, content_hash: content_hash || null })
+            .select("id").single();
+          if (screenErr) return err(screenErr.message);
+          const screenId = (newScreen as Record<string, unknown>).id as string;
+          await supabase.from("screen_revisions").insert({
+            screen_id: screenId, version_no: 1, imgsrc, content_hash: content_hash || null,
+            captured_at: new Date().toISOString(), is_current: true, status: "new",
+          });
+          return json({ action: "created", screen_id: screenId, set_id: setId, version_no: 1, message: "새 화면이 추가되었습니다." });
+        }
+      }
+
       if (path === "/storage/upload-url" && method === "POST") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        const { company_code, type_code, subtype_code, screen_type_code, version, order_no, ext = "png" } = await req.json();
+        const { company_code, type_code, subtype_code, screen_type_code, order_no, content_hash, ext = "png" } = await req.json();
         const orderStr = String(order_no).padStart(3, "0");
-        const filePath = `${company_code}/${type_code}/${subtype_code}/${company_code}_${type_code}_${subtype_code}_${screen_type_code}_${version}_${orderStr}.${ext}`;
+        const hashPrefix = content_hash ? String(content_hash).slice(0, 8) : Date.now().toString(16);
+        const filePath = `${company_code}/${type_code}/${subtype_code}/${company_code}_${type_code}_${subtype_code}_${screen_type_code}_${orderStr}_${hashPrefix}.${ext}`;
         const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath);
         if (error) return err(error.message);
         return json({ upload_url: data.signedUrl, file_path: filePath, token: data.token });

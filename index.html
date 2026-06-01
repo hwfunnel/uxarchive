@@ -4158,7 +4158,6 @@ function renderUploadView(){
               ${buildSubtypeOptions()}
             </select>
           </div>
-          <div class="form-group"><label class="form-label">버전</label><input class="input" id="up-version" placeholder="예) V1, V2" value="V1"><div class="form-hint">동일 세트의 새 버전이면 V2, V3 등으로 입력하세요</div></div>
           <div class="form-group"><label class="form-label">업로드 일자</label><input class="input" type="date" id="up-date" value="${new Date().toISOString().split('T')[0]}"></div>
           <!-- 파일 미리 선택으로 자동 감지 -->
           <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px">
@@ -4264,9 +4263,9 @@ function goUploadStep1(){document.getElementById('upload-step-2').style.display=
 function goUploadStep2(){
   const company=document.getElementById('up-company').value,type=document.getElementById('up-type').value;
   const subtype=document.getElementById('up-subtype').value;
-  const version=document.getElementById('up-version').value.trim(),date=document.getElementById('up-date').value;
-  if(!company||!type||!subtype||!version||!date)return toast('모든 항목을 입력해주세요','error');
-  state.uploadMeta={company,type,subtype,version,date};
+  const date=document.getElementById('up-date').value;
+  if(!company||!type||!subtype||!date)return toast('모든 항목을 입력해주세요','error');
+  state.uploadMeta={company,type,subtype,date};
   document.getElementById('upload-step-1').style.display='none';document.getElementById('upload-step-2').style.display='block';
   document.getElementById('step-1').classList.remove('active');document.getElementById('step-1').classList.add('done');
   document.getElementById('step-2').classList.add('active');
@@ -4294,18 +4293,12 @@ function autoDetectFromFiles(files){
     state.uploadMeta.subtype = meta.subtype;
     detected.push('유형상세: '+(state.subtypes.find(s=>s.code===meta.subtype)?.name||meta.subtype));
   }
-  if(meta.version){
-    document.getElementById('up-version').value = meta.version;
-    state.uploadMeta.version = meta.version;
-    detected.push('버전: '+meta.version);
-  }
-
   const resultEl = document.getElementById('step1-detect-result');
   if(resultEl){
     if(detected.length){
       resultEl.style.display = 'block';
       resultEl.innerHTML = '<strong>자동 감지됨:</strong> '+detected.join(' · ')
-        +(detected.length < 4 ? ' · <span style="color:var(--text-secondary)">나머지는 직접 입력해주세요</span>' : '');
+        +(detected.length < 3 ? ' · <span style="color:var(--text-secondary)">나머지는 직접 입력해주세요</span>' : '');
       toast('기본 정보가 자동으로 채워졌어요!', 'success');
     } else {
       resultEl.style.display = 'block';
@@ -4380,174 +4373,85 @@ function renderUploadPreviews(){
   }).join('');
 }
 
+async function computeFileHash(file) {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function startUpload(){
   const meta=state.uploadMeta;
   const untyped=state.uploadFiles.filter(f=>!f.screenTypeCode);
   if(untyped.length)return toast('모든 화면의 화면유형을 선택해주세요','error');
 
-  // 같은 버전 세트 체크
-  let setId;
-  let appendMode=false;
-  let appendStartOrder=1;
-  try{
-    const existing=await api('GET',`/screen-sets?company=${meta.company}&type=${meta.type}&subtype=${meta.subtype}&latest_only=false`);
-    const sameVersion=existing?.find(s=>s.version===meta.version);
+  const mainFiles=state.uploadFiles.filter(f=>!f.isRelated);
+  const relatedFiles=state.uploadFiles.filter(f=>f.isRelated);
+  let setId=null;
 
-    // 전부 연관 화면이면 다이얼로그 없이 기존 세트에 바로 추가
-    const allRelated = state.uploadFiles.every(f => f.isRelated);
-
-    if(sameVersion){
-      const detail=await api('GET',`/screen-sets/${sameVersion.id}`);
-      const existingCount=detail?.screens?.length||0;
-
-      if(allRelated){
-        // 연관 화면만 올리는 경우 → 자동으로 기존 세트에 추가
-        setId=sameVersion.id;
-        appendMode=true;
-        appendStartOrder=existingCount+1;
-      } else {
-        // 메인 플로우 포함 → 선택 다이얼로그
-        const choice = await showUploadChoiceModal(meta.version, existingCount);
-        if(choice===null)return; // 취소
-        if(choice==='append'){
-          setId=sameVersion.id;
-          appendMode=true;
-          appendStartOrder=existingCount+1;
-        } else {
-          // 전체 교체
-          if(detail?.screens?.length){
-            await api('POST','/screens/bulk-delete',{ids:detail.screens.map(s=>s.id)});
-          }
-          await api('DELETE',`/screen-sets/${sameVersion.id}`);
-          toast('기존 세트를 삭제했습니다');
-        }
-      }
-    }
-    if(!appendMode){
-      const screenList=state.uploadFiles.map((f,i)=>({screen_type_code:f.screenTypeCode,order_no:i+1}));
-      const newSet=await api('POST','/screen-sets',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,version:meta.version,uploaded_at:meta.date,screens:screenList});
-      setId=newSet.id;
-    }
-  }catch(e){return toast('세트 생성 실패: '+e.message,'error');}
-
-  // 메인 플로우 / 연관 화면 분리
-  const mainFiles = state.uploadFiles.filter(f => !f.isRelated);
-  const relatedFiles = state.uploadFiles.filter(f => f.isRelated);
-
-  // 메인 플로우 업로드
-  let mainOrder = appendMode ? appendStartOrder : 1;
+  // 메인 플로우 업로드 (order_no: 1, 2, 3...)
   for(let i=0;i<mainFiles.length;i++){
     const item=mainFiles[i]; item.status='uploading'; renderUploadPreviews();
     try{
-      const orderNo = mainOrder + i;
+      const orderNo=i+1;
       const ext=item.file.name.split('.').pop()||'png';
-      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:orderNo,ext});
+      const contentHash=await computeFileHash(item.file);
+      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,order_no:orderNo,content_hash:contentHash,ext});
       await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
-      await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path});
-      item.status='done';
+      const result=await api('POST','/screens/upsert',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path,content_hash:contentHash,uploaded_at:meta.date});
+      if(!setId&&result.set_id) setId=result.set_id;
+      item.status='done'; item.resultMsg=result.message;
     }catch(e){item.status='error';}
     renderUploadPreviews();
   }
 
-  // 연관 화면 업로드 - 별도 세트 없이 같은 세트에 넣되 order_no를 9000번대로 분리
-  // 기존 9000번대 화면 수 확인해서 충돌 방지
-  const relatedScreenIds = [];
-  let relatedStartOrder = 9000;
-  try {
-    const existingSetDetail = await api('GET', `/screen-sets/${setId}?include_related=true`);
-    const existingRelated = (existingSetDetail?.screens||[]).filter(s => s.order_no >= 9000);
-    if (existingRelated.length > 0) {
-      const maxOrder = Math.max(...existingRelated.map(s => s.order_no));
-      relatedStartOrder = maxOrder + 1;
-    }
-  } catch(e) { relatedStartOrder = 9000; }
+  // 연관 화면 업로드 (order_no: 9000+)
+  let relatedStartOrder=9000;
+  if(setId){
+    try{
+      const setDetail=await api('GET',`/screen-sets/${setId}`);
+      const existingRelated=(setDetail?.screens||[]).filter(s=>s.order_no>=9000);
+      if(existingRelated.length>0) relatedStartOrder=Math.max(...existingRelated.map(s=>s.order_no))+1;
+    }catch(e){}
+  }
 
+  const relatedScreenIds=[];
   for(let i=0;i<relatedFiles.length;i++){
     const item=relatedFiles[i]; item.status='uploading'; renderUploadPreviews();
     try{
-      const orderNo = relatedStartOrder + i;
+      const orderNo=relatedStartOrder+i;
       const ext=item.file.name.split('.').pop()||'png';
-      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,version:meta.version,order_no:orderNo,ext});
+      const contentHash=await computeFileHash(item.file);
+      const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,order_no:orderNo,content_hash:contentHash,ext});
       await fetch(urlRes.upload_url,{method:'PUT',body:item.file,headers:{'Content-Type':item.file.type}});
-      const newScreen=await api('POST','/screens',{set_id:setId,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path});
-      if(newScreen?.id) relatedScreenIds.push(newScreen.id);
+      const result=await api('POST','/screens/upsert',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,order_no:orderNo,imgsrc:urlRes.file_path,content_hash:contentHash,uploaded_at:meta.date});
+      if(!setId&&result.set_id) setId=result.set_id;
+      if(result.screen_id) relatedScreenIds.push(result.screen_id);
       item.status='done';
     }catch(e){item.status='error';}
     renderUploadPreviews();
   }
 
-  // 연관 화면이 있으면 → 메인 플로우 첫 번째 화면과 자동 연결 (screen_relations)
-  if(relatedScreenIds.length > 0){
+  // 연관 화면 자동 연결
+  if(relatedScreenIds.length>0&&setId){
     try{
-      // 세트에서 메인 화면 목록 조회 (order_no < 9000)
-      const setDetail = await api('GET', `/screen-sets/${setId}`);
-      const mainScreens = (setDetail?.screens||[]).filter(s=>s.order_no < 9000).sort((a,b)=>a.order_no-b.order_no);
-      if(mainScreens.length > 0){
-        // 마지막으로 업로드한 메인 화면과 연결
-        const targetScreenId = mainScreens[mainScreens.length - 1].id;
+      const setDetail=await api('GET',`/screen-sets/${setId}`);
+      const mainScreens=(setDetail?.screens||[]).filter(s=>s.order_no<9000).sort((a,b)=>a.order_no-b.order_no);
+      if(mainScreens.length>0){
+        const targetScreenId=mainScreens[mainScreens.length-1].id;
         for(const relId of relatedScreenIds){
-          try{ await api('POST','/screen-relations',{screen_id:targetScreenId,related_screen_id:relId}); }catch(e){}
+          try{await api('POST','/screen-relations',{screen_id:targetScreenId,related_screen_id:relId});}catch(e){}
         }
-        toast(`연관 화면 ${relatedScreenIds.length}개가 자동 연결됐습니다`, 'success');
+        toast(`연관 화면 ${relatedScreenIds.length}개가 자동 연결됐습니다`,'success');
       }
-    }catch(e){ console.warn('연관 화면 자동 연결 실패:', e); }
+    }catch(e){console.warn('연관 화면 자동 연결 실패:',e);}
   }
 
-  const doneCount=state.uploadFiles.filter(f=>f.status==='done').length;
   const relatedCount=relatedFiles.filter(f=>f.status==='done').length;
   document.getElementById('upload-step-2').style.display='none';document.getElementById('upload-step-3').style.display='block';
   document.getElementById('step-2').classList.remove('active');document.getElementById('step-2').classList.add('done');
   document.getElementById('step-3').classList.add('active');
   document.getElementById('upload-done-desc').textContent=`메인 ${mainFiles.filter(f=>f.status==='done').length}장${relatedCount?` · 연관 화면 ${relatedCount}장`:''} 등록됐습니다`;
   toast('업로드 완료!','success');
-}
-
-// 업로드 옵션 선택 다이얼로그 (Promise 기반)
-function showUploadChoiceModal(version, existingCount) {
-  return new Promise((resolve) => {
-    document.getElementById('generic-modal')?.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'generic-modal';
-    overlay.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <div class="modal-title">${version} 세트가 이미 있습니다</div>
-          <button class="modal-close" onclick="document.getElementById('generic-modal').remove();"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
-        </div>
-        <div class="modal-body">
-          <p style="font-size: 14px;color:var(--text-secondary);margin-bottom:16px">현재 <strong>${existingCount}장</strong>이 등록되어 있습니다. 어떻게 하시겠습니까?</p>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='append';">
-              <div>
-                <div style="font-weight:500;margin-bottom:2px">기존 세트에 추가</div>
-                <div style="font-size: 14px;color:var(--text-tertiary)">기존 ${existingCount}장 유지 · 새 이미지를 ${existingCount+1}번부터 추가</div>
-              </div>
-            </button>
-            <button class="btn btn-secondary" style="justify-content:flex-start;height:auto;padding:12px 14px;text-align:left" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='replace';">
-              <div>
-                <div style="font-weight:500;margin-bottom:2px;color:#C0392B">전체 교체</div>
-                <div style="font-size: 14px;color:var(--text-tertiary)">기존 ${existingCount}장 삭제 후 새로 업로드</div>
-              </div>
-            </button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="document.getElementById('generic-modal').remove();window._uploadChoice='cancel';">취소</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-
-    // 버튼 클릭 감지
-    const checkChoice = setInterval(() => {
-      if (window._uploadChoice !== undefined) {
-        clearInterval(checkChoice);
-        const choice = window._uploadChoice;
-        delete window._uploadChoice;
-        resolve(choice === 'cancel' ? null : choice);
-      }
-    }, 100);
-  });
 }
 
 // ===================== MASTER VIEW =====================
