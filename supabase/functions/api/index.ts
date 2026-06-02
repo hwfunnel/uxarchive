@@ -138,7 +138,9 @@ function joinResponseText(content: AITextBlock[]): string {
 }
 
 function parseJSONIfPossible(text: string): unknown | null {
-  const trimmed = text.trim();
+  let trimmed = text.trim();
+  // 마크다운 코드 블록 제거 (```json ... ``` 또는 ``` ... ```)
+  trimmed = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   if (!trimmed || !(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
   try {
     return JSON.parse(trimmed);

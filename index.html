@@ -1226,7 +1226,8 @@ function darkpatternRiskCountBadges(item) {
     .join('');
   if (!badges) {
     const overall = extractOverallRisk(item);
-    if (!overall || overall === '없음' || overall === '낮음') {
+    // overall이 null이면 result_json 파싱 실패(데이터 없음)이므로 표시하지 않음
+    if (overall === '없음' || overall === '낮음') {
       return `<span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #16a34a30">이상 없음</span>`;
     }
     return '';
