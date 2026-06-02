@@ -1572,7 +1572,8 @@ function renderSetDetail(set) {
 let setDragOrder=null; // 현재 드래그 중인 순서 배열 (screen objects)
 
 function onSetDragStart(e,idx){
-  dragSrcIdx=idx;
+  // data-idx는 rerenderSetGrid가 항상 최신으로 유지하므로 속성값 우선 사용
+  dragSrcIdx=parseInt(e.currentTarget.dataset.idx??idx);
   if(!setDragOrder) setDragOrder=[...(state.currentSet?.screens||[])];
   e.currentTarget.style.opacity='0.4';
   e.dataTransfer.effectAllowed='move';
@@ -1580,20 +1581,19 @@ function onSetDragStart(e,idx){
 function onSetDragOver(e,idx){
   e.preventDefault();
   e.dataTransfer.dropEffect='move';
-  // 드래그 중 위치 표시
   document.querySelectorAll('.draggable-card').forEach(c=>c.classList.remove('drag-over'));
   e.currentTarget.classList.add('drag-over');
 }
 function onSetDrop(e,idx){
   e.preventDefault();
-  if(dragSrcIdx===null||dragSrcIdx===idx)return;
+  const dropIdx=parseInt(e.currentTarget.dataset.idx??idx);
+  if(dragSrcIdx===null||dragSrcIdx===dropIdx)return;
   if(!setDragOrder) setDragOrder=[...(state.currentSet?.screens||[])];
   const arr=[...setDragOrder];
   const [moved]=arr.splice(dragSrcIdx,1);
   // 앞→뒤 드래그 시 소스 제거로 타깃 인덱스가 1 내려가므로 보정 → 타깃 카드 앞에 삽입
-  arr.splice(dragSrcIdx < idx ? idx - 1 : idx, 0, moved);
+  arr.splice(dragSrcIdx < dropIdx ? dropIdx - 1 : dropIdx, 0, moved);
   setDragOrder=arr;
-  // 미리보기 리렌더
   rerenderSetGrid(arr);
 }
 function onSetDragEnd(e){
