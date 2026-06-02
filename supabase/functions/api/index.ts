@@ -850,7 +850,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const { data, error } = await query;
         if (error) return err(error.message);
 
-        const result = await Promise.all((data || []).map(async (set: Record<string, unknown>) => {
+        const sets = data || [];
+
+        // 모든 screen ID 수집 → revisions max captured_at 조회 (정렬용)
+        const allScreenIds = sets.flatMap((set: Record<string, unknown>) =>
+          ((set.screens as { id: string }[]) || []).map((s) => s.id)
+        ).filter(Boolean) as string[];
+
+        const revMaxMap = new Map<string, string>(); // screen_id → max captured_at
+        if (allScreenIds.length > 0) {
+          const { data: revRows } = await supabase
+            .from("screen_revisions")
+            .select("screen_id, captured_at")
+            .in("screen_id", allScreenIds)
+            .order("captured_at", { ascending: false });
+          for (const r of (revRows || []) as { screen_id: string; captured_at: string }[]) {
+            if (!revMaxMap.has(r.screen_id)) revMaxMap.set(r.screen_id, r.captured_at);
+          }
+        }
+
+        const result = await Promise.all(sets.map(async (set: Record<string, unknown>) => {
           const screens = (set.screens as { id: string; screen_type_code: string; order_no: number; imgsrc: string; screen_type: unknown }[]) || [];
           const screensWithUrl = await Promise.all(
             screens.sort((a, b) => a.order_no - b.order_no).map(async (s) => {
@@ -858,8 +877,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
               return { ...s, signed_url: urlData?.signedUrl };
             })
           );
-          return { ...set, screens: screensWithUrl };
+          // 세트의 최신 활동 시각 = max(revisions.captured_at) across all screens
+          const screenIds = screens.map((s) => s.id);
+          const maxRev = screenIds
+            .map((id) => revMaxMap.get(id))
+            .filter(Boolean)
+            .sort()
+            .pop() ?? (set.created_at as string);
+          const last_activity_at = maxRev > (set.created_at as string) ? maxRev : (set.created_at as string);
+          return { ...set, screens: screensWithUrl, last_activity_at };
         }));
+
+        // 최신 활동 순 정렬
+        result.sort((a, b) =>
+          new Date((b as Record<string, unknown>).last_activity_at as string).getTime() -
+          new Date((a as Record<string, unknown>).last_activity_at as string).getTime()
+        );
 
         return json(result);
       }
@@ -1291,7 +1324,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (!imgsrc) return err("imgsrc가 필요합니다.", 400);
         const { data: rev, error: revErr } = await supabase
           .from("screen_revisions")
-          .update({ imgsrc, content_hash: content_hash || null })
+          .update({ imgsrc, content_hash: content_hash || null, captured_at: new Date().toISOString() })
           .eq("id", revisionId)
           .select("id, screen_id, is_current, version_no")
           .single();
@@ -1313,7 +1346,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         }
         const { data, error } = await supabase
           .from("screen_revisions")
-          .update({ memo: memo ?? null })
+          .update({ memo: memo ?? null, captured_at: new Date().toISOString() })
           .eq("id", revisionId)
           .select("id, memo")
           .single();
