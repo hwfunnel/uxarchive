@@ -484,6 +484,7 @@ let state = {
   isPopping:false,
   currentViewingRevisionId:null,
   currentScreenRevisions:[],
+  productOnly: true,
 };
 
 // =====================
@@ -1663,11 +1664,14 @@ async function renderCompanyView() {
       return;
     }
     let html=`<div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
-      <div><div class="page-title">기업별 조회</div><div class="page-desc">기업과 유형별로 화면을 확인합니다</div></div>
-      <button class="btn ${state.productOnly?'btn-primary':'btn-secondary'}" onclick="toggleProductOnly()" id="product-only-btn" style="white-space:nowrap">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="10" height="7" rx="1.5"/><path d="M4.5 3V2a1.5 1.5 0 013 0v1"/></svg>
-        ${state.productOnly?'✓ 상품만 보기':'상품만 보기'}
-      </button>
+      <div><div class="page-title">기업별 조회</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <button class="btn ${state.productOnly?'btn-primary':'btn-secondary'}" onclick="toggleProductOnly()" id="product-only-btn" style="white-space:nowrap">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="3" width="10" height="7" rx="1.5"/><path d="M4.5 3V2a1.5 1.5 0 013 0v1"/></svg>
+          ${state.productOnly?'화면 유형 전체 보기':'상품만 보기'}
+        </button>
+        <div class="page-desc" style="font-size:12px">기업과 유형별로 화면을 확인합니다</div>
+      </div>
     </div>`;
     state.companies.forEach((c,ci)=>{
       let cSets=byCompany[c.code]?.sets||[];
@@ -3105,12 +3109,15 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
     // A 화면 ID 먼저, B 화면 ID 나중 (display_image_urls 순서와 일치)
     const aIds = matchedPairs.flatMap(p => p.screensA.map(s => s.id)).filter(Boolean);
     const bIds = matchedPairs.flatMap(p => p.screensB.map(s => s.id)).filter(Boolean);
+    const aImgsrcs = matchedPairs.flatMap(p => p.screensA.map(s => s.imgsrc)).filter(Boolean);
+    const bImgsrcs = matchedPairs.flatMap(p => p.screensB.map(s => s.imgsrc)).filter(Boolean);
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
       messages: [{role:'user', content: userContent}],
       max_tokens: maxTokens,
       analysis_type: 'compare',
+      image_paths: [...aImgsrcs, ...bImgsrcs],
       image_ids: [...aIds, ...bIds],
     });
 
@@ -4063,7 +4070,7 @@ async function startDarkpatternAnalysis(mode) {
 
     const systemPrompt = isFlow ? PROMPTS.DARKPATTERN_FLOW : PROMPTS.DARKPATTERN_UI;
 
-    const imagePaths = screens.map(s => s.signed_url || s.file_path).filter(Boolean);
+    const imagePaths = screens.map(s => s.imgsrc || s.file_path).filter(Boolean);
     const imageIds = screens.map(s => s.id).filter(Boolean);
 
     const res = await api('POST', '/ai/analyze', {
@@ -4356,6 +4363,7 @@ function lazyImg(signedUrl, imgsrc, extraStyle='', extraAttr='') {
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
 let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
+let pickerRevisionMode=false;
 
 async function openScreenPicker(slot) {
   openCompareImagePicker(slot);
@@ -4363,7 +4371,13 @@ async function openScreenPicker(slot) {
 
 async function onPickerFilter(key,value) {
   pickerFilters[key]=value;
-  if(key!=='version'&&pickerFilters.company&&pickerFilters.type&&pickerFilters.subtype){
+  if(key==='screen_type'){
+    pickerRevisionMode=!!value;
+    pickerFilters.version='';
+    const vSel=document.getElementById('pf-version');
+    if(vSel)vSel.innerHTML='<option value="">버전</option>';
+  }
+  if(!pickerRevisionMode&&key!=='version'&&pickerFilters.company&&pickerFilters.type&&pickerFilters.subtype){
     const sets=await api('GET',`/screen-sets?company=${pickerFilters.company}&type=${pickerFilters.type}&subtype=${pickerFilters.subtype}&latest_only=false`);
     const vSel=document.getElementById('pf-version');
     if(vSel&&sets) vSel.innerHTML=`<option value="">버전</option>`+sets.map(s=>`<option value="${s.version}" ${pickerFilters.version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
@@ -4389,14 +4403,19 @@ async function loadPickerScreens(){
     let screens=[];
     if(company&&type&&subtype){
       const inclRel = pickerSlot==='__relation__' ? '&include_related=true' : ''; const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&subtype=${subtype}&latest_only=false${inclRel}`);
-      const vSel=document.getElementById('pf-version');
-      if(vSel&&sets) vSel.innerHTML=`<option value="">버전 전체</option>`+sets.map(s=>`<option value="${s.version}" ${version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
+      if(!pickerRevisionMode){
+        const vSel=document.getElementById('pf-version');
+        if(vSel&&sets) vSel.innerHTML=`<option value="">버전 전체</option>`+sets.map(s=>`<option value="${s.version}" ${version===s.version?'selected':''}>${s.version} (${s.uploaded_at})</option>`).join('');
+      }
       let targetSets=sets||[];
-      if(version) targetSets=targetSets.filter(s=>s.version===version);
-      else {
+      if(!pickerRevisionMode&&version) targetSets=targetSets.filter(s=>s.version===version);
+      else if(!pickerRevisionMode){
         const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
         targetSets=latest?[latest]:[];
         if(latest){pickerFilters.version=latest.version;const vSel2=document.getElementById('pf-version');if(vSel2)Array.from(vSel2.options).forEach(o=>{o.selected=o.value===latest.version;});updatePickerFilterStyles();}
+      } else {
+        const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
+        targetSets=latest?[latest]:[];
       }
       for(const s of targetSets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
@@ -4421,6 +4440,26 @@ async function loadPickerScreens(){
     } else if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];}
     const seen=new Set();screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
     screens.sort((a,b)=>a.order_no-b.order_no);
+    // Revision mode: populate version selector from screen revisions
+    if(pickerRevisionMode&&screens.length>0&&company&&type&&subtype){
+      const refScreen=screens.find(s=>s.screen_type_code===screen_type)||screens[0];
+      const revs=await api('GET',`/screens/${refScreen.id}/revisions`)||[];
+      const vSel=document.getElementById('pf-version');
+      if(vSel&&revs.length){
+        const v=String(pickerFilters.version||'');
+        vSel.innerHTML=`<option value="">버전 전체</option>`+revs.map(r=>`<option value="${r.version_no}" ${String(r.version_no)===v?'selected':''}>V${r.version_no} (${(r.captured_at||'').slice(0,10)})</option>`).join('');
+        updatePickerFilterStyles();
+      }
+      if(pickerFilters.version){
+        const vNo=Number(pickerFilters.version);
+        const revCache=new Map();revCache.set(refScreen.id,revs);
+        for(let i=0;i<screens.length;i++){
+          if(!revCache.has(screens[i].id))revCache.set(screens[i].id,await api('GET',`/screens/${screens[i].id}/revisions`)||[]);
+          const rev=(revCache.get(screens[i].id)||[]).find(r=>r.version_no===vNo);
+          if(rev)screens[i]={...screens[i],imgsrc:rev.imgsrc,signed_url:rev.signed_url};
+        }
+      }
+    }
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
     // 피커 렌더 후 레이지 observe (아래 innerHTML 세팅 후 처리)

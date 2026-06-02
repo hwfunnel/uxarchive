@@ -406,6 +406,30 @@ async function enrichReportsWithMeta(
   reports: Record<string, unknown>[],
   includeScreenMeta = false
 ): Promise<Record<string, unknown>[]> {
+  // ── Priority 1: image_paths (storage paths saved at analysis time) ──
+  // 분석 당시 저장된 storage path로 fresh signed URL 생성.
+  // image_paths가 https:// 시작이면 만료된 signed URL이므로 무시.
+  const allStoragePaths = [
+    ...new Set(
+      reports.flatMap((r) => {
+        const paths = Array.isArray(r.image_paths) ? (r.image_paths as string[]) : [];
+        return paths.filter((p) => p && !p.startsWith("http"));
+      })
+    ),
+  ];
+  const storageUrlMap = new Map<string, string>();
+  if (allStoragePaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("screens").createSignedUrls(allStoragePaths, 3600);
+    if (signed) {
+      for (const item of signed as { path: string; signedUrl: string }[]) {
+        if (item.signedUrl) storageUrlMap.set(item.path, item.signedUrl);
+      }
+    }
+  }
+
+  // ── Priority 2 (fallback): image_ids → screens.imgsrc ──
+  // 오래된 report이거나 image_paths가 없는 경우에만 사용.
+  // 이 경우 screens.imgsrc는 현재 최신 버전이므로, 분석 당시 이미지와 다를 수 있음.
   const allImageIds = reports
     .flatMap((r) => (Array.isArray(r.image_ids) ? (r.image_ids as string[]) : []))
     .filter(Boolean);
@@ -423,12 +447,12 @@ async function enrichReportsWithMeta(
       const uniqueImgsrcs = [
         ...new Set((screenData as Record<string, unknown>[]).map((s) => s.imgsrc as string).filter(Boolean)),
       ];
-      const urlMap = new Map<string, string>();
+      const fallbackUrlMap = new Map<string, string>();
       if (uniqueImgsrcs.length > 0) {
-        const { data: signed } = await supabase.storage.from("screens").createSignedUrls(uniqueImgsrcs, 3600);
-        if (signed) {
-          for (const item of signed as { path: string; signedUrl: string }[]) {
-            if (item.signedUrl) urlMap.set(item.path, item.signedUrl);
+        const { data: fbSigned } = await supabase.storage.from("screens").createSignedUrls(uniqueImgsrcs, 3600);
+        if (fbSigned) {
+          for (const item of fbSigned as { path: string; signedUrl: string }[]) {
+            if (item.signedUrl) fallbackUrlMap.set(item.path, item.signedUrl);
           }
         }
       }
@@ -440,7 +464,7 @@ async function enrichReportsWithMeta(
         const imgsrc = (s.imgsrc as string) || "";
         screenMetaMap.set(s.id as string, {
           imgsrc,
-          signed_url: urlMap.get(imgsrc) || "",
+          signed_url: fallbackUrlMap.get(imgsrc) || "",
           company_name: (compObj?.name as string) || "",
           subtype_name: (subObj?.name as string) || "",
           screen_type_name: (stObj?.name as string) || "",
@@ -453,20 +477,23 @@ async function enrichReportsWithMeta(
 
   return reports.map((r) => {
     const ids = Array.isArray(r.image_ids) ? (r.image_ids as string[]) : [];
+    const storagePaths = (Array.isArray(r.image_paths) ? (r.image_paths as string[]) : []).filter((p) => p && !p.startsWith("http"));
     const firstMeta = ids[0] ? screenMetaMap.get(ids[0]) : null;
     const overall_risk = computeOverallRisk(r.result_json);
-    // Fresh signed URLs for all image_ids in order
-    const display_image_urls = ids
-      .map((id) => screenMetaMap.get(id)?.signed_url || "")
-      .filter(Boolean);
-    // thumbnail: only fresh signed URL — no image_paths fallback (those may be expired)
+
+    // display_image_urls 우선순위:
+    // 1. image_paths(storage path) → fresh signed URL
+    // 2. image_ids → screens.imgsrc(현재 버전) signed URL (fallback, 분석 당시와 다를 수 있음)
+    const display_image_urls = storagePaths.length > 0
+      ? storagePaths.map((p) => storageUrlMap.get(p) || "").filter(Boolean)
+      : ids.map((id) => screenMetaMap.get(id)?.signed_url || "").filter(Boolean);
+
     const thumbnail_url = display_image_urls[0] || null;
     const display_company = firstMeta?.company_name || null;
     const display_subtype = firstMeta?.subtype_name || null;
     const display_screen_type = firstMeta?.screen_type_name || null;
     const display_title = buildDisplayTitle(r.analysis_type as string, display_screen_type);
     const display_subtitle = buildDisplaySubtitle(r);
-    // compare 타입: A/B 첫 이미지들의 company/type/version을 노출
     const compare_screens_meta = (r.analysis_type as string) === "compare"
       ? ids.slice(0, 4).map((id) => {
           const m = screenMetaMap.get(id);
@@ -482,10 +509,14 @@ async function enrichReportsWithMeta(
     if (includeScreenMeta) {
       enriched.screen_meta = ids.map((id) => {
         const meta = screenMetaMap.get(id);
+        // 상세 모달도 동일 우선순위: storage path signed URL → screens.imgsrc signed URL
+        const snapshotUrl = storagePaths.length > 0
+          ? storageUrlMap.get(storagePaths[ids.indexOf(id)] || "") || meta?.signed_url || null
+          : meta?.signed_url || null;
         return {
           screen_id: id,
           set_id: meta?.set_id || null,
-          signed_url: meta?.signed_url || null,
+          signed_url: snapshotUrl,
           company_name: meta?.company_name || null,
           screen_type_name: meta?.screen_type_name || null,
           version: meta?.version || null,
