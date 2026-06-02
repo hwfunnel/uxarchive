@@ -616,69 +616,259 @@ ${comparisonMode === 'same_company_version' ? `comparisonMode가 same_company_ve
   },
 
   // 플로우 비교 분석 (runAIFlowAnalysis)
-  FLOW_COMPARE_DETAIL: (nameA, nameB, covACount, covBCount) =>
-    '당신은 10년 이상 경력의 자동차보험 가입 퍼널 전문가입니다.\n' +
-    '보험사 디지털 채널의 가입 흐름 설계, 이탈 구간 분석, 정보 수집 전략 최적화를 전문으로 합니다.\n' +
-    '보험을 어려워하는 일반 사용자의 시점과 전문가의 전략적 시점을 동시에 갖고 분석합니다.\n\n' +
-    '[자동차보험 가입에 필요한 5가지 정보 카테고리]\n' +
-    '① 약관 동의: AGREE_PRE / AGREE_PRD / AGREE_PHONE / AGREE_NOTICE / AGREE_TERM / AGREE_PAY / AGREE_APPLY / AGREE_TERM_LIST / AGREE_DISCOUNT_ALL / AGREE_DISCOUNT_MAKER / AGREE_DISCOUNT_TMAP / AGREE_DISCOUNT_NAVER / AGREE_DISCOUNT_CONN / AGREE_DISCOUNT_WINTER / AGREE_DISCOUNT_ECO\n' +
-    '② 인적사항 수집: CERT_INPUT / CERT_DONE / CERT_METHOD / CERT_PHONE / INFO_BASIC / INFO_JOB / INFO_CONFIRM / INFO_DISEASE / PIN\n' +
-    '③ 자동차 정보 수집: CAR_NUM / CAR_REG / CAR_SELECT / CAR_LIST / CAR_INFO / CAR_PERIOD / CAR_OPTION / PRICE_INPUT / CAR_OWNER / CAR_EXTRA\n' +
-    '④ 운전자 정보 수집: DRIVER_RANGE / DRIVER_INFO\n' +
-    '⑤ 보험료·특약: PREMIUM_CALC_Y / PREMIUM_CALC_M / COVERAGE_RANGE / COVERAGE_EDIT / COVERAGE_RECOMMEND / COVERAGE_DETAIL / COVERAGE_STAT / SPEC_PHOTO / SPEC_RECOMMEND_A / SPEC_SELECT_A / SPEC_SELECT_OPT_A / SPEC_INFO\n\n' +
-    '[분석 제외 대상]\n메인화면 / 광고팝업 / 챗봇 / 앱 스플래시 / 사고처리 / TM 연결 배너 등 정규 가입 흐름 외 화면\n\n' +
-    '[작성 원칙]\n' +
-    '- 전문 용어 사용 금지. 쉬운 말로 서술 (CTA→가입버튼, 이탈률→가입 포기 비율, 퍼널→가입 흐름)\n' +
-    '- 사실 서술 먼저, 평가는 총평 섹션에만 작성\n' +
-    '- 확인 불가 항목은 "확인 필요"로 표시\n' +
-    '- 변동사항·차이점은 가감 없이 전부 기록\n\n' +
-    '[응답 형식 — 반드시 아래 구조로 출력]\n\n' +
-    '## SUMMARY\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n' +
-    '|------|---------|----------|\n' +
-    '| 총 화면 수 | | |\n' +
-    '| 카테고리 커버리지 | ' + covACount + '/5 | ' + covBCount + '/5 |\n' +
-    '| 약관 수집 시점 | | |\n' +
-    '| 인증 수단 수 | | |\n' +
-    '| 차량번호 입력 시점 | | |\n' +
-    '| 보험료 산출 시점 | | |\n\n' +
-    '## 1. 플로우 전체 구조\n' +
-    '좌우 비교 표로 출력. 뱃지는 반드시 아래 4가지 중 하나만 사용:\n' +
-    '공통 단계 / A만 있음 / B만 있음 / 같은 단계 다른 방식\n\n' +
-    '| 순서 | ' + nameA + ' 단계 | ' + nameB + ' 단계 | 뱃지 |\n' +
-    '|------|-------------|-------------|------|\n\n' +
-    '## 2. 카테고리별 수집 전략 비교\n\n' +
-    '### ① 약관 동의\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
-    '| 수집 시점 | | |\n| 동의 화면 수 | | |\n| 필수·선택 구분 방식 | | |\n| 일괄 처리 vs 단계별 분산 | | |\n| 할인특약 조회 동의 포함 여부 | | |\n| 특이사항 | | |\n\n' +
-    '### ② 인적사항 수집\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
-    '| 수집 시점 | | |\n| 인증 수단 종류 및 수 | | |\n| 이름·주민번호 입력 방식 | | |\n| 특이사항 | | |\n\n' +
-    '### ③ 자동차 정보 수집\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
-    '| 수집 시점 | | |\n| 차량번호 입력 시점 | | |\n| 차량 조회 방식 | | |\n| 부속품·옵션 입력 여부 | | |\n| 특이사항 | | |\n\n' +
-    '### ④ 운전자 정보 수집\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
-    '| 수집 시점 | | |\n| 운전자 범위 선택 방식 | | |\n| 특이사항 | | |\n\n' +
-    '### ⑤ 보험료·특약\n' +
-    '| 항목 | ' + nameA + ' | ' + nameB + ' |\n|------|---------|----------|\n' +
-    '| 보험료 산출 시점 | | |\n| 특약 선택 시점 (산출 전/후) | | |\n| 보상범위 수정 가능 여부 | | |\n| 특약 사진 등록 요구 여부 | | |\n| 특이사항 | | |\n\n' +
-    '## 3. 이탈 위험 구간 분석\n' +
-    '가입을 포기하고 싶어질 가능성이 높은 구간을 분석합니다.\n' +
-    '위험도: 높음 / 중간 / 낮음\n\n' +
-    '| 구간 | 이탈 위험도 | 위험한 이유 | ' + nameA + ' 대응 방식 | ' + nameB + ' 대응 방식 |\n' +
-    '|------|-----------|------------|-----------------|----------------|\n\n' +
-    '## 4. 총평\n' +
-    '◆ ' + nameA + '이 잘하는 것\n' +
-    '◆ ' + nameA + '의 아쉬운 점\n' +
-    '◆ ' + nameB + '이 잘하는 것\n' +
-    '◆ ' + nameB + '의 아쉬운 점\n' +
-    '◆ 두 회사 공통 개선 필요 사항\n' +
-    '→ 바로 적용할 수 있는 것 (→ 로 시작, 3개 이상, 구체적으로)\n\n' +
-    '한국어. 쉬운 말로. 빠짐없이.',
+  FLOW_COMPARE_DETAIL: function(p) {
+    var fA = p.flowALabel, fB = p.flowBLabel, cA = p.companyA, cB = p.companyB;
+    var vA = p.versionA, vB = p.versionB, mode = p.comparisonMode;
+    var fname = p.flowName, slA = p.screenListA, slB = p.screenListB, str = p.screenTypeRequirements;
+    var modeSection = mode === 'same_company_version'
+      ? 'comparisonMode가 same_company_version이면:\n\n- ' + fA + '을 이전 플로우, ' + fB + '을 신규 플로우로 보고 분석하세요.\n- 무엇이 추가, 제거, 축약, 이동, 강조되었는지 중심으로 작성하세요.\n- 변화가 사용자 미션 달성에 더 도움이 되는지 판단하세요.\n- 실제 성과나 내부 의도는 단정하지 마세요.'
+      : 'comparisonMode가 competitor_same_flow이면:\n\n- ' + fA + '과 ' + fB + '을 서로 다른 회사의 같은 목적 플로우로 보고 분석하세요.\n- 어느 플로우가 사용자의 이해, 진행, 선택, 완료에 더 유리한지 비교하세요.\n- 한쪽을 무조건 승자로 만들지 말고, 구간별 강점과 약점을 나누어 작성하세요.';
+    var nameSection = mode === 'same_company_version'
+      ? '- same_company_version인 경우 예시는 다음과 같습니다.\n    - ' + cA + ' 이전 플로우\n    - ' + cB + ' 신규 플로우'
+      : '- competitor_same_flow인 경우 예시는 다음과 같습니다.\n    - ' + cA + ' 플로우\n    - ' + cB + ' 플로우';
+    return [
+      '당신은 보험·금융 모바일 서비스 플로우를 분석하는 UX 리서처입니다.',
+      '두 개의 서비스 플로우를 비교하되, 반드시 제공된 화면 이미지와 화면 정보값에서 확인 가능한 내용만 근거로 분석하세요.',
+      '',
+      '[분석 대상]',
+      '',
+      '- 비교 모드: ' + mode,
+      '    - same_company_version: 같은 회사의 이전 플로우와 신규 플로우 비교',
+      '    - competitor_same_flow: 서로 다른 회사의 같은 화면 유형/가입 흐름 비교',
+      '- 플로우명: ' + fname,
+      '- 분석 목적: 사용자가 서비스 이용 과정에서 자신의 미션을 막힘 없이 달성할 수 있는지 비교',
+      '- 플로우 1:',
+      '플로우 라벨: ' + fA,
+      '회사명: ' + cA,
+      '버전/수집일: ' + vA,
+      '화면 목록: ' + slA,
+      '화면 이미지들: image A1, image A2, image A3 ...',
+      '- 플로우 2:',
+      '플로우 라벨: ' + fB,
+      '회사명: ' + cB,
+      '버전/수집일: ' + vB,
+      '화면 목록: ' + slB,
+      '화면 이미지들: image B1, image B2, image B3 ...',
+      '',
+      '[화면 정보값]',
+      '각 화면에는 다음 정보가 제공됩니다.',
+      '',
+      '- 기업명',
+      '- 화면명',
+      '- 화면 유형',
+      '- 화면 순서',
+      '- 유형/유형상세',
+      '- 수집일 또는 버전',
+      '',
+      '분석할 때 화면 이미지뿐 아니라 위 화면 정보값도 함께 참고하세요.',
+      '특히 "화면 유형"은 해당 화면에서 사용자가 달성해야 하는 목적을 이해하는 기준으로 사용하세요.',
+      '',
+      '[화면 유형별 요구사항]',
+      '아래 값은 각 화면 유형에서 기대되는 UX 기준입니다.',
+      '화면 유형이 제공되면, 해당 유형의 요구사항을 기준으로 플로우를 평가하세요.',
+      '',
+      str,
+      '',
+      '사용 방법:',
+      '',
+      '- 화면 유형별 요구사항은 "정답"이 아니라 평가 기준입니다.',
+      '- 해당 화면에서 요구사항을 잘 충족하면 좋은 점으로 표시하세요.',
+      '- 요구사항을 충족하지 못하거나 흐름을 방해하면 개선 필요로 표시하세요.',
+      '- 이미지에서 확인할 수 없는 내용은 추측하지 말고 "확인 어려움"이라고 쓰세요.',
+      '',
+      '[화면 이름 표기 원칙]',
+      '',
+      '- 사용자에게 보여주는 문장과 표에서는 "플로우 A", "플로우 B", "화면 A", "화면 B"라는 표현을 사용하지 마세요.',
+      '- 반드시 ' + fA + ', ' + fB + ' 또는 기업명이 포함된 화면명을 사용하세요.',
+      nameSection,
+      '- 내부적으로 이미지를 구분할 때만 image A1, image B1 등을 참고하세요.',
+      '- 최종 응답에는 image A1, image B1 같은 표현을 쓰지 마세요.',
+      '',
+      '[정확도 최우선 원칙]',
+      '이 분석에서는 좋은 해석보다 정확한 관찰이 더 중요합니다.',
+      '',
+      '- 화면에 실제로 보이는 내용만 작성하세요.',
+      '- 제공된 화면 정보값에 있는 내용만 사용하세요.',
+      '- 보이지 않는 내용은 추측하지 마세요.',
+      '- 일반적인 보험/금융 가입 흐름에 있을 법한 내용을 임의로 보완하지 마세요.',
+      '- 확실하지 않으면 반드시 "확인 어려움"이라고 쓰세요.',
+      '- 이미지가 너무 길거나 해상도가 낮아 문구, 금액, 버튼, 조건을 읽기 어렵다면 "해상도 문제로 확인 어려움"이라고 명확히 쓰세요.',
+      '- 흐릿한 문구를 그럴듯하게 복원하지 마세요.',
+      '- 버튼, 입력창, 카드, 배너, 탭, 리스트, 모달, 바텀시트를 혼동하지 마세요.',
+      '- 사용자가 값을 입력할 수 있는 칸이 보일 때만 "입력 폼"이라고 쓰세요.',
+      '- 혜택 카드, 안내 카드, 배너는 입력 폼이 아닙니다.',
+      '- 버튼은 사용자가 누를 수 있는 명확한 실행 요소일 때만 버튼이라고 쓰세요.',
+      '- 수치가 보여도 항목과 연결이 불명확하면 "확인 어려움"이라고 쓰세요.',
+      '- 화면 순서가 제공되지 않거나 이미지 순서와 맞지 않으면 "순서 확인 필요"라고 쓰세요.',
+      '- 없는 화면, 없는 버튼, 없는 문구, 없는 입력 단계, 없는 조건을 만들어 쓰지 마세요.',
+      '',
+      '[근거 표시 원칙]',
+      '',
+      '- UX 인사이트와 실무 제안은 반드시 어떤 플로우 또는 어떤 화면에서 착안했는지 함께 표시하세요.',
+      '- "근거"에는 확인된 화면명, 화면 유형, 플로우 라벨 중 하나 이상을 포함하세요.',
+      '- 근거가 불명확하면 제안하지 마세요.',
+      '- 일반론으로 보이는 제안은 쓰지 마세요.',
+      '- 화면에서 확인된 문제 또는 좋은 점과 직접 연결되는 제안만 작성하세요.',
+      '- 근거 표현 예시는 다음과 같습니다.',
+      '    - 근거: ' + fA + '의 약관동의화면',
+      '    - 근거: ' + fB + '의 결제수단설정 화면',
+      '    - 근거: ' + fA + '에서는 상담 전환 배너가 가입 흐름 중간에 노출됨',
+      '    - 근거: ' + fB + '에서는 하단 주요 버튼이 결제 행동을 명확히 안내함',
+      '',
+      '[분석 관점]',
+      '서비스 플로우를 다음 관점에서 비교하세요.',
+      '',
+      '1. 사용자의 최종 미션',
+      '- 이 플로우에서 사용자가 달성해야 하는 목적이 무엇인지 정의하세요.',
+      '- 예: 보험료 산출, 보장 선택, 특약 적용, 약관 동의, 결제 완료, 사고 접수 등',
+      '2. 흐름의 자연스러움',
+      '- 화면 순서가 사용자의 기대와 맞는지 확인하세요.',
+      '- 갑자기 개인정보, 동의, 결제, 상담 전환을 요구하지 않는지 확인하세요.',
+      '- 이전 화면의 선택 결과가 다음 화면에서 이어지는지 확인하세요.',
+      '3. 미션을 방해하는 요소',
+      '- 불필요하게 긴 단계',
+      '- 반복 입력',
+      '- 목적과 관련 없는 팝업/배너',
+      '- 닫기 어려운 모달',
+      '- 조건이나 유의사항의 늦은 노출',
+      '- 다음 행동이 불명확한 버튼',
+      '- 입력값이 사라질 수 있는 흐름',
+      '- 상담/앱설치/마케팅 전환이 본래 과업을 가리는 경우',
+      '4. 좋은 UX 요소',
+      '- 사용자의 현재 단계가 명확함',
+      '- 다음 행동이 한눈에 보임',
+      '- 중요한 조건을 제때 안내함',
+      '- 선택 전후 차이를 쉽게 보여줌',
+      '- 수정/되돌아가기 경로가 명확함',
+      '- 사용자가 불안해할 정보를 쉽게 설명함',
+      '- 화면 유형별 요구사항을 잘 충족함',
+      '5. 가입/산출/결제 진행에 미치는 영향',
+      '- 사용자가 계속 진행하기 쉬운지',
+      '- 중간 이탈 가능성이 높은 구간이 있는지',
+      '- 사용자가 헷갈릴 수 있는 분기나 선택지가 있는지',
+      '- 최종 행동 버튼이 명확한지',
+      '',
+      '[비교 모드별 기준]',
+      modeSection,
+      '',
+      '[작성 원칙]',
+      '',
+      '- 한국어로 작성하세요.',
+      '- 짧고 직관적으로 작성하세요.',
+      '- 한 문장은 가능하면 40자 이내로 작성하세요.',
+      '- 중복 설명을 하지 마세요.',
+      '- 전문 용어를 피하세요.',
+      '    - CTA 대신 "주요 버튼"이라고 쓰세요.',
+      '    - 전환율 대신 "가입으로 이어질 가능성"이라고 쓰세요.',
+      '    - 소셜프루프 대신 "후기, 별점, 가입자 수 같은 신뢰 요소"라고 쓰세요.',
+      '- JSON과 코드블록은 출력하지 마세요.',
+      '- 표는 최대 3개만 사용하세요.',
+      '- 각 표는 6행 이내로 작성하세요.',
+      '- 표의 각 칸은 짧게 작성하세요.',
+      '- 설명 문단은 각 섹션당 최대 2문장만 작성하세요.',
+      '- 다크패턴 분석은 하지 마세요.',
+      '- 법적 위반 여부는 판단하지 마세요.',
+      '- 단, 사용자의 미션을 방해하는 UX 요소는 "방해 요소"로 표시하세요.',
+      '',
+      '[응답 형식]',
+      '아래 형식을 반드시 지키세요.',
+      '',
+      '## 1. 핵심 요약',
+      '- 한 줄 인사이트:',
+      '- 사용자 미션:',
+      '- ' + fA + '의 방향:',
+      '- ' + fB + '의 방향:',
+      '- 더 유리한 플로우:',
+      '',
+      '작성 규칙:',
+      '',
+      '- 한 줄 인사이트는 가장 중요한 전략적 차이를 1문장으로 쓰세요.',
+      '- 근거가 부족하면 "판단 어려움"이라고 쓰세요.',
+      '',
+      '## 2. 흐름 비교 요약',
+      '',
+      '| 구분 | ' + fA + ' | ' + fB + ' | UX 의미 |',
+      '| --- | --- | --- | --- |',
+      '| 시작 방식 |  |  |  |',
+      '| 주요 단계 구성 |  |  |  |',
+      '| 정보 확인 방식 |  |  |  |',
+      '| 입력/동의 흐름 |  |  |  |',
+      '| 다음 행동 안내 |  |  |  |',
+      '| 완료 또는 이탈 구간 |  |  |  |',
+      '',
+      '작성 규칙:',
+      '',
+      '- 각 칸은 짧게 쓰세요.',
+      '- 확인되지 않으면 "확인 어려움"이라고 쓰세요.',
+      '- 이미지 해상도 때문에 읽기 어려우면 "해상도 문제로 확인 어려움"이라고 쓰세요.',
+      '- 차이가 작으면 "큰 차이 없음"이라고 쓰세요.',
+      '',
+      '## 3. 화면 유형별 체크',
+      '',
+      '제공된 화면 유형값과 화면 유형별 요구사항을 기준으로 평가하세요.',
+      '최대 6개 화면 유형만 작성하세요.',
+      '중요도가 높은 화면 유형을 우선 작성하세요.',
+      '',
+      '| 화면 유형 | 기대 UX | ' + fA + ' | ' + fB + ' | 판단 |',
+      '| --- | --- | --- | --- | --- |',
+      '',
+      '판단 값은 아래 중 하나만 사용하세요.',
+      '좋음 / 보통 / 개선 필요 / 확인 어려움 / 해상도 문제로 확인 어려움',
+      '',
+      '작성 규칙:',
+      '',
+      '- "기대 UX"에는 해당 화면 유형의 핵심 요구사항을 짧게 쓰세요.',
+      '- 화면에서 확인된 내용만 평가하세요.',
+      '- 보이지 않는 기능은 있다고 가정하지 마세요.',
+      '',
+      '## 4. 미션 방해 요소',
+      '',
+      '| 구간/화면 | 방해 요소 | 영향 | 확인도 |',
+      '| --- | --- | --- | --- |',
+      '',
+      '작성 규칙:',
+      '',
+      '- 실제로 확인된 방해 요소만 작성하세요.',
+      '- 방해 요소가 명확하지 않으면 "뚜렷한 방해 요소 확인 어려움"이라고 쓰세요.',
+      '- 확인도는 "확실함 / 부분 확인 / 확인 어려움 / 해상도 문제로 확인 어려움" 중 하나로 쓰세요.',
+      '',
+      '## 5. 좋은 점',
+      '- ' + fA + '에서 좋은 점:',
+      '- ' + fB + '에서 좋은 점:',
+      '',
+      '각 항목은 최대 2개만 작성하세요.',
+      '확인된 내용만 작성하세요.',
+      '',
+      '## 6. UX 인사이트',
+      '',
+      '| 인사이트 | 근거가 된 플로우/화면 | 의미 |',
+      '| --- | --- | --- |',
+      '',
+      '작성 규칙:',
+      '',
+      '- 최대 3개만 작성하세요.',
+      '- "근거가 된 플로우/화면"에는 ' + fA + ', ' + fB + ' 또는 실제 화면명을 포함하세요.',
+      '- 화면 유형값이 있으면 함께 쓰세요.',
+      '- 확인된 사실에 근거하지 않으면 작성하지 마세요.',
+      '- 각 칸은 짧게 작성하세요.',
+      '',
+      '## 7. 실무 제안',
+      '',
+      '| 제안 | 근거 | 기대 효과 |',
+      '| --- | --- | --- |',
+      '',
+      '작성 규칙:',
+      '',
+      '- 제안은 3개만 작성하세요.',
+      '- "근거"에는 어떤 플로우나 화면에서 착안했는지 쓰세요.',
+      '- 근거가 불명확한 제안은 작성하지 마세요.',
+      '- 바로 적용 가능한 제안만 작성하세요.',
+      '- 각 칸은 짧게 작성하세요.',
+    ].join('\n');
+  },
 
   // 플로우 비교 분석 — 요약 (runAIFlowAnalysis, maxTokens < 4000)
-  FLOW_COMPARE_SUMMARY: (nameA, nameB, covACount, covBCount) => PROMPTS.FLOW_COMPARE_DETAIL(nameA, nameB, covACount, covBCount),
+  FLOW_COMPARE_SUMMARY: function(p) { return PROMPTS.FLOW_COMPARE_DETAIL(p); },
 
   // 다크패턴 플로우 분석 (startDarkpatternAnalysis — isFlow)
   DARKPATTERN_FLOW: `당신은 사용자의 연속된 가입·해지 여정(User Journey)을 추적하며 플로우 관점에서 다크패턴을 분석하는 전문가입니다.
@@ -3227,6 +3417,36 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
   };
   const extra = getAnalysisExtra();
 
+  // 새 프롬프트용 변수 계산
+  var comparisonMode = isSameCompany ? 'same_company_version' : 'competitor_same_flow';
+  var buildScreenList = function(flow) {
+    return flow.map(function(s, i) {
+      return (i+1) + '. ' + getName(s.screen_type_code) + '[' + (s.screen_type_code||'?') + '] 순서' + (s.order_no||'?');
+    }).join(' / ');
+  };
+  var screenListA = buildScreenList(resolvedFlowA);
+  var screenListB = buildScreenList(resolvedFlowB);
+  var setA = resolvedFlowA[0] && resolvedFlowA[0].set;
+  var setB = resolvedFlowB[0] && resolvedFlowB[0].set;
+  var versionInfoA = ((setA && setA.version) || '') + ((setA && setA.uploaded_at) ? ((setA.version ? ' / ' : '') + setA.uploaded_at) : '') || '정보 없음';
+  var versionInfoB = ((setB && setB.version) || '') + ((setB && setB.uploaded_at) ? ((setB.version ? ' / ' : '') + setB.uploaded_at) : '') || '정보 없음';
+  var catDisplayNames = { '약관':'약관동의', '인적사항':'인적사항', '차량':'차량정보', '운전자':'운전자정보', '보험료특약':'보험료/특약' };
+  var allCatKeys = [];
+  resolvedFlowA.concat(resolvedFlowB).forEach(function(s) {
+    var cat = FLOW_CATEGORY_MAP[s.screen_type_code];
+    if (cat && allCatKeys.indexOf(cat) === -1) allCatKeys.push(cat);
+  });
+  var flowName = allCatKeys.length > 0 ? allCatKeys.map(function(c){ return catDisplayNames[c]||c; }).join('·') + ' 플로우' : '보험 가입 플로우';
+  var allScreenTypeCodes = {};
+  resolvedFlowA.concat(resolvedFlowB).forEach(function(s) {
+    if (s.screen_type_code && !allScreenTypeCodes[s.screen_type_code]) {
+      allScreenTypeCodes[s.screen_type_code] = { name: getName(s.screen_type_code), category: FLOW_CATEGORY_MAP[s.screen_type_code] || '기타' };
+    }
+  });
+  var screenTypeRequirements = Object.entries(allScreenTypeCodes)
+    .map(function(e){ return '- [' + e[1].category + '] ' + e[1].name + ' (' + e[0] + ')'; }).join('\n')
+    || '(화면 유형 정보 없음)';
+
   resultWrap.style.display = 'block';
   resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
@@ -3246,31 +3466,14 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
 
     const userContent = [];
 
-    const modeText = isSameCompany
-      ? '[분석 모드: 버전 비교 — ' + companyNameA + ']\n이전 버전과 신규 버전의 가입 흐름을 비교합니다.'
-      : '[분석 모드: 경쟁사 비교 — ' + nameA + ' vs ' + nameB + ']';
-
-    let contextText = modeText + '\n\n' +
-      '[A사 정보]\n' +
-      '회사명: ' + nameA + '\n' +
-      '총 화면 수: ' + resolvedFlowA.length + '장\n' +
-      '카테고리 커버리지: ' + covA.count + '/5\n' +
-      covText(covA) + '\n\n' +
-      '[B사 정보]\n' +
-      '회사명: ' + nameB + '\n' +
-      '총 화면 수: ' + resolvedFlowB.length + '장\n' +
-      '카테고리 커버리지: ' + covB.count + '/5\n' +
-      covText(covB) + '\n\n' +
-      '이미지는 가입 순서(order_no) 기준으로 정렬되어 있습니다.\n' +
-      '각 이미지 앞 레이블: [화면유형코드 / 순서N / 화면유형명]';
-
+    let contextText = '두 플로우의 화면 이미지를 순서대로 제공합니다. 각 이미지 앞에 화면 정보 레이블이 붙어 있습니다.';
     if (extra) contextText += '\n\n[추가 분석 요청]\n' + extra;
     userContent.push({type:'text', text: contextText});
 
-    userContent.push({type:'text', text: '\n=== ' + nameA + ' 화면 (' + resolvedFlowA.length + '장, 순서대로) ==='});
+    userContent.push({type:'text', text: '\n=== ' + nameA + ' 화면 (' + resolvedFlowA.length + '장) ==='});
     for (var i = 0; i < resolvedFlowA.length; i++) {
       var s = resolvedFlowA[i];
-      userContent.push({type:'text', text: '[' + (s.screen_type_code||'?') + ' / 순서' + (s.order_no||'?') + ' / ' + getName(s.screen_type_code) + ']'});
+      userContent.push({type:'text', text: 'image A' + (i+1) + ': [' + (s.screen_type_code||'?') + ' / 순서' + (s.order_no||'?') + ' / ' + getName(s.screen_type_code) + '] ' + companyNameA});
       if (s.signed_url) {
         try {
           var b64 = await resizeImageToBase64ForFlow(s.signed_url);
@@ -3279,10 +3482,10 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       }
     }
 
-    userContent.push({type:'text', text: '\n=== ' + nameB + ' 화면 (' + resolvedFlowB.length + '장, 순서대로) ==='});
+    userContent.push({type:'text', text: '\n=== ' + nameB + ' 화면 (' + resolvedFlowB.length + '장) ==='});
     for (var j = 0; j < resolvedFlowB.length; j++) {
       var sb = resolvedFlowB[j];
-      userContent.push({type:'text', text: '[' + (sb.screen_type_code||'?') + ' / 순서' + (sb.order_no||'?') + ' / ' + getName(sb.screen_type_code) + ']'});
+      userContent.push({type:'text', text: 'image B' + (j+1) + ': [' + (sb.screen_type_code||'?') + ' / 순서' + (sb.order_no||'?') + ' / ' + getName(sb.screen_type_code) + '] ' + companyNameB});
       if (sb.signed_url) {
         try {
           var b64b = await resizeImageToBase64ForFlow(sb.signed_url);
@@ -3291,9 +3494,17 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       }
     }
 
+    const promptParams = {
+      flowALabel: nameA, flowBLabel: nameB,
+      companyA: companyNameA, companyB: companyNameB,
+      versionA: versionInfoA, versionB: versionInfoB,
+      comparisonMode: comparisonMode, flowName: flowName,
+      screenListA: screenListA, screenListB: screenListB,
+      screenTypeRequirements: screenTypeRequirements,
+    };
     const systemPrompt = maxTokens >= 4000
-      ? PROMPTS.FLOW_COMPARE_DETAIL(nameA, nameB, covA.count, covB.count)
-      : PROMPTS.FLOW_COMPARE_SUMMARY(nameA, nameB, covA.count, covB.count);
+      ? PROMPTS.FLOW_COMPARE_DETAIL(promptParams)
+      : PROMPTS.FLOW_COMPARE_SUMMARY(promptParams);
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
@@ -3319,13 +3530,20 @@ function renderFlowResult(wrap, text, nameA, nameB, isSame, maxTokens) {
 
   function flowBadge(val) {
     var v = val.trim();
-    if (v.indexOf('공통 단계') !== -1)           return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">공통 단계</span>';
-    if (v.indexOf('A만 있음') !== -1)            return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#E6F1FB;color:#185FA5">A만 있음</span>';
-    if (v.indexOf('B만 있음') !== -1)            return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EEEDFE;color:#534AB7">B만 있음</span>';
-    if (v.indexOf('같은 단계 다른 방식') !== -1) return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">같은 단계 다른 방식</span>';
-    if (v.indexOf('높음') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">높음</span>';
-    if (v.indexOf('중간') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">중간</span>';
-    if (v.indexOf('낮음') !== -1)                return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">낮음</span>';
+    if (v.indexOf('공통 단계') !== -1)                    return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">공통 단계</span>';
+    if (v.indexOf('A만 있음') !== -1)                     return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#E6F1FB;color:#185FA5">A만 있음</span>';
+    if (v.indexOf('B만 있음') !== -1)                     return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EEEDFE;color:#534AB7">B만 있음</span>';
+    if (v.indexOf('같은 단계 다른 방식') !== -1)          return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">같은 단계 다른 방식</span>';
+    if (v.indexOf('높음') !== -1)                         return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">높음</span>';
+    if (v.indexOf('중간') !== -1)                         return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">중간</span>';
+    if (v.indexOf('낮음') !== -1)                         return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">낮음</span>';
+    if (v.indexOf('해상도 문제') !== -1)                  return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#F5F5F5;color:#777">해상도 문제로 확인 어려움</span>';
+    if (v === '좋음' || v.indexOf('좋음') !== -1)         return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">좋음</span>';
+    if (v === '보통')                                     return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#F0F0F0;color:#555">보통</span>';
+    if (v.indexOf('개선 필요') !== -1)                    return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FCEBEB;color:#A32D2D">개선 필요</span>';
+    if (v.indexOf('확인 어려움') !== -1)                  return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">확인 어려움</span>';
+    if (v === '확실함')                                   return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#EAF3DE;color:#3B6D11">확실함</span>';
+    if (v.indexOf('부분 확인') !== -1)                    return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#FAEEDA;color:#854F0B">부분 확인</span>';
     return '<span style="font-size:14px;color:var(--text-secondary)">' + v + '</span>';
   }
 
@@ -3384,7 +3602,7 @@ function renderFlowResult(wrap, text, nameA, nameB, isSame, maxTokens) {
 
     function flushTable() {
       if (!tableRows.length) return;
-      var isBadgeTable = tableHeaders.some(function(h){ return h.indexOf('뱃지') !== -1 || h.indexOf('위험도') !== -1 || h.indexOf('상태') !== -1; });
+      var isBadgeTable = tableHeaders.some(function(h){ return h.indexOf('뱃지') !== -1 || h.indexOf('위험도') !== -1 || h.indexOf('상태') !== -1 || h.indexOf('판단') !== -1 || h.indexOf('확인도') !== -1; });
       var thtml = '<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">' +
         '<table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:auto">' +
         '<thead><tr style="background:var(--gray-50)">';
@@ -3395,7 +3613,7 @@ function renderFlowResult(wrap, text, nameA, nameB, isSame, maxTokens) {
       tableRows.forEach(function(row) {
         thtml += '<tr>';
         row.forEach(function(cell, ci) {
-          var isBadgeCol = isBadgeTable && tableHeaders[ci] && (tableHeaders[ci].indexOf('뱃지') !== -1 || tableHeaders[ci].indexOf('위험도') !== -1 || tableHeaders[ci].indexOf('상태') !== -1);
+          var isBadgeCol = isBadgeTable && tableHeaders[ci] && (tableHeaders[ci].indexOf('뱃지') !== -1 || tableHeaders[ci].indexOf('위험도') !== -1 || tableHeaders[ci].indexOf('상태') !== -1 || tableHeaders[ci].indexOf('판단') !== -1 || tableHeaders[ci].indexOf('확인도') !== -1);
           var cellHtml = isBadgeCol ? flowBadge(cell) : '<span style="color:var(--text-primary)">' + cell + '</span>';
           thtml += '<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5">' + cellHtml + '</td>';
         });
