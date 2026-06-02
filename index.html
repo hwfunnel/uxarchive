@@ -1747,7 +1747,7 @@ function openScreenDetail(screenId, setId, push=true) {
   if (push && !state.isPopping) {
     try { history.pushState({page:'company', setId: set.id, screenId: screen.id}, '', `#company?set=${set.id}&screen=${screen.id}`); } catch(e) {}
   }
-  setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
+  setTimeout(() => loadRelatedScreens(screen.id), 100);
   state.currentViewingRevisionId = null;
   state.currentScreenRevisions = [];
   loadVersionHistory(screen.id);
@@ -2126,7 +2126,7 @@ async function openFunctionScreenDetail(screenId) {
           </div>
         </div>
       </div>`;
-    setTimeout(() => loadRelatedScreens('${screen.id}'), 100);
+    setTimeout(() => loadRelatedScreens(screen.id), 100);
   } catch(e) {
     toast(e.message, 'error');
     if (currentFunctionType) loadFunctionScreens(currentFunctionType);

@@ -974,6 +974,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (path === "/screens" && method === "GET") {
         const screen_type = url.searchParams.get("screen_type");
         const company = url.searchParams.get("company");
+        const id = url.searchParams.get("id");
 
         let query = supabase.from("screens").select(`
           *,
@@ -982,12 +983,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
             company:companies(code, name), type:types(code, name), subtype:subtypes(code, name))
         `).order("order_no");
 
+        if (id) query = query.eq("id", id);
         if (screen_type) query = query.eq("screen_type_code", screen_type);
 
         const { data, error } = await query;
         if (error) return err(error.message);
 
         let filtered = (data || []).filter((s: Record<string, unknown>) => {
+          if (id) return true; // 특정 ID 조회 시 is_latest 무관
           const set = s.set as Record<string, unknown>;
           if (!set?.is_latest) return false;
           if (company && set.company_code !== company) return false;
