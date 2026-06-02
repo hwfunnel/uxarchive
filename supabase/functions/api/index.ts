@@ -741,7 +741,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data, 201);
       }
-      if (path.match(/^\/companies\/\w+$/) && method === "PATCH") {
+      if (path.match(/^\/companies\/[\w-]+$/) && method === "PATCH") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const body = await req.json();
@@ -749,7 +749,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data);
       }
-      if (path.match(/^\/companies\/\w+$/) && method === "DELETE") {
+      if (path.match(/^\/companies\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const { error } = await supabase.from("companies").delete().eq("code", code);
@@ -763,7 +763,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data, 201);
       }
-      if (path.match(/^\/types\/\w+$/) && method === "PATCH") {
+      if (path.match(/^\/types\/[\w-]+$/) && method === "PATCH") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const body = await req.json();
@@ -771,7 +771,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data);
       }
-      if (path.match(/^\/types\/\w+$/) && method === "DELETE") {
+      if (path.match(/^\/types\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const { error } = await supabase.from("types").delete().eq("code", code);
@@ -786,7 +786,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data, 201);
       }
-      if (path.match(/^\/subtypes\/[\w]+$/) && method === "PATCH") {
+      if (path.match(/^\/subtypes\/[\w-]+$/) && method === "PATCH") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const body = await req.json();
@@ -794,7 +794,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data);
       }
-      if (path.match(/^\/subtypes\/[\w]+$/) && method === "DELETE") {
+      if (path.match(/^\/subtypes\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const { error } = await supabase.from("subtypes").delete().eq("code", code);
@@ -809,7 +809,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data, 201);
       }
-      if (path.match(/^\/screen-types\/[\w]+$/) && method === "PATCH") {
+      if (path.match(/^\/screen-types\/[\w-]+$/) && method === "PATCH") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const body = await req.json();
@@ -817,7 +817,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (error) return err(error.message);
         return json(data);
       }
-      if (path.match(/^\/screen-types\/[\w]+$/) && method === "DELETE") {
+      if (path.match(/^\/screen-types\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const code = path.split("/")[2];
         const { error } = await supabase.from("screen_types").delete().eq("code", code);
