@@ -1282,6 +1282,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       // 버전 메모 수정 (admin only)
+      if (path.match(/^\/screen-revisions\/[\w-]+\/image$/) && method === "PATCH") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const revisionId = path.split("/")[2];
+        const { imgsrc, content_hash } = await req.json();
+        if (!imgsrc) return err("imgsrc가 필요합니다.", 400);
+        const { data: rev, error: revErr } = await supabase
+          .from("screen_revisions")
+          .update({ imgsrc, content_hash: content_hash || null })
+          .eq("id", revisionId)
+          .select("id, screen_id, is_current, version_no")
+          .single();
+        if (revErr) return err(revErr.message);
+        if ((rev as any).is_current) {
+          await supabase.from("screens")
+            .update({ imgsrc, content_hash: content_hash || null })
+            .eq("id", (rev as any).screen_id);
+        }
+        return json({ message: `V${(rev as any).version_no} 이미지가 교체되었습니다.` });
+      }
+
       if (path.match(/^\/screen-revisions\/[\w-]+\/memo$/) && method === "PATCH") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
         const revisionId = path.split("/")[2];

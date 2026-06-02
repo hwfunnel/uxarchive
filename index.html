@@ -1943,6 +1943,7 @@ function openScreenDetail(screenId, setId, push=true) {
         </div>
         <div id="version-history-list" style="font-size:12px;color:var(--text-tertiary);padding:4px 0">불러오는 중...</div>
         <input type="file" id="revision-upload-input" accept="image/*" style="display:none" onchange="uploadRevisionImage(this)">
+        <input type="file" id="revision-replace-input" accept="image/*" style="display:none" onchange="replaceRevisionImage(this)">
       </div>
       <!-- 연관 화면 -->
       <div id="related-screens-section">
@@ -2006,6 +2007,9 @@ function renderVersionHistoryList() {
         : `<button class="btn btn-secondary btn-sm" style="font-size:11px;padding:2px 8px" onclick="switchVersionImage('${escapeHtml(r.signed_url)}','${r.id}',${r.version_no})">보기</button>`)
       : '<span style="color:var(--text-tertiary)">—</span>';
     const memoText = r.memo ? escapeHtml(r.memo) : '';
+    const replaceBtn = isAdmin
+      ? `<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:1px 6px;flex-shrink:0;color:var(--text-tertiary)" onclick="triggerRevisionReplace('${r.id}')">교체</button>`
+      : '';
     const memoSection = isAdmin
       ? `<div style="margin-top:4px;display:flex;align-items:flex-start;gap:4px">
            <span style="font-size:11px;color:var(--text-tertiary);flex:1;white-space:pre-wrap">${memoText || '<span style="color:var(--text-tertiary);opacity:0.5">메모 없음</span>'}</span>
@@ -2019,7 +2023,7 @@ function renderVersionHistoryList() {
           ${badge}
           <span style="color:var(--text-tertiary);font-size:11px">${date}</span>
         </div>
-        ${viewBtn}
+        <div style="display:flex;align-items:center;gap:4px">${replaceBtn}${viewBtn}</div>
       </div>
       ${memoSection}
     </div>`;
@@ -2055,6 +2059,46 @@ function triggerRevisionUpload(screenId) {
   input.dataset.screenId = screenId;
   input.value = '';
   input.click();
+}
+
+function triggerRevisionReplace(revisionId) {
+  const input = document.getElementById('revision-replace-input');
+  if (!input) return;
+  input.dataset.revisionId = revisionId;
+  input.value = '';
+  input.click();
+}
+
+async function replaceRevisionImage(input) {
+  const revisionId = input.dataset.revisionId;
+  const file = input.files?.[0];
+  if (!file || !revisionId) return;
+
+  const rev = state.currentScreenRevisions.find(r => r.id === revisionId);
+  if (!rev) return;
+
+  const screenId = state.currentScreen?.id;
+  if (!screenId) return;
+
+  try {
+    const contentHash = await computeFileHash(file);
+    const ext = file.name.split('.').pop() || 'png';
+    const urlRes = await api('POST', '/storage/screen-upload-url', { screen_id: screenId, content_hash: contentHash, ext });
+    await fetch(urlRes.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+    const result = await api('PATCH', `/screen-revisions/${revisionId}/image`, { imgsrc: urlRes.file_path, content_hash: contentHash });
+    toast(result.message || '이미지가 교체되었습니다.', 'success');
+    await loadVersionHistory(screenId);
+    // 현재 보고 있는 버전이 교체된 경우 이미지 즉시 갱신
+    if (state.currentViewingRevisionId === revisionId) {
+      const updated = state.currentScreenRevisions.find(r => r.id === revisionId);
+      if (updated?.signed_url) {
+        const img = document.querySelector('.detail-img-viewport img');
+        if (img) img.src = updated.signed_url;
+      }
+    }
+  } catch(e) {
+    toast('교체 실패: ' + (e?.message || e), 'error');
+  }
 }
 
 async function uploadRevisionImage(input) {
