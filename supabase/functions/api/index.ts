@@ -1077,6 +1077,35 @@ Deno.serve(async (req: Request): Promise<Response> => {
         })));
       }
 
+      // 상세화면에서 직접 버전 이미지 등록 (admin only, 항상 새 revision 생성)
+      if (path.match(/^\/screens\/[\w-]+\/revisions$/) && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const screenId = path.split("/")[2];
+        const { imgsrc, content_hash, uploaded_at } = await req.json();
+        if (!imgsrc) return err("imgsrc가 필요합니다.", 400);
+        const { data: currentRev } = await supabase
+          .from("screen_revisions")
+          .select("id, version_no")
+          .eq("screen_id", screenId)
+          .eq("is_current", true)
+          .single();
+        const nextVersion = currentRev ? (currentRev as Record<string, unknown>).version_no as number + 1 : 1;
+        if (currentRev) {
+          await supabase.from("screen_revisions").update({ is_current: false }).eq("id", (currentRev as Record<string, unknown>).id as string);
+        }
+        const revUploadedAt = uploaded_at || new Date().toISOString().split("T")[0];
+        const { error: revErr } = await supabase.from("screen_revisions").insert({
+          screen_id: screenId, version_no: nextVersion, imgsrc,
+          content_hash: content_hash || "",
+          uploaded_at: revUploadedAt,
+          captured_at: new Date().toISOString(),
+          is_current: true, status: "changed",
+        });
+        if (revErr) return err(`revision 생성 실패: ${revErr.message}`);
+        await supabase.from("screens").update({ imgsrc, content_hash: content_hash || null }).eq("id", screenId);
+        return json({ version_no: nextVersion, message: `V${nextVersion}으로 업데이트되었습니다.` });
+      }
+
       // screens 삭제 (FK cascade 처리 포함)
       if (path.match(/^\/screens\/[\w-]+$/) && method === "DELETE") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
@@ -1214,11 +1243,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
         if (existingScreen) {
           const existing = existingScreen as Record<string, unknown>;
-          // 동일 hash → 변경 없음
-          if (content_hash && content_hash === existing.content_hash) {
-            return json({ action: "unchanged", screen_id: existing.id, set_id: setId, message: "동일한 이미지라 변경 없이 유지되었습니다." });
-          }
-          // 새 revision 추가
+          // 새 revision 추가 (hash 동일 여부와 무관하게 항상 버전업)
           const { data: currentRev } = await supabase.from("screen_revisions")
             .select("id, version_no").eq("screen_id", existing.id as string).eq("is_current", true).single();
           const nextVersion = currentRev ? (currentRev as Record<string, unknown>).version_no as number + 1 : 2;
@@ -1269,6 +1294,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
           .single();
         if (error) return err(error.message);
         return json(data);
+      }
+
+      // 상세화면 버전 업로드용 Signed URL (screen_id로 경로 자동 구성)
+      if (path === "/storage/screen-upload-url" && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const { screen_id, content_hash, ext = "png" } = await req.json();
+        const { data: screenData } = await supabase
+          .from("screens")
+          .select("screen_type_code, order_no, set:screen_sets(company_code, type_code, subtype_code)")
+          .eq("id", screen_id)
+          .single();
+        if (!screenData) return err("화면을 찾을 수 없습니다.", 404);
+        const sc = screenData as Record<string, unknown>;
+        const st = sc.set as Record<string, unknown>;
+        const orderStr = String(sc.order_no).padStart(3, "0");
+        const hashPrefix = content_hash ? String(content_hash).slice(0, 8) : Date.now().toString(16);
+        const filePath = `${st.company_code}/${st.type_code}/${st.subtype_code}/${st.company_code}_${st.type_code}_${st.subtype_code}_${sc.screen_type_code}_${orderStr}_${hashPrefix}.${ext}`;
+        const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath);
+        if (error) return err(error.message);
+        return json({ upload_url: data.signedUrl, file_path: filePath });
       }
 
       if (path === "/storage/upload-url" && method === "POST") {

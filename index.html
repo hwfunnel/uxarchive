@@ -1722,8 +1722,12 @@ function openScreenDetail(screenId, setId, push=true) {
       </div>
       <!-- 버전 히스토리 -->
       <div id="version-history-section">
-        <div style="font-size:14px;font-weight:500;color:var(--text-tertiary);margin-bottom:8px">버전 히스토리</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">버전 히스토리</div>
+          ${isAdmin?`<button id="add-revision-btn" class="btn btn-secondary btn-sm" onclick="triggerRevisionUpload('${screen.id}')">+ 버전 추가</button>`:''}
+        </div>
         <div id="version-history-list" style="font-size:12px;color:var(--text-tertiary);padding:4px 0">불러오는 중...</div>
+        <input type="file" id="revision-upload-input" accept="image/*" style="display:none" onchange="uploadRevisionImage(this)">
       </div>
       <!-- 연관 화면 -->
       <div id="related-screens-section">
@@ -1827,6 +1831,47 @@ async function openMemoEdit(revisionId) {
     renderVersionHistoryList();
   } catch(e) {
     alert('메모 저장 실패: ' + (e?.message || e));
+  }
+}
+
+function triggerRevisionUpload(screenId) {
+  const input = document.getElementById('revision-upload-input');
+  if (!input) return;
+  input.dataset.screenId = screenId;
+  input.value = '';
+  input.click();
+}
+
+async function uploadRevisionImage(input) {
+  const screenId = input.dataset.screenId;
+  const file = input.files?.[0];
+  if (!file || !screenId) return;
+
+  const btn = document.getElementById('add-revision-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '업로드 중...'; }
+  try {
+    const contentHash = await computeFileHash(file);
+    const ext = file.name.split('.').pop() || 'png';
+    const urlRes = await api('POST', '/storage/screen-upload-url', { screen_id: screenId, content_hash: contentHash, ext });
+    await fetch(urlRes.upload_url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+    const today = new Date().toISOString().split('T')[0];
+    const result = await api('POST', `/screens/${screenId}/revisions`, { imgsrc: urlRes.file_path, content_hash: contentHash, uploaded_at: today });
+    toast(result.message || '버전이 추가되었습니다.', 'success');
+    // 버전 히스토리 새로고침
+    state.currentViewingRevisionId = null;
+    await loadVersionHistory(screenId);
+    // 메인 이미지 + 버전 뱃지 업데이트
+    const newRev = state.currentScreenRevisions?.[0];
+    if (newRev?.signed_url) {
+      const img = document.querySelector('.detail-img-viewport img');
+      if (img) img.src = newRev.signed_url;
+    }
+    const vd = document.getElementById('screen-version-display');
+    if (vd && result.version_no) vd.textContent = `V${result.version_no}`;
+  } catch(e) {
+    toast('업로드 실패: ' + (e?.message || e), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '+ 버전 추가'; }
   }
 }
 
