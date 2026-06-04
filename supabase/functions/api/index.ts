@@ -292,14 +292,22 @@ async function callGeminiMessages(payload: Record<string, unknown>): Promise<Rec
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("Gemini API 키가 구성되어 있지 않습니다.");
   const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(safeGeminiErrorMessage(data, res.status));
-  return data as Record<string, unknown>;
+  const RETRY_STATUSES = [503, 429];
+  const RETRY_DELAYS = [2000, 4000, 8000];
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.ok) return data as Record<string, unknown>;
+    lastError = new Error(safeGeminiErrorMessage(data, res.status));
+    if (!RETRY_STATUSES.includes(res.status) || attempt === RETRY_DELAYS.length) break;
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+  }
+  throw lastError!;
 }
 
 function normalizeGeminiResponse(result: Record<string, unknown>): AITextBlock[] {
