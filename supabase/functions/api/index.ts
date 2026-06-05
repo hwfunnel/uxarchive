@@ -288,14 +288,33 @@ function buildGeminiPayload(messages: AIMessage[], system: string | undefined, m
   return payload;
 }
 
+function geminiRetryDelay(data: unknown, status: number, attempt: number): number {
+  // Gemini 429: 에러 응답에 retryDelay 필드가 있으면 우선 사용
+  if (status === 429) {
+    try {
+      const details = ((data as Record<string, unknown>)?.error as Record<string, unknown>)?.details as unknown[];
+      if (Array.isArray(details)) {
+        for (const d of details) {
+          const rd = (d as Record<string, unknown>)?.retryDelay as string | undefined;
+          if (rd) {
+            const secs = parseFloat(rd.replace("s", ""));
+            if (!isNaN(secs)) return Math.ceil(secs) * 1000 + 1000;
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    return [15000, 30000, 60000][attempt] ?? 60000;
+  }
+  return [2000, 5000, 10000][attempt] ?? 10000;
+}
+
 async function callGeminiMessages(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("Gemini API 키가 구성되어 있지 않습니다.");
   const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`;
-  const RETRY_STATUSES = [503, 429];
-  const RETRY_DELAYS = [2000, 4000, 8000];
+  const MAX_RETRIES = 3;
   let lastError: Error | null = null;
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -304,8 +323,8 @@ async function callGeminiMessages(payload: Record<string, unknown>): Promise<Rec
     const data = await res.json();
     if (res.ok) return data as Record<string, unknown>;
     lastError = new Error(safeGeminiErrorMessage(data, res.status));
-    if (!RETRY_STATUSES.includes(res.status) || attempt === RETRY_DELAYS.length) break;
-    await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+    if (![429, 503].includes(res.status) || attempt === MAX_RETRIES) break;
+    await new Promise((r) => setTimeout(r, geminiRetryDelay(data, res.status, attempt)));
   }
   throw lastError!;
 }
