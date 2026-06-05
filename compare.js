@@ -9,7 +9,7 @@ function renderCompareView() {
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <div id="analysis-mode-badge" style="display:none"></div>
-        <button class="btn btn-secondary btn-sm" id="btn-ai-screen" onclick="startAIScreenAnalysis(4000)">
+        <button class="btn btn-secondary btn-sm" id="btn-ai-screen" onclick="startAIScreenAnalysis(5000)">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2" width="4" height="9" rx="1"/><rect x="7.5" y="2" width="4" height="9" rx="1"/></svg>
           단일화면 비교
         </button>
@@ -588,10 +588,10 @@ async function startAIScreenAnalysis(maxTokens=3000) {
   runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens);
 }
 
-// 단일화면 비교 분析 캐시 (상세분析·이미지저장 재호출 시 이미지 재업로드 없이 재사용)
+// 단일화면 비교 분석 캐시 (상세분석·이미지저장 재호출 시 이미지 재업로드 없이 재사용)
 let compareAnalysisCache = null;
 
-// 실제 AI 분析 실행 (최초결과 모드)
+// 실제 AI 분석 실행 (최초결과 모드)
 async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=3000) {
   compareAnalysisCache = null;
   const resultWrap = document.getElementById('analysis-result-wrap');
@@ -680,8 +680,10 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
     const aImgsrcs = matchedPairs.flatMap(p => p.screensA.map(s => s.imgsrc)).filter(Boolean);
     const bImgsrcs = matchedPairs.flatMap(p => p.screensB.map(s => s.imgsrc)).filter(Boolean);
 
-    // 캐시에 저장 (상세분析·이미지저장 재호출 시 프롬프트 재생성 + 이미지 재사용)
+    // 캐시에 저장 (상세분석·이미지저장 재호출 시 프롬프트 재생성 + 이미지 재사용)
     compareAnalysisCache = { userContent, aIds, bIds, aImgsrcs, bImgsrcs, companyNameA, companyNameB, isSameCompany, extra, maxTokens, screenName, versionA, versionB, screenTypeReq };
+    const _aiBtn = document.getElementById('btn-ai-screen');
+    if (_aiBtn) { _aiBtn.disabled = true; _aiBtn.style.opacity = '0.5'; }
 
     const res = await api('POST', '/ai/analyze', {
       system: systemPrompt,
@@ -692,69 +694,39 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
       image_ids: [...aIds, ...bIds],
     });
 
-    if (!res) throw new Error('분析 요청 실패');
+    if (!res) throw new Error('분석 요청 실패');
     const text = res.content?.find(b=>b.type==='text')?.text || '';
-    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra, maxTokens, '최초결과');
+    compareAnalysisCache.initialResultText = text;
+    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra, maxTokens, '통합분석');
+    if (_aiBtn) { _aiBtn.disabled = false; _aiBtn.style.opacity = ''; }
+    resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
 
   } catch(e) {
+    const isRateLimit = e.message && (e.message.includes('한도') || e.message.includes('429') || e.message.includes('초과'));
+    const hint = isRateLimit ? '<div style="margin-top:8px;font-size:13px;color:#666">Gemini 요청 한도 초과 — 잠시 후 다시 시도해 주세요.</div>' : '';
     resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
-      <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분析 오류: ${e.message}</div>
+      <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}${hint}
+        <div style="margin-top:12px">
+          <button class="btn btn-secondary" onclick="startAIScreenAnalysis(5000)">다시 시도</button>
+        </div>
+      </div>
     </div>`;
+    if (_aiBtn) { _aiBtn.disabled = false; _aiBtn.style.opacity = ''; }
   }
 }
 
-// 상세분析 실행
+// 상세분석 실행 (AI 추가 호출 없음 — 기존 결과 재사용)
 async function runDetailAnalysis() {
-  if (!compareAnalysisCache) { toast('먼저 기본 분析을 실행해주세요', 'error'); return; }
-  const { userContent, aIds, bIds, aImgsrcs, bImgsrcs, companyNameA, companyNameB, isSameCompany, extra, maxTokens, screenName, versionA, versionB, screenTypeReq } = compareAnalysisCache;
-  const detailSystemPrompt = PROMPTS.SCREEN_COMPARE_DETAIL(companyNameA, companyNameB, isSameCompany, screenName, versionA, versionB, screenTypeReq);
+  if (!compareAnalysisCache?.initialResultText) { toast('먼저 분석을 실행해주세요', 'error'); return; }
+  const { companyNameA, companyNameB, isSameCompany, extra, maxTokens, initialResultText } = compareAnalysisCache;
   const resultWrap = document.getElementById('analysis-result-wrap');
   if (!resultWrap) return;
-  resultWrap.style.display = 'block';
-  resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div class="spinner"></div><span style="font-size:14px;font-weight:500">상세 분析 중...</span><span style="font-size:14px;color:var(--text-tertiary)">' + AI_MODEL_LABEL + '</span></div></div>';
-  resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
-  try {
-    const res = await api('POST', '/ai/analyze', {
-      system: detailSystemPrompt,
-      messages: [{role:'user', content: userContent}],
-      max_tokens: maxTokens,
-      analysis_type: 'compare',
-      image_paths: [...aImgsrcs, ...bImgsrcs],
-      image_ids: [...aIds, ...bIds],
-    });
-    if (!res) throw new Error('분析 요청 실패');
-    const text = res.content?.find(b=>b.type==='text')?.text || '';
-    compareAnalysisCache.detailResultText = text;
-    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra, maxTokens, '상세분析');
-  } catch(e) {
-    resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px"><div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분析 오류: ' + e.message + '</div></div>';
-  }
+  renderAnalysisResult(resultWrap, initialResultText, companyNameA, companyNameB, isSameCompany, extra, maxTokens, '통합분석');
 }
 
-// 이미지저장 실행 (이미지 재전송 없이 기존 분析 텍스트 재포맷)
+// 이미지저장 실행 (AI 추가 호출 없음 — 현재 결과 직접 캡처)
 async function runImageSaveAnalysis() {
-  if (!compareAnalysisCache?.detailResultText) { toast('먼저 상세 분析을 실행해주세요', 'error'); return; }
-  const { companyNameA, companyNameB, isSameCompany, extra, detailResultText } = compareAnalysisCache;
-  const imageSaveSystemPrompt = PROMPTS.SCREEN_COMPARE_IMAGE_SAVE(companyNameA, companyNameB, isSameCompany);
-  const resultWrap = document.getElementById('analysis-result-wrap');
-  if (!resultWrap) return;
-  resultWrap.style.display = 'block';
-  resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div class="spinner"></div><span style="font-size:14px;font-weight:500">이미지 저장용으로 정리 중...</span></div></div>';
-  resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
-  try {
-    const reformatMsg = '다음 분析 결과를 이미지 저장용 형식으로 정리해주세요.\n\n' + detailResultText;
-    const res = await api('POST', '/ai/analyze', {
-      system: imageSaveSystemPrompt,
-      messages: [{role:'user', content: [{type:'text', text: reformatMsg}]}],
-      max_tokens: 2000,
-      analysis_type: 'compare',
-    });
-    if (!res) throw new Error('분析 요청 실패');
-    const text = res.content?.find(b=>b.type==='text')?.text || '';
-    renderAnalysisResult(resultWrap, text, companyNameA, companyNameB, isSameCompany, extra, 2000, '이미지저장');
-  } catch(e) {
-    resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px"><div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">오류: ' + e.message + '</div></div>';
-  }
+  await downloadAnalysisReport();
 }
 
 // 변화 방향 뱃지 변환 (전역)
@@ -862,7 +834,7 @@ function md2report(t) {
 }
 
 // 결과 렌더 - 보고서 스타일
-function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxTokens=3000, mode='상세분析') {
+function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxTokens=3000, mode='통합분석') {
 
   // 변동 뱃지 (변동/다름/높음/낮음/증가/감소/동일/확인 필요)
   function changeBadge(val) {
@@ -907,10 +879,10 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       const isChangeTable = tableHeaders.some(h => h.includes('변화') || h.includes('유형') || h.includes('변동'));
       const isJudgeTable = tableHeaders.some(h => h.includes('판단'));
       let thtml = `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:auto">
           <thead><tr style="background:var(--gray-50)">`;
       tableHeaders.forEach(h => {
-        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:12px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
+        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:13px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
       });
       thtml += `</tr></thead><tbody>`;
       tableRows.forEach(row => {
@@ -944,7 +916,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       }
       if (line.startsWith('### ')) {
         flushTable();
-        html += `<div style="font-size:13px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
+        html += `<div style="font-size:14px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
         continue;
       }
       if (line.match(/^\|[-| :]+\|$/)) continue;
@@ -962,19 +934,19 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
         const dotColor = isGood ? '#639922' : isRisk ? '#E24B4A' : isInsight ? '#378ADD' : '#888780';
         html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">
           <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
-          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${rest}</div>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary)">${rest.replace(/\*\*(.+?)\*\*/g,'<strong style="color:'+dotColor+'">$1</strong>')}</div>
         </div>`;
         continue;
       }
       if (line.match(/^[-•·] /)) {
-        html += `<div style="display:flex;gap:8px;font-size:13px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
+        html += `<div style="display:flex;gap:8px;font-size:14px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
           <span style="color:var(--text-tertiary);flex-shrink:0">→</span>
           <span>${line.replace(/^[-•·] /,'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</span>
         </div>`;
         continue;
       }
       if (line.trim()) {
-        html += `<div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
+        html += `<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
       } else {
         html += `<div style="height:8px"></div>`;
       }
@@ -983,40 +955,20 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
     return html;
   }
 
-  const modeLabel = {최초결과:'핵심 분析', 상세분析:'상세 분析', 이미지저장:'이미지 저장 요약'}[mode] || '분析 결과';
   const subLabel = isSame ? nameA+' 버전 비교' : nameA+' vs '+nameB;
 
-  // 모드별 하단 버튼
-  const footerBtns = mode === '최초결과'
-    ? `<div style="margin-top:20px;display:flex;justify-content:center">
-        <button class="btn btn-primary" onclick="runDetailAnalysis()" style="min-width:140px">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M6.5 4v3l2 1"/></svg>
-          분析 상세보기
-        </button>
-      </div>`
-    : mode === '상세분析'
-    ? `<div style="margin-top:20px;display:flex;justify-content:center;gap:8px">
-        <button class="btn btn-secondary" onclick="runImageSaveAnalysis()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M4 6h4M6 4v4"/></svg>
-          이미지로 저장
-        </button>
-        <button class="btn btn-secondary" onclick="downloadAnalysisReport()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg>
-          PNG 저장
-        </button>
-      </div>`
-    : `<div style="margin-top:20px;display:flex;justify-content:center">
-        <button class="btn btn-secondary" onclick="downloadAnalysisReport()">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg>
-          PNG 저장
-        </button>
-      </div>`;
+  const footerBtns = `<div style="margin-top:20px;display:flex;justify-content:center">
+    <button id="btn-save-report" class="btn btn-secondary" onclick="downloadAnalysisReport(this)">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1v7M3 5.5l3 3 3-3M1 10h10"/></svg>
+      이미지 저장
+    </button>
+  </div>`;
 
   wrap.innerHTML = `
     <div id="analysis-report" style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">AI 화면 분析 결과 · ${modeLabel}</div>
+          <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px">AI 화면 분석 결과</div>
           <div style="font-size:13px;color:var(--text-tertiary)">${subLabel}${purpose ? ' · '+purpose : ''}</div>
         </div>
       </div>
