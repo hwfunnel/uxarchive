@@ -170,6 +170,8 @@ function safeErrorMessage(data: unknown, status: number): string {
 }
 
 function safeGeminiErrorMessage(data: unknown, status: number): string {
+  if (status === 429) return "Gemini 요청 한도가 초과되었습니다. 잠시 후 다시 시도해 주세요.";
+  if (status === 503) return "Gemini 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해 주세요.";
   if (typeof data !== "object" || data === null) return `Gemini API 오류 (${status})`;
   const obj = data as Record<string, unknown>;
   if (obj.error && typeof obj.error === "object") {
@@ -288,31 +290,12 @@ function buildGeminiPayload(messages: AIMessage[], system: string | undefined, m
   return payload;
 }
 
-function geminiRetryDelay(data: unknown, status: number, attempt: number): number {
-  // Gemini 429: 에러 응답에 retryDelay 필드가 있으면 우선 사용
-  if (status === 429) {
-    try {
-      const details = ((data as Record<string, unknown>)?.error as Record<string, unknown>)?.details as unknown[];
-      if (Array.isArray(details)) {
-        for (const d of details) {
-          const rd = (d as Record<string, unknown>)?.retryDelay as string | undefined;
-          if (rd) {
-            const secs = parseFloat(rd.replace("s", ""));
-            if (!isNaN(secs)) return Math.ceil(secs) * 1000 + 1000;
-          }
-        }
-      }
-    } catch { /* ignore */ }
-    return [15000, 30000, 60000][attempt] ?? 60000;
-  }
-  return [2000, 5000, 10000][attempt] ?? 10000;
-}
-
 async function callGeminiMessages(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("Gemini API 키가 구성되어 있지 않습니다.");
   const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`;
-  const MAX_RETRIES = 3;
+  // 인터랙티브 요청: 최대 1회 재시도 (429→4초, 503→3초). 길게 대기하면 브라우저 fetch 타임아웃 발생.
+  const MAX_RETRIES = 1;
   let lastError: Error | null = null;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const res = await fetch(url, {
@@ -324,17 +307,26 @@ async function callGeminiMessages(payload: Record<string, unknown>): Promise<Rec
     if (res.ok) return data as Record<string, unknown>;
     lastError = new Error(safeGeminiErrorMessage(data, res.status));
     if (![429, 503].includes(res.status) || attempt === MAX_RETRIES) break;
-    await new Promise((r) => setTimeout(r, geminiRetryDelay(data, res.status, attempt)));
+    const delay = res.status === 429 ? 4000 : 3000;
+    await new Promise((r) => setTimeout(r, delay));
   }
   throw lastError!;
 }
 
 function normalizeGeminiResponse(result: Record<string, unknown>): AITextBlock[] {
   const candidates = result.candidates as unknown[] | undefined;
-  if (!Array.isArray(candidates) || candidates.length === 0) return [];
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    const pf = result.promptFeedback as Record<string, unknown> | undefined;
+    if (pf?.blockReason) throw new Error(`Gemini 응답이 차단되었습니다: ${pf.blockReason}`);
+    throw new Error("Gemini 응답이 비어 있습니다. 이미지 또는 요청 내용을 확인해 주세요.");
+  }
   const candidate = candidates[0] as Record<string, unknown>;
+  const finishReason = candidate.finishReason as string | undefined;
+  if (finishReason && finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+    throw new Error(`Gemini 응답 중단 (${finishReason}). 이미지 또는 요청 내용을 확인해 주세요.`);
+  }
   const content = candidate.content as Record<string, unknown> | undefined;
-  if (!content) return [];
+  if (!content) throw new Error("Gemini 응답 내용이 없습니다. 잠시 후 다시 시도해 주세요.");
   const parts = content.parts as unknown[] | undefined;
   if (!Array.isArray(parts)) return [];
   return parts
