@@ -279,15 +279,15 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
     const summaryText = escapeHtml(data.summary || data.journey_summary || '');
     let bodyHtml = `
       <div style="padding:14px 18px;border-radius:var(--radius-md);margin-bottom:${issues.length?'20px':'0'};background:${verdict.bg}">
-        <div style="font-size:14px;font-weight:600;color:${verdict.color};line-height:1.6">${verdict.text}</div>
-        ${summaryText ? `<div style="font-size:13px;color:${verdict.color};margin-top:6px;line-height:1.6;opacity:0.85">${summaryText}</div>` : ''}
+        <div style="font-size:16px;font-weight:600;color:${verdict.color};line-height:1.6">${verdict.text}</div>
+        ${summaryText ? `<div style="font-size:16px;font-weight:500;color:${verdict.color};margin-top:6px;line-height:1.6;opacity:0.85">${summaryText}</div>` : ''}
       </div>`;
 
     // 플로우 단계 분석
     if (mode === 'flow' && data.steps_analyzed?.length) {
-      bodyHtml += `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 10px">단계별 분석</div>
+      bodyHtml += `<div style="font-size:16px;font-weight:600;color:var(--text-primary);margin:20px 0 10px">단계별 분석</div>
         <div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);margin-bottom:20px">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <table style="width:100%;border-collapse:collapse;font-size:16px">
             <thead><tr style="background:var(--gray-50)">
               <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border);width:60px">단계</th>
               <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border)">화면</th>
@@ -307,10 +307,10 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
       bodyHtml += `
         <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">${idx+1}.</span>
-            <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escapeHtml(issue.title||'')}</span>
+            <span style="font-size:16px;color:var(--text-tertiary);font-weight:600">${idx+1}.</span>
+            <span style="font-size:16px;font-weight:600;color:var(--text-primary)">${escapeHtml(issue.title||'')}</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:16px">
             <div style="display:flex;align-items:baseline;gap:8px">
               <span style="color:var(--text-tertiary);min-width:68px;flex-shrink:0">위험도</span>
               ${riskBadge(issue.risk_level||'')}
@@ -333,7 +333,7 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
 
     if (data.common_pattern) {
       bodyHtml += `
-        <div style="margin-top:16px;padding:12px 16px;background:var(--gray-50);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary);line-height:1.6">
+        <div style="margin-top:16px;padding:12px 16px;background:var(--gray-50);border-radius:var(--radius-md);font-size:16px;font-weight:500;color:var(--text-secondary);line-height:1.6">
           <span style="font-weight:600;color:var(--text-primary)">공통 요약</span> · ${escapeHtml(data.common_pattern)}
         </div>`;
     }
@@ -358,12 +358,12 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
     const rc = riskColor(overallRisk);
     let bodyHtml = `<div style="padding:16px 20px;background:${rc.bg};border-radius:var(--radius-md);margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
       <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:3px;background:${rc.color};color:#fff;flex-shrink:0;margin-top:2px">${overallRisk}</span>
-      <div style="font-size:14px;color:${rc.color};font-weight:500;line-height:1.6">${data.summary || data.journey_summary || ''}</div>
+      <div style="font-size:16px;color:${rc.color};font-weight:600;line-height:1.6">${data.summary || data.journey_summary || ''}</div>
     </div>`;
     if (mode === 'flow' && data.steps_analyzed?.length) {
-      bodyHtml += `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:10px">단계별 분석</div>
+      bodyHtml += `<div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:10px">단계별 분석</div>
         <div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);margin-bottom:20px">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <table style="width:100%;border-collapse:collapse;font-size:16px">
             <thead><tr style="background:var(--gray-50)">
               <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border);width:60px">단계</th>
               <th style="padding:8px 12px;text-align:left;font-weight:500;color:var(--text-secondary);border-bottom:0.5px solid var(--border)">화면</th>
@@ -378,7 +378,7 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
         </div>`;
     }
     if (data.issues?.length) {
-      bodyHtml += `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:10px">감지된 이슈 (${data.issues.length}건)</div>`;
+      bodyHtml += `<div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:10px">감지된 이슈 (${data.issues.length}건)</div>`;
       data.issues.forEach(issue => {
         const ic = riskColor(issue.risk_level || 'LOW');
         const typeName = issue.dark_pattern_type || issue.flow_pattern_type || '';
@@ -386,14 +386,14 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:${ic.bg};color:${ic.color}">${issue.risk_level}</span>
             <span style="font-size:12px;padding:2px 8px;border-radius:3px;background:var(--gray-100);color:var(--text-secondary)">${typeName}</span>
-            <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${issue.case_name}</span>
+            <span style="font-size:16px;font-weight:600;color:var(--text-primary)">${issue.case_name}</span>
           </div>
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px">${issue.reason}</div>
+          <div style="font-size:16px;font-weight:500;color:var(--text-secondary);line-height:1.6;margin-bottom:6px">${issue.reason}</div>
           ${issue.policy_reference ? `<div style="font-size:12px;color:var(--text-tertiary);padding:6px 10px;background:var(--gray-50);border-radius:var(--radius-sm)">📋 ${issue.policy_reference}</div>` : ''}
         </div>`;
       });
     } else {
-      bodyHtml += `<div style="text-align:center;padding:24px;color:var(--text-tertiary);font-size:14px">감지된 다크패턴 이슈가 없습니다</div>`;
+      bodyHtml += `<div style="text-align:center;padding:24px;color:var(--text-tertiary);font-size:16px">감지된 다크패턴 이슈가 없습니다</div>`;
     }
     wrap.innerHTML = `<div id="dp-analysis-report" style="border-top:1px solid var(--border);padding-top:24px">
       ${reportHeader}
@@ -408,7 +408,7 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
   wrap.innerHTML = `<div id="dp-analysis-report" style="border-top:1px solid var(--border);padding-top:24px">
     ${reportHeader}
     <div id="dp-report-body" style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 28px">
-      <pre style="font-size:13px;white-space:pre-wrap;color:var(--text-secondary);line-height:1.7">${escapeHtml(rawText)}</pre>
+      <pre style="font-size:16px;font-weight:500;white-space:pre-wrap;color:var(--text-secondary);line-height:1.7">${escapeHtml(rawText)}</pre>
     </div>
   </div>`;
 }

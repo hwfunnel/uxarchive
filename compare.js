@@ -879,10 +879,10 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
       const isChangeTable = tableHeaders.some(h => h.includes('변화') || h.includes('유형') || h.includes('변동'));
       const isJudgeTable = tableHeaders.some(h => h.includes('판단'));
       let thtml = `<div style="overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-md);background:var(--gray-0);margin-bottom:16px">
-        <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:16px;table-layout:auto">
           <thead><tr style="background:var(--gray-50)">`;
       tableHeaders.forEach(h => {
-        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:500;font-size:13px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
+        thtml += `<th style="padding:9px 12px;text-align:left;font-weight:600;font-size:15px;color:var(--text-secondary);border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`;
       });
       thtml += `</tr></thead><tbody>`;
       tableRows.forEach(row => {
@@ -892,7 +892,7 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
           const isJudgeCol = hdr.includes('판단');
           const isChangeCol = !isJudgeCol && (isChangeTable && (hdr.includes('변화') || hdr.includes('유형') || hdr.includes('방향') || hdr.includes('변동')));
           const cellHtml = isJudgeCol ? judgeBadge(cell) : isChangeCol ? changeBadge(cell) : `<span style="color:var(--text-primary)">${cell}</span>`;
-          thtml += `<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5">${cellHtml}</td>`;
+          thtml += `<td style="padding:9px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;line-height:1.5;font-size:16px">${cellHtml}</td>`;
         });
         thtml += `</tr>`;
       });
@@ -909,14 +909,14 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
         const sc = sectionColors[sectionIdx % sectionColors.length];
         sectionIdx++;
         html += `<div style="display:flex;align-items:center;gap:8px;margin:${sectionIdx>1?'24px':'0'} 0 12px">
-          <div style="width:22px;height:22px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
-          <div style="font-size:14px;font-weight:500">${title}</div>
+          <div style="width:24px;height:24px;border-radius:50%;background:${sc.num};color:${sc.txt};font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${sectionIdx}</div>
+          <div style="font-size:17px;font-weight:600">${title}</div>
         </div>`;
         continue;
       }
       if (line.startsWith('### ')) {
         flushTable();
-        html += `<div style="font-size:14px;font-weight:500;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
+        html += `<div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin:12px 0 6px">${line.replace('### ','')}</div>`;
         continue;
       }
       if (line.match(/^\|[-| :]+\|$/)) continue;
@@ -934,19 +934,19 @@ function renderAnalysisResult(wrap, text, nameA, nameB, isSame, purpose, maxToke
         const dotColor = isGood ? '#639922' : isRisk ? '#E24B4A' : isInsight ? '#378ADD' : '#888780';
         html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-md);margin-bottom:6px">
           <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:5px"></div>
-          <div style="font-size:14px;font-weight:500;color:var(--text-primary)">${rest.replace(/\*\*(.+?)\*\*/g,'<strong style="color:'+dotColor+'">$1</strong>')}</div>
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary)">${rest.replace(/\*\*(.+?)\*\*/g,'<strong style="color:'+dotColor+'">$1</strong>')}</div>
         </div>`;
         continue;
       }
       if (line.match(/^[-•·] /)) {
-        html += `<div style="display:flex;gap:8px;font-size:14px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
+        html += `<div style="display:flex;gap:8px;font-size:16px;color:var(--text-secondary);padding:4px 14px;line-height:1.6">
           <span style="color:var(--text-tertiary);flex-shrink:0">→</span>
-          <span>${line.replace(/^[-•·] /,'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</span>
+          <span>${line.replace(/^[-•·] /,'').replace(/\*\*(.+?)\*\*/g,'<strong style="font-weight:600;color:var(--text-primary)">$1</strong>')}</span>
         </div>`;
         continue;
       }
       if (line.trim()) {
-        html += `<div style="font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text-primary)">$1</strong>')}</div>`;
+        html += `<div style="font-size:16px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;padding:0 2px">${line.replace(/\*\*(.+?)\*\*/g,'<strong style="font-weight:600;color:var(--text-primary)">$1</strong>')}</div>`;
       } else {
         html += `<div style="height:8px"></div>`;
       }
