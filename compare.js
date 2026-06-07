@@ -692,6 +692,14 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
       analysis_type: 'compare',
       image_paths: [...aImgsrcs, ...bImgsrcs],
       image_ids: [...aIds, ...bIds],
+      analysis_meta: {
+        compare_mode: 'single',
+        extra_request: extra,
+        a_count: aIds.length,
+        b_count: bIds.length,
+        label_a: companyNameA,
+        label_b: companyNameB,
+      },
     });
 
     if (!res) throw new Error('분석 요청 실패');
@@ -1201,6 +1209,10 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
     const systemPrompt = maxTokens >= 4000
       ? PROMPTS.FLOW_COMPARE_DETAIL(promptParams)
       : PROMPTS.FLOW_COMPARE_SUMMARY(promptParams);
+    const flowAIds = resolvedFlowA.map(function(s){ return s.id; }).filter(Boolean);
+    const flowBIds = resolvedFlowB.map(function(s){ return s.id; }).filter(Boolean);
+    const flowAImgsrcs = resolvedFlowA.map(function(s){ return s.imgsrc; }).filter(Boolean);
+    const flowBImgsrcs = resolvedFlowB.map(function(s){ return s.imgsrc; }).filter(Boolean);
 
     const isRetryableFlowError = (message) => {
       const msg = String(message || '');
@@ -1224,7 +1236,18 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
           system: systemPrompt,
           messages: [{role:'user', content: userContent}],
           max_tokens: maxTokens,
-          analysis_type: 'compare'
+          analysis_type: 'compare',
+          image_paths: flowAImgsrcs.concat(flowBImgsrcs),
+          image_ids: flowAIds.concat(flowBIds),
+          analysis_meta: {
+            compare_mode: 'flow',
+            extra_request: extra,
+            a_count: flowAIds.length,
+            b_count: flowBIds.length,
+            label_a: nameA,
+            label_b: nameB,
+            flow_name: flowName,
+          },
         });
         break;
       } catch (err) {

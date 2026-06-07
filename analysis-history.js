@@ -63,6 +63,24 @@ function historyTypeLabel(analysisType) {
   return 'AI 분석';
 }
 
+function reportMeta(item) {
+  const rj = item && item.result_json;
+  if (rj && typeof rj === 'object' && rj.__meta && typeof rj.__meta === 'object') return rj.__meta;
+  return {};
+}
+
+function getCompareMode(item) {
+  const meta = reportMeta(item);
+  if (meta.compare_mode === 'flow' || meta.compare_mode === 'single') return meta.compare_mode;
+  const imageCount = Array.isArray(item.display_image_urls) ? item.display_image_urls.length : (Array.isArray(item.image_paths) ? item.image_paths.length : 0);
+  return imageCount > 2 ? 'flow' : 'single';
+}
+
+function getExtraRequest(item) {
+  const meta = reportMeta(item);
+  return typeof meta.extra_request === 'string' ? meta.extra_request.trim() : '';
+}
+
 function darkpatternRiskCountBadges(item) {
   const rj = item.result_json;
   const issues = (rj && Array.isArray(rj.issues)) ? rj.issues : [];
@@ -95,11 +113,18 @@ function renderCompareHistoryCard(item) {
   const model = escapeHtml(item.model || '');
   const urls = Array.isArray(item.display_image_urls) ? item.display_image_urls : [];
   const imagePaths = Array.isArray(item.image_paths) ? item.image_paths : [];
+  const metaInfo = reportMeta(item);
+  const compareMode = getCompareMode(item);
+  const aCount = Number(metaInfo.a_count || 0);
+  const bStartIndex = compareMode === 'flow'
+    ? (aCount > 0 ? aCount : Math.ceil((urls.length || imagePaths.length) / 2))
+    : 1;
   const thumbA = urls[0] || imagePaths[0] || null;
-  const thumbB = urls[1] || imagePaths[1] || null;
+  const thumbB = urls[bStartIndex] || imagePaths[bStartIndex] || urls[1] || imagePaths[1] || null;
   const meta = Array.isArray(item.compare_screens_meta) ? item.compare_screens_meta : [];
   const mA = meta[0] || null;
-  const mB = meta[1] || null;
+  const mB = meta[bStartIndex] || meta[1] || null;
+  const modeLabel = compareMode === 'flow' ? '플로우 비교' : '단일 비교';
   let compareLabel = '';
   if (mA) {
     const lA = [mA.company_name, mA.screen_type_name].filter(Boolean).join(' · ') + (mA.version ? ` ${mA.version}` : '');
@@ -107,7 +132,6 @@ function renderCompareHistoryCard(item) {
     const sep = (mA.company_name && mB && mA.company_name === mB.company_name) ? ' → ' : ' vs ';
     compareLabel = lB ? lA + sep + lB : lA;
   }
-  const subtitle = cleanSummaryText(item.summary || '');
   const makeThumb = (url, label) => {
     const imgEl = url
       ? `<img src="${escapeHtml(url)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top" onerror="this.style.display='none'">`
@@ -128,9 +152,11 @@ function renderCompareHistoryCard(item) {
           ${makeThumb(thumbB, 'B')}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;font-weight:600;color:var(--primary);margin-bottom:4px;letter-spacing:0.03em">화면 비교 분석</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="font-size:11px;font-weight:600;color:var(--primary);letter-spacing:0.03em">화면 비교 분석</span>
+            <span style="font-size:11px;font-weight:600;color:#6b6862;background:#f0ede9;border-radius:4px;padding:2px 6px">${modeLabel}</span>
+          </div>
           ${compareLabel ? `<div style="font-size:13px;font-weight:600;color:#25221f;margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${escapeHtml(compareLabel)}">${escapeHtml(compareLabel)}</div>` : ''}
-          <div style="font-size:13px;color:#6b6862;margin-bottom:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${subtitle ? escapeHtml(subtitle) : '<span style="color:#aaa">요약 없음</span>'}</div>
           <div style="font-size:12px;color:#9f9b95;margin-bottom:10px">${escapeHtml(createdAt)} · ${model}</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-secondary btn-sm" onclick="openAnalysisReportDetail(${item.id}, 'compare')">상세 보기</button>
@@ -279,16 +305,26 @@ async function openAnalysisReportDetail(id, analysisType) {
     const typeLabel = { darkpattern:'다크패턴 검수', compare:'화면 비교', ai_analyze:'AI 분석' };
     const typeName = escapeHtml(typeLabel[report.analysis_type] || report.analysis_type || '');
     const risk = extractOverallRisk(report);
+    const metaInfo = reportMeta(report);
+    const compareMode = report.analysis_type === 'compare' ? getCompareMode(report) : null;
+    const extraRequest = getExtraRequest(report);
 
     const metaHtml = `
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--text-tertiary);margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
         <span>유형: <strong style="color:var(--text-secondary)">${typeName}</strong></span>
+        ${compareMode ? `<span>비교 방식: <strong style="color:var(--text-secondary)">${compareMode === 'flow' ? '플로우 비교' : '단일 비교'}</strong></span>` : ''}
         ${risk ? riskBadgeHtml(risk) : ''}
         <span>모델: <strong style="color:var(--text-secondary)">${escapeHtml(report.model || '')}</strong></span>
         <span>생성일: <strong style="color:var(--text-secondary)">${escapeHtml(createdAt)}</strong></span>
         <span>상태: <strong style="color:var(--text-secondary)">${escapeHtml(report.status || '')}</strong></span>
       </div>
     `;
+    const extraHtml = extraRequest ? `
+      <div style="margin-bottom:16px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50)">
+        <div style="font-size:12px;font-weight:700;color:var(--text-tertiary);margin-bottom:5px">추가 분석 요청</div>
+        <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${escapeHtml(extraRequest)}</div>
+      </div>
+    ` : '';
 
     state.currentDetailReport = report;
     const imgBtn = document.getElementById('detail-export-img-btn');
@@ -307,7 +343,8 @@ async function openAnalysisReportDetail(id, analysisType) {
     if (displayImageUrls.length > 0) {
       if (report.analysis_type === 'compare') {
         // A/B 두 칸 레이아웃: 앞 절반 = A, 뒤 절반 = B
-        const midpoint = Math.ceil(displayImageUrls.length / 2);
+        const aCount = Number(metaInfo.a_count || 0);
+        const midpoint = aCount > 0 ? aCount : Math.ceil(displayImageUrls.length / 2);
         const renderCompareSide = (urls, metas) => urls.map((url, i) => {
           const meta = metas[i] || null;
           const hasNav = meta && meta.screen_id && meta.set_id;
@@ -393,7 +430,7 @@ async function openAnalysisReportDetail(id, analysisType) {
       `;
     }
 
-    body.innerHTML = metaHtml + imageHtml;
+    body.innerHTML = metaHtml + extraHtml + imageHtml;
     body.appendChild(resultWrap);
   } catch(e) {
     const body = document.getElementById('report-detail-body');

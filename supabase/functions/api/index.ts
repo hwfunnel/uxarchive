@@ -514,7 +514,7 @@ async function enrichReportsWithMeta(
     const display_title = buildDisplayTitle(r.analysis_type as string, display_screen_type);
     const display_subtitle = buildDisplaySubtitle(r);
     const compare_screens_meta = (r.analysis_type as string) === "compare"
-      ? ids.slice(0, 4).map((id) => {
+      ? ids.map((id) => {
           const m = screenMetaMap.get(id);
           return m ? { company_name: m.company_name, screen_type_name: m.screen_type_name, version: m.version } : null;
         }).filter(Boolean)
@@ -651,7 +651,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const requestBody = await req.json();
         if (!requestBody || typeof requestBody !== "object") return err("요청 본문이 필요합니다.", 400);
 
-        const { system, messages, max_tokens, analysis_type, image_paths, image_ids } = requestBody as Record<string, unknown>;
+        const { system, messages, max_tokens, analysis_type, image_paths, image_ids, analysis_meta } = requestBody as Record<string, unknown>;
         if (!Array.isArray(messages)) return err("messages 배열이 필요합니다.", 400);
 
         const analysisType = typeof analysis_type === "string" && analysis_type.trim() ? analysis_type : "ai_analyze";
@@ -661,12 +661,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const systemValue = typeof system === "string" ? system : undefined;
         const imagePaths = Array.isArray(image_paths) ? image_paths : [];
         const imageIds = Array.isArray(image_ids) ? image_ids : [];
+        const analysisMeta = analysis_meta && typeof analysis_meta === "object" && !Array.isArray(analysis_meta)
+          ? analysis_meta as Record<string, unknown>
+          : null;
 
         try {
           const { content, raw } = await analyzeWithProvider(provider, messages as AIMessage[], systemValue, maxTokensNum);
           const responseText = joinResponseText(content);
           const promptHash = await buildPromptHash(systemValue, messages);
           const resultJson = parseJSONIfPossible(responseText);
+          const storedResultJson = analysisMeta
+            ? (resultJson && typeof resultJson === "object" && !Array.isArray(resultJson)
+              ? { ...(resultJson as Record<string, unknown>), __meta: analysisMeta }
+              : { __meta: analysisMeta })
+            : resultJson;
 
           // 다크패턴 분석은 JSON 결과에서 사용자용 summary 추출
           let summary: string;
@@ -700,7 +708,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             prompt_version: promptVersion,
             model: getActiveModelName(),
             summary,
-            result_json: resultJson,
+            result_json: storedResultJson,
             result_markdown: responseText,
             raw_response: raw,
             status: "completed",

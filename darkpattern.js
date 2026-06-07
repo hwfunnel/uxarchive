@@ -236,6 +236,10 @@ async function startDarkpatternAnalysis(mode) {
         analysis_type: 'darkpattern',
         image_paths: imagePaths,
         image_ids: imageIds,
+        analysis_meta: {
+          check_mode: isFlow ? 'flow' : 'ui',
+          extra_request: extra,
+        },
       });
 
       if (!res) throw new Error('분석 요청 실패');
@@ -454,4 +458,3 @@ async function downloadDpReport() {
     toast('저장 완료!', 'success');
   } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
 }
-
