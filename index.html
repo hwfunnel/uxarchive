@@ -1187,26 +1187,13 @@ async function resizeImageToBase64ForFlow(url) {
     img.onload = () => {
       try {
         let {width: w, height: h} = img;
-        // 가로 1500px 이하로 제한 (텍스트 밀도 유지)
-        // 세로는 2000px 이하로만 제한 (API 한도)
-        const MAX_W = 1500;
-        const MAX_H = 2000;
-        if (w > MAX_W) {
-          const ratio = MAX_W / w;
-          w = MAX_W;
-          h = Math.round(h * ratio);
-        }
-        if (h > MAX_H) {
-          const ratio = MAX_H / h;
-          h = MAX_H;
-          w = Math.round(w * ratio);
-        }
+        const MAX_W = 1000, MAX_H = 1400;
+        if (w > MAX_W) { const ratio = MAX_W / w; w = MAX_W; h = Math.round(h * ratio); }
+        if (h > MAX_H) { const ratio = MAX_H / h; h = MAX_H; w = Math.round(w * ratio); }
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        const base64 = canvas.toDataURL('image/png').split(',')[1];
-        resolve(base64);
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
       } catch(e) { reject(e); }
     };
     img.onerror = reject;

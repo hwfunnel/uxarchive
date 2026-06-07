@@ -1173,7 +1173,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       if (s.signed_url) {
         try {
           var b64 = await resizeImageToBase64ForFlow(s.signed_url);
-          userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
+          userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
         } catch(e) { console.warn('이미지 로드 실패:', s.signed_url, e); }
       }
     }
@@ -1185,7 +1185,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       if (sb.signed_url) {
         try {
           var b64b = await resizeImageToBase64ForFlow(sb.signed_url);
-          userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64b}});
+          userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64b}});
         } catch(e) { console.warn('이미지 로드 실패:', sb.signed_url, e); }
       }
     }
