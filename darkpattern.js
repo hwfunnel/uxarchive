@@ -279,22 +279,18 @@ function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
     const riskRank = {'높음':0,'의심':1,'주의':2,'낮음':3,'없음':4};
     const overall = data.overall_risk || '없음';
     const hasDetected = overall === '높음' || overall === '의심';
-    const hasCaution = overall === '주의';
 
     const verdict = hasDetected
       ? {text:'다크패턴 의심 요소가 감지되었습니다.', bg:'#FCEBEB', color:'#A32D2D'}
-      : hasCaution
-      ? {text:'주의사항이 있습니다.', bg:'#FAEEDA', color:'#854F0B'}
-      : {text:'검출된 다크패턴이 없습니다.', bg:'#EAF3DE', color:'#3B6D11'};
+      : {text:'검출된 주요 다크패턴이 없습니다.', bg:'#EAF3DE', color:'#3B6D11'};
 
     const issues = (data.issues || [])
-      .filter(i => ['높음','의심','주의'].includes(i.risk_level))
+      .filter(i => ['높음','의심'].includes(i.risk_level))
       .sort((a,b) => (riskRank[a.risk_level]??9)-(riskRank[b.risk_level]??9));
 
     const riskBadge = (level) => {
       const s = level==='높음' ? 'background:#A32D2D;color:#fff'
         : level==='의심' ? 'background:#FAEEDA;color:#854F0B'
-        : level==='주의' ? 'background:#FFF0EB;color:#FF4600'
         : 'background:var(--gray-100);color:var(--text-secondary)';
       return `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;${s}">${escapeHtml(level)}</span>`;
     };
@@ -458,5 +454,4 @@ async function downloadDpReport() {
     toast('저장 완료!', 'success');
   } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
 }
-
 

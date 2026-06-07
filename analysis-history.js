@@ -66,7 +66,7 @@ function historyTypeLabel(analysisType) {
 function darkpatternRiskCountBadges(item) {
   const rj = item.result_json;
   const issues = (rj && Array.isArray(rj.issues)) ? rj.issues : [];
-  const counts = { '높음': 0, '의심': 0, '주의': 0 };
+  const counts = { '높음': 0, '의심': 0 };
   issues.forEach(i => {
     const lvl = normalizeRiskLevel(i.risk_level);
     if (lvl in counts) counts[lvl]++;
@@ -74,7 +74,6 @@ function darkpatternRiskCountBadges(item) {
   const styleMap = {
     '높음': 'background:#fef2f2;color:#dc2626;border:1px solid #dc262630',
     '의심': 'background:#fff7ed;color:#f97316;border:1px solid #f9731630',
-    '주의': 'background:#fffbeb;color:#d97706;border:1px solid #d9770630',
   };
   const badges = Object.entries(counts)
     .filter(([, n]) => n > 0)
@@ -83,7 +82,7 @@ function darkpatternRiskCountBadges(item) {
   if (!badges) {
     const overall = extractOverallRisk(item);
     // overall이 null이면 result_json 파싱 실패(데이터 없음)이므로 표시하지 않음
-    if (overall === '없음' || overall === '낮음') {
+    if (overall === '없음' || overall === '낮음' || overall === '주의') {
       return `<span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #16a34a30">이상 없음</span>`;
     }
     return '';
@@ -503,4 +502,3 @@ function exportDetailReportCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
-
