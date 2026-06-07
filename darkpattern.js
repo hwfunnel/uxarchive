@@ -166,75 +166,98 @@ async function startDarkpatternAnalysis(mode) {
   </div>`;
   resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
 
-  try {
-    // signed_url → base64 변환
-    const toBase64FromUrl = (url) => new Promise((res, rej) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          let w = img.width, h = img.height;
-          const MAX_W = 1500, MAX_H = 2000;
-          if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-          if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          res(canvas.toDataURL('image/png').split(',')[1]);
-        } catch(e) { rej(e); }
-      };
-      img.onerror = () => rej(new Error('이미지 로드 실패'));
-      img.src = url;
-    });
+  // signed_url → base64 변환 (다크패턴용: 이미지 최대 1000×1400으로 축소해 요청 크기 절감)
+  const toBase64FromUrl = (url) => new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        let w = img.width, h = img.height;
+        const MAX_W = 1000, MAX_H = 1400;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+      } catch(e) { rej(e); }
+    };
+    img.onerror = () => rej(new Error('이미지 로드 실패'));
+    img.src = url;
+  });
 
-    // 이미지 메시지 구성
-    const userContent = [];
-    const context = extra || (isFlow ? '구독 서비스 중도 해지 여정 확인 및 결제 취소' : '디렉토리 탐색 및 서비스 가입/해지 테스트 단계');
+  // 이미지 메시지 구성
+  const userContent = [];
+  const context = extra || (isFlow ? '구독 서비스 중도 해지 여정 확인 및 결제 취소' : '디렉토리 탐색 및 서비스 가입/해지 테스트 단계');
 
-    if (isFlow) {
-      userContent.push({type:'text', text: `여정 목표(User Goal): ${context}\n여정 이미지 흐름: 아래 ${screens.length}장 이미지 순서대로 분석\n각 화면의 앞뒤 인과관계를 철저히 추적하여, 사용자의 주의를 의도적으로 분산시키는 전술 및 경제적 선택 침해 전술을 종단적(Longitudinal)으로 탐지하고 결과를 보고해주십시오.`});
-    } else {
-      userContent.push({type:'text', text: `분석 대상 이미지: 아래 화면\n이용자 현재 상황(Context): ${context}\n위의 가이드라인에 근거하여 기만적 UX 요소의 심층 거시 분석을 진행하고 JSON 결과를 반환해주십시오.`});
+  if (isFlow) {
+    userContent.push({type:'text', text: `여정 목표(User Goal): ${context}\n여정 이미지 흐름: 아래 ${screens.length}장 이미지 순서대로 분석\n각 화면의 앞뒤 인과관계를 철저히 추적하여, 사용자의 주의를 의도적으로 분산시키는 전술 및 경제적 선택 침해 전술을 종단적(Longitudinal)으로 탐지하고 결과를 보고해주십시오.`});
+  } else {
+    userContent.push({type:'text', text: `분석 대상 이미지: 아래 화면\n이용자 현재 상황(Context): ${context}\n위의 가이드라인에 근거하여 기만적 UX 요소의 심층 거시 분석을 진행하고 JSON 결과를 반환해주십시오.`});
+  }
+
+  for (let i = 0; i < screens.length; i++) {
+    const s = screens[i];
+    const stName = state.screenTypes.find(st => st.code === s.screen_type_code)?.name || s.screen_type_code || '';
+    userContent.push({type:'text', text: `[화면 ${i+1}/${screens.length} · ${stName}]`});
+    if (s.signed_url) {
+      try {
+        const b64 = await toBase64FromUrl(s.signed_url);
+        userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
+      } catch(e) { console.warn('이미지 로드 실패:', e); }
     }
+  }
 
-    for (let i = 0; i < screens.length; i++) {
-      const s = screens[i];
-      const stName = state.screenTypes.find(st => st.code === s.screen_type_code)?.name || s.screen_type_code || '';
-      userContent.push({type:'text', text: `[화면 ${i+1}/${screens.length} · ${stName}]`});
-      if (s.signed_url) {
-        try {
-          const b64 = await toBase64FromUrl(s.signed_url);
-          userContent.push({type:'image', source:{type:'base64', media_type:'image/png', data:b64}});
-        } catch(e) { console.warn('이미지 로드 실패:', e); }
+  const systemPrompt = isFlow ? PROMPTS.DARKPATTERN_FLOW : PROMPTS.DARKPATTERN_UI;
+  const imagePaths = screens.map(s => s.imgsrc || s.file_path).filter(Boolean);
+  const imageIds = screens.map(s => s.id).filter(Boolean);
+
+  // Gemini 503 혼잡 시 클라이언트 자동 재시도 (최대 2회, 5초 대기)
+  const isRetryable = (msg) => msg && (msg.includes('혼잡') || msg.includes('503') || msg.includes('한도') || msg.includes('429'));
+  const MAX_CLIENT_RETRIES = 2;
+
+  for (let attempt = 0; attempt <= MAX_CLIENT_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        toast(`Gemini 서버 혼잡 — ${attempt}차 재시도 중... (5초 대기)`, 'default');
+        await new Promise(r => setTimeout(r, 5000));
+        resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+            <div class="spinner"></div>
+            <span style="font-size:14px;font-weight:500">재시도 중... (${attempt}/${MAX_CLIENT_RETRIES})</span>
+          </div>
+        </div>`;
       }
+
+      const res = await api('POST', '/ai/analyze', {
+        system: systemPrompt,
+        messages: [{role:'user', content: userContent}],
+        max_tokens: 4000,
+        analysis_type: 'darkpattern',
+        image_paths: imagePaths,
+        image_ids: imageIds,
+      });
+
+      if (!res) throw new Error('분석 요청 실패');
+      const rawText = (res.content || []).find(b => b.type === 'text')?.text || '';
+      renderDarkpatternResult(resultWrap, rawText, screens.length, mode);
+      return;
+
+    } catch(e) {
+      if (attempt < MAX_CLIENT_RETRIES && isRetryable(e.message)) continue;
+      const isRate = isRetryable(e.message);
+      const hint = isRate ? '<div style="margin-top:8px;font-size:13px;color:#666">Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.</div>' : '';
+      resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
+        <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">검수 오류: ${e.message}${hint}
+          <div style="margin-top:12px">
+            <button class="btn btn-secondary" onclick="startDarkpatternAnalysis('${mode}')">다시 시도</button>
+          </div>
+        </div>
+      </div>`;
+      return;
     }
-
-    const systemPrompt = isFlow ? PROMPTS.DARKPATTERN_FLOW : PROMPTS.DARKPATTERN_UI;
-
-    const imagePaths = screens.map(s => s.imgsrc || s.file_path).filter(Boolean);
-    const imageIds = screens.map(s => s.id).filter(Boolean);
-
-    const res = await api('POST', '/ai/analyze', {
-      system: systemPrompt,
-      messages: [{role:'user', content: userContent}],
-      max_tokens: 4000,
-      analysis_type: 'darkpattern',
-      image_paths: imagePaths,
-      image_ids: imageIds,
-    });
-
-    if (!res) throw new Error('분석 요청 실패');
-    const rawText = (res.content || []).find(b => b.type === 'text')?.text || '';
-    renderDarkpatternResult(resultWrap, rawText, screens.length, mode);
-
-  } catch(e) {
-    resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
-      <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">검수 오류: ${e.message}</div>
-    </div>`;
   }
 }
-
-
 function renderDarkpatternResult(wrap, rawText, fileCount, mode) {
   let data = null;
   try {
