@@ -219,12 +219,12 @@ async function startDarkpatternAnalysis(mode) {
   for (let attempt = 0; attempt <= MAX_CLIENT_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        toast(`Gemini 서버 혼잡 — ${attempt}차 재시도 중... (5초 대기)`, 'default');
+        toast('결과를 정리하고 있습니다.', 'default');
         await new Promise(r => setTimeout(r, 5000));
         resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
             <div class="spinner"></div>
-            <span style="font-size:14px;font-weight:500">재시도 중... (${attempt}/${MAX_CLIENT_RETRIES})</span>
+            <span style="font-size:14px;font-weight:500">결과를 정리하고 있습니다.</span>
           </div>
         </div>`;
       }
@@ -250,7 +250,7 @@ async function startDarkpatternAnalysis(mode) {
     } catch(e) {
       if (attempt < MAX_CLIENT_RETRIES && isRetryable(e.message)) continue;
       const isRate = isRetryable(e.message);
-      const hint = isRate ? '<div style="margin-top:8px;font-size:13px;color:#666">Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.</div>' : '';
+      const hint = isRate ? '<div style="margin-top:8px;font-size:13px;color:#666">분석이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.</div>' : '';
       resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
         <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">검수 오류: ${e.message}${hint}
           <div style="margin-top:12px">

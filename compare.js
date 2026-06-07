@@ -711,7 +711,7 @@ async function runAIAnalysis(matchedCodes, codesA, codesB, sA, sB, maxTokens=300
 
   } catch(e) {
     const isRateLimit = e.message && (e.message.includes('한도') || e.message.includes('429') || e.message.includes('초과'));
-    const hint = isRateLimit ? '<div style="margin-top:8px;font-size:13px;color:#666">Gemini 요청 한도 초과 — 잠시 후 다시 시도해 주세요.</div>' : '';
+    const hint = isRateLimit ? '<div style="margin-top:8px;font-size:13px;color:#666">분석이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.</div>' : '';
     resultWrap.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:24px">
       <div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">분석 오류: ${e.message}${hint}
         <div style="margin-top:12px">
@@ -1227,8 +1227,8 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
           resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px">' +
             '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
             '<div class="spinner"></div>' +
-            '<span style="font-size:14px;font-weight:500">Gemini 재시도 중... (' + attempt + '/' + FLOW_MAX_RETRIES + ')</span>' +
-            '<span style="font-size:14px;color:var(--text-tertiary)">5초 후 다시 요청합니다</span>' +
+            '<span style="font-size:14px;font-weight:500">결과를 정리하고 있습니다.</span>' +
+            '' +
             '</div></div>';
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
@@ -1263,7 +1263,7 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
 
   } catch(e) {
     const isRateLike = String(e.message || '').includes('혼잡') || String(e.message || '').includes('한도') || String(e.message || '').includes('429') || String(e.message || '').includes('503');
-    const hint = isRateLike ? '<div style="margin-top:8px;font-size:13px;color:#8a5b52">Gemini 서버가 혼잡하거나 요청 한도에 걸렸습니다. 잠시 후 다시 시도해 주세요.</div>' : '';
+    const hint = isRateLike ? '<div style="margin-top:8px;font-size:13px;color:#8a5b52">분석이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.</div>' : '';
     resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px">' +
       '<div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">플로우 분석 오류: ' + e.message + hint +
       '<div style="margin-top:12px"><button class="btn btn-secondary" onclick="startAIFlowAnalysis(' + maxTokens + ')">다시 시도</button></div></div>' +
