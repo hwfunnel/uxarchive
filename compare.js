@@ -1202,21 +1202,48 @@ async function runAIFlowAnalysis(flowA, flowB, maxTokens) {
       ? PROMPTS.FLOW_COMPARE_DETAIL(promptParams)
       : PROMPTS.FLOW_COMPARE_SUMMARY(promptParams);
 
-    const res = await api('POST', '/ai/analyze', {
-      system: systemPrompt,
-      messages: [{role:'user', content: userContent}],
-      max_tokens: maxTokens,
-      analysis_type: 'compare'
-    });
+    const isRetryableFlowError = (message) => {
+      const msg = String(message || '');
+      return msg.includes('혼잡') || msg.includes('한도') || msg.includes('429') || msg.includes('503') || msg.includes('중간에 끊겼습니다');
+    };
+    const FLOW_MAX_RETRIES = 2;
+    let res = null;
+    let lastError = null;
+    for (let attempt = 0; attempt <= FLOW_MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px">' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">' +
+            '<div class="spinner"></div>' +
+            '<span style="font-size:14px;font-weight:500">Gemini 재시도 중... (' + attempt + '/' + FLOW_MAX_RETRIES + ')</span>' +
+            '<span style="font-size:14px;color:var(--text-tertiary)">5초 후 다시 요청합니다</span>' +
+            '</div></div>';
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+        res = await api('POST', '/ai/analyze', {
+          system: systemPrompt,
+          messages: [{role:'user', content: userContent}],
+          max_tokens: maxTokens,
+          analysis_type: 'compare'
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        if (attempt >= FLOW_MAX_RETRIES || !isRetryableFlowError(err.message)) throw err;
+      }
+    }
 
-    if (!res) throw new Error('분석 요청 실패');
+    if (!res) throw (lastError || new Error('분석 요청 실패'));
     const text = (res.content || []).find(function(b){return b.type==='text';});
     const resultText = text ? text.text : '';
     renderFlowResult(resultWrap, resultText, nameA, nameB, isSameCompany, maxTokens);
 
   } catch(e) {
+    const isRateLike = String(e.message || '').includes('혼잡') || String(e.message || '').includes('한도') || String(e.message || '').includes('429') || String(e.message || '').includes('503');
+    const hint = isRateLike ? '<div style="margin-top:8px;font-size:13px;color:#8a5b52">Gemini 서버가 혼잡하거나 요청 한도에 걸렸습니다. 잠시 후 다시 시도해 주세요.</div>' : '';
     resultWrap.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:24px">' +
-      '<div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">플로우 분석 오류: ' + e.message + '</div>' +
+      '<div style="color:#C0392B;font-size:14px;padding:16px;background:#FEF2F1;border-radius:var(--radius-md)">플로우 분석 오류: ' + e.message + hint +
+      '<div style="margin-top:12px"><button class="btn btn-secondary" onclick="startAIFlowAnalysis(' + maxTokens + ')">다시 시도</button></div></div>' +
       '</div>';
   }
 }
@@ -1469,4 +1496,3 @@ async function resizeImageToBase64ForCompare(url) {
     img.src = url;
   });
 }
-
