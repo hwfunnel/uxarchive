@@ -1,4 +1,4 @@
-const API = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
+const API = window.UXARCHIVE_API_URL;
 
 async function api(method, path, body) {
   const headers = {'Content-Type':'application/json'};
