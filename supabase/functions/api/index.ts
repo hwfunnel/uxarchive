@@ -1443,56 +1443,114 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json({ upload_url: data.signedUrl, file_path: filePath, token: data.token });
       }
 
-      // ── screen-type-options ──────────────────────────────────────────
-      if (path === "/screen-type-options" && method === "GET") {
-        const stCode = url.searchParams.get("screen_type_code");
-        let q = supabase.from("screen_type_options").select("*").order("order_no").order("id");
-        if (stCode) q = q.eq("screen_type_code", stCode);
-        const { data, error } = await q;
-        if (error) return err(error.message, 500);
-        return json(data || []);
-      }
-
-      if (path === "/screen-type-options" && method === "POST") {
-        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        const { screen_type_code, name, order_no } = await req.json();
-        if (!screen_type_code || !name) return err("screen_type_code와 name이 필요합니다.", 400);
-        const { data, error } = await supabase.from("screen_type_options")
-          .insert({ screen_type_code, name, order_no: order_no ?? 0, created_by: user.sub })
-          .select().single();
-        if (error) return err(error.message, 500);
-        return json(data);
-      }
-
-      if (path.match(/^\/screen-type-options\/\d+$/) && method === "DELETE") {
-        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        const optId = path.split("/")[2];
-        const { error } = await supabase.from("screen_type_options").delete().eq("id", optId);
-        if (error) return err(error.message, 500);
-        return json({ ok: true });
-      }
-
       // ── screen-options ───────────────────────────────────────────────
       if (path === "/screen-options" && method === "GET") {
         const screenId = url.searchParams.get("screen_id");
         if (!screenId) return err("screen_id가 필요합니다.", 400);
-        const { data, error } = await supabase.from("screen_options")
-          .select("*, option:screen_type_options(*)")
-          .eq("screen_id", screenId);
-        if (error) return err(error.message, 500);
-        return json(data || []);
+
+        const { data: opts, error: optsErr } = await supabase
+          .from("screen_options")
+          .select("id, name, order_no")
+          .eq("screen_id", screenId)
+          .order("order_no").order("id");
+        if (optsErr) return err(optsErr.message, 500);
+        if (!opts?.length) return json([]);
+
+        const optIds = (opts as { id: number }[]).map(o => o.id);
+
+        const { data: links, error: linksErr } = await supabase
+          .from("screen_option_screens")
+          .select("id, screen_option_id, linked_screen_id, order_no")
+          .in("screen_option_id", optIds)
+          .order("screen_option_id").order("order_no").order("id");
+        if (linksErr) return err(linksErr.message, 500);
+
+        const linkedScreenIds = [...new Set(
+          ((links || []) as { linked_screen_id: string }[]).map(l => l.linked_screen_id)
+        )];
+        const screenDataMap = new Map<string, Record<string, unknown>>();
+
+        if (linkedScreenIds.length) {
+          const { data: screens } = await supabase
+            .from("screens")
+            .select("id, imgsrc, screen_type_code, order_no")
+            .in("id", linkedScreenIds);
+
+          const imgsrcs = ((screens || []) as { imgsrc: string }[]).map(s => s.imgsrc).filter(Boolean);
+          const signedMap: Record<string, string> = {};
+          if (imgsrcs.length) {
+            const { data: signed } = await supabase.storage.from("screens").createSignedUrls(imgsrcs, 3600);
+            for (const item of (signed || [])) {
+              if (item.signedUrl) signedMap[item.path] = item.signedUrl;
+            }
+          }
+          for (const s of (screens || []) as Record<string, unknown>[]) {
+            screenDataMap.set(s.id as string, { ...s, signed_url: signedMap[s.imgsrc as string] || null });
+          }
+        }
+
+        const linksByOption = new Map<number, Record<string, unknown>[]>();
+        for (const link of (links || []) as Record<string, unknown>[]) {
+          const optId = link.screen_option_id as number;
+          if (!linksByOption.has(optId)) linksByOption.set(optId, []);
+          const sd = screenDataMap.get(link.linked_screen_id as string) || {};
+          linksByOption.get(optId)!.push({ link_id: link.id, ...sd });
+        }
+
+        return json((opts as Record<string, unknown>[]).map(opt => ({
+          ...opt,
+          linked_screens: linksByOption.get(opt.id as number) || [],
+        })));
       }
 
       if (path === "/screen-options" && method === "POST") {
         if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
-        const { screen_id, option_ids } = await req.json();
-        if (!screen_id) return err("screen_id가 필요합니다.", 400);
-        await supabase.from("screen_options").delete().eq("screen_id", screen_id);
-        if (Array.isArray(option_ids) && option_ids.length > 0) {
-          const rows = option_ids.map((option_id: number) => ({ screen_id, option_id }));
-          const { error } = await supabase.from("screen_options").insert(rows);
-          if (error) return err(error.message, 500);
-        }
+        const { screen_id, name, order_no } = await req.json();
+        if (!screen_id || !name) return err("screen_id와 name이 필요합니다.", 400);
+        const { data, error } = await supabase.from("screen_options")
+          .insert({ screen_id, name, order_no: order_no ?? 0 })
+          .select().single();
+        if (error) return err(error.message, 500);
+        return json(data, 201);
+      }
+
+      if (path.match(/^\/screen-options\/\d+$/) && method === "PATCH") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const optId = path.split("/")[2];
+        const body = await req.json() as Record<string, unknown>;
+        const updates: Record<string, unknown> = {};
+        if (body.name !== undefined) updates.name = body.name;
+        if (body.order_no !== undefined) updates.order_no = body.order_no;
+        const { data, error } = await supabase.from("screen_options").update(updates).eq("id", optId).select().single();
+        if (error) return err(error.message, 500);
+        return json(data);
+      }
+
+      if (path.match(/^\/screen-options\/\d+$/) && method === "DELETE") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const optId = path.split("/")[2];
+        const { error } = await supabase.from("screen_options").delete().eq("id", optId);
+        if (error) return err(error.message, 500);
+        return json({ ok: true });
+      }
+
+      // ── screen-option-screens ────────────────────────────────────────
+      if (path === "/screen-option-screens" && method === "POST") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const { screen_option_id, linked_screen_id, order_no } = await req.json();
+        if (!screen_option_id || !linked_screen_id) return err("screen_option_id와 linked_screen_id가 필요합니다.", 400);
+        const { data, error } = await supabase.from("screen_option_screens")
+          .insert({ screen_option_id, linked_screen_id, order_no: order_no ?? 0 })
+          .select().single();
+        if (error) return err(error.message, 500);
+        return json(data, 201);
+      }
+
+      if (path.match(/^\/screen-option-screens\/\d+$/) && method === "DELETE") {
+        if (user.role !== "admin") return err("관리자 권한이 필요합니다.", 403);
+        const linkId = path.split("/")[2];
+        const { error } = await supabase.from("screen_option_screens").delete().eq("id", linkId);
+        if (error) return err(error.message, 500);
         return json({ ok: true });
       }
 

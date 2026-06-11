@@ -291,6 +291,14 @@ function openScreenDetail(screenId, setId, push=true) {
           </div>
         </div>
         ${screen.signed_url?`<div style="margin-top:6px;font-size:14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 · 스크롤로 전체 확인</div>`:''}
+        <div id="screen-options-section" style="margin-top:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연결된 옵션 화면</div>
+            ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openScreenOptionsModal('${screen.id}')">+ 옵션 추가</button>`:''}
+          </div>
+          <div id="screen-options-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+          <div id="screen-options-content"></div>
+        </div>
       </div>
       <!-- 플로우 2열 그리드: 고정 너비 -->
       <div style="flex-shrink:0;width:240px">
@@ -316,14 +324,7 @@ function openScreenDetail(screenId, setId, push=true) {
           <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value" id="screen-order-display">${screen.order_no}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange" id="screen-version-display">V${screen.current_version_no||1}</span></div></div>
-          <div class="detail-meta-row"><div class="detail-meta-label">업데이트</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
-          <div class="detail-meta-row" style="border-bottom:none;align-items:flex-start" id="screen-options-row">
-            <div class="detail-meta-label" style="padding-top:2px">옵션</div>
-            <div class="detail-meta-value" style="flex:1">
-              <div id="screen-options-display" style="color:var(--text-tertiary);font-size:13px">불러오는 중...</div>
-              ${isAdmin?`<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:12px" onclick="openScreenOptionsModal('${screen.id}','${screen.screen_type_code}')">+ 옵션 관리</button>`:''}
-            </div>
-          </div>
+          <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업데이트</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
         </div>
       </div>
       <!-- 버전 히스토리 -->
@@ -830,97 +831,231 @@ async function openScreenMetaEditor(screenId, setId) {
 }
 
 // ── 화면 옵션 로드 ────────────────────────────────────────────────────
+// ── 연결된 옵션 화면 ─────────────────────────────────────────────────
+let _optionCurrentScreenId = null;
+let _optionCurrentId = null;
+let _optionCurrentData = [];
+
 async function loadScreenOptions(screenId) {
-  const el = document.getElementById('screen-options-display');
-  if (!el) return;
+  const chipsEl = document.getElementById('screen-options-chips');
+  const contentEl = document.getElementById('screen-options-content');
+  if (!chipsEl) return;
+  if (_optionCurrentScreenId !== screenId) {
+    _optionCurrentId = null;
+    _optionCurrentScreenId = screenId;
+  }
   try {
-    const data = await api('GET', `/screen-options?screen_id=${screenId}`);
-    if (!data || data.length === 0) {
-      el.textContent = '없음';
-    } else {
-      el.innerHTML = data.map(d => `<span class="badge" style="margin-right:4px;margin-bottom:4px">${d.option?.name||''}</span>`).join('');
+    const opts = await api('GET', `/screen-options?screen_id=${screenId}`) || [];
+    _optionCurrentData = opts;
+    if (!opts.find(o => o.id === _optionCurrentId)) {
+      _optionCurrentId = opts.length ? opts[0].id : null;
+    }
+    renderOptionChips(screenId, opts);
+    if (contentEl) {
+      const sel = opts.find(o => o.id === _optionCurrentId);
+      sel ? renderOptionContent(screenId, sel) : (contentEl.innerHTML = '');
     }
   } catch(e) {
-    el.textContent = '불러오기 실패';
+    chipsEl.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary)">불러오기 실패</div>';
   }
 }
 
-// ── 화면 옵션 관리 모달 ──────────────────────────────────────────────
-async function openScreenOptionsModal(screenId, screenTypeCode) {
+function renderOptionChips(screenId, opts) {
+  const chipsEl = document.getElementById('screen-options-chips');
+  if (!chipsEl) return;
+  const isAdmin = state.user?.role === 'admin';
+  if (!opts.length) {
+    chipsEl.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary)">등록된 옵션 없음</div>';
+    return;
+  }
+  chipsEl.innerHTML = opts.map(opt => {
+    const isActive = _optionCurrentId === opt.id;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'var(--primary)':'var(--surface)'};color:${isActive?'#fff':'var(--text-primary)'}" onclick="selectOptionChip('${screenId}',${opt.id})">
+      ${opt.name}
+      ${isAdmin?`<button onclick="event.stopPropagation();deleteScreenOption(${opt.id},'${screenId}')" style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;display:inline-flex;align-items:center;color:${isActive?'rgba(255,255,255,0.7)':'var(--text-tertiary)'}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l6 6M8 2l-6 6"/></svg></button>`:''}
+    </span>`;
+  }).join('');
+}
+
+function selectOptionChip(screenId, optionId) {
+  _optionCurrentId = optionId;
+  renderOptionChips(screenId, _optionCurrentData);
+  const sel = _optionCurrentData.find(o => o.id === optionId);
+  if (sel) renderOptionContent(screenId, sel);
+}
+
+function renderOptionContent(screenId, option) {
+  const contentEl = document.getElementById('screen-options-content');
+  if (!contentEl) return;
+  const isAdmin = state.user?.role === 'admin';
+  const screens = option.linked_screens || [];
+  contentEl.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:13px;color:var(--text-tertiary)">${option.name} (${screens.length}개)</div>
+      ${isAdmin?`<button class="btn btn-ghost btn-sm" style="font-size:12px" onclick="openOptionScreenPicker('${screenId}',${option.id})">+ 화면 연결</button>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      ${screens.length ? screens.map(s => `
+        <div style="position:relative;cursor:pointer" onclick="openRelatedScreenDetail('${s.id}')">
+          ${s.signed_url?`<img src="${s.signed_url}" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px;border:1px solid var(--border)" loading="lazy">`:`<div style="width:100%;aspect-ratio:9/16;background:var(--surface);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-tertiary)">없음</div>`}
+          ${isAdmin?`<button onclick="event.stopPropagation();deleteOptionScreen(${s.link_id},'${screenId}',${option.id})" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" stroke-width="1.5"><path d="M1 1l6 6M7 1l-6 6"/></svg></button>`:''}
+        </div>`).join('') : '<div style="font-size:13px;color:var(--text-tertiary);grid-column:1/-1;padding:8px 0">연결된 화면 없음</div>'}
+    </div>`;
+}
+
+async function openScreenOptionsModal(screenId) {
   const modalId = 'screen-options-modal';
   document.getElementById(modalId)?.remove();
-
-  const [allOptions, linkedOptions] = await Promise.all([
-    api('GET', `/screen-type-options?screen_type_code=${screenTypeCode}`),
-    api('GET', `/screen-options?screen_id=${screenId}`)
-  ]);
-  const linkedIds = new Set((linkedOptions||[]).map(d => d.option_id));
-
-  const optRows = (allOptions||[]).map(opt => `
-    <label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
-      <input type="checkbox" value="${opt.id}" ${linkedIds.has(opt.id)?'checked':''} style="width:16px;height:16px">
-      <span style="font-size:14px">${opt.name}</span>
-      <button onclick="deleteScreenTypeOption(${opt.id},'${screenTypeCode}','${screenId}')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:12px">삭제</button>
-    </label>`).join('');
-
+  const opts = await api('GET', `/screen-options?screen_id=${screenId}`) || [];
   const modal = document.createElement('div');
   modal.id = modalId;
   modal.className = 'modal-overlay';
   modal.style.cssText = 'display:flex;z-index:1000';
   modal.innerHTML = `
-    <div class="modal" style="width:380px;max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal" style="width:360px">
       <div class="modal-header">
-        <div class="modal-title">옵션 관리</div>
-        <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">
+        <div class="modal-title">옵션 그룹 관리</div>
+        <button class="modal-close" onclick="document.getElementById('${modalId}').remove();loadScreenOptions('${screenId}')">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
         </button>
       </div>
-      <div class="modal-body" style="overflow-y:auto;flex:1">
-        <div id="options-list" style="margin-bottom:16px">
-          ${allOptions?.length ? optRows : '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 0">등록된 옵션이 없습니다.</div>'}
+      <div class="modal-body">
+        <div id="options-modal-list" style="margin-bottom:16px">
+          ${opts.length ? opts.map(opt => `
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+              <input type="text" value="${opt.name}" id="opt-name-${opt.id}" class="input" style="flex:1;font-size:13px" onblur="renameScreenOption(${opt.id},'${screenId}',this)">
+              <button onclick="deleteScreenOption(${opt.id},'${screenId}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;flex-shrink:0">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+              </button>
+            </div>`).join('') : '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 0">등록된 옵션이 없습니다.</div>'}
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="new-option-name" type="text" class="input" placeholder="새 옵션명 입력" style="flex:1;font-size:13px">
-          <button class="btn btn-secondary btn-sm" onclick="addScreenTypeOption('${screenTypeCode}','${screenId}')">추가</button>
+        <div style="display:flex;gap:8px">
+          <input id="new-option-name" type="text" class="input" placeholder="새 옵션 그룹명" style="flex:1;font-size:13px">
+          <button class="btn btn-secondary btn-sm" onclick="addScreenOption('${screenId}')">추가</button>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="document.getElementById('${modalId}').remove()">취소</button>
-        <button class="btn btn-primary" onclick="saveScreenOptions('${screenId}','${modalId}')">저장</button>
+        <button class="btn btn-primary" onclick="document.getElementById('${modalId}').remove();loadScreenOptions('${screenId}')">완료</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
 }
 
-async function addScreenTypeOption(screenTypeCode, screenId) {
+async function addScreenOption(screenId) {
   const input = document.getElementById('new-option-name');
   const name = input?.value?.trim();
-  if (!name) return toast('옵션명을 입력해주세요', 'error');
+  if (!name) return toast('옵션 그룹명을 입력해주세요', 'error');
   try {
-    await api('POST', '/screen-type-options', { screen_type_code: screenTypeCode, name });
+    await api('POST', '/screen-options', { screen_id: screenId, name });
     input.value = '';
-    const modalId = 'screen-options-modal';
-    document.getElementById(modalId)?.remove();
-    await openScreenOptionsModal(screenId, screenTypeCode);
-  } catch(e) { toast(e.message, 'error'); }
-}
-
-async function deleteScreenTypeOption(optionId, screenTypeCode, screenId) {
-  if (!confirm('이 옵션을 삭제하면 연결된 화면에서도 제거됩니다. 삭제할까요?')) return;
-  try {
-    await api('DELETE', `/screen-type-options/${optionId}`);
     document.getElementById('screen-options-modal')?.remove();
-    await openScreenOptionsModal(screenId, screenTypeCode);
+    await openScreenOptionsModal(screenId);
   } catch(e) { toast(e.message, 'error'); }
 }
 
-async function saveScreenOptions(screenId, modalId) {
-  const checks = document.querySelectorAll(`#${modalId} input[type=checkbox]:checked`);
-  const option_ids = [...checks].map(c => Number(c.value));
+async function renameScreenOption(optionId, screenId, inputEl) {
+  const name = inputEl?.value?.trim();
+  if (!name) { inputEl.value = inputEl.defaultValue; return; }
+  if (name === inputEl.defaultValue) return;
   try {
-    await api('POST', '/screen-options', { screen_id: screenId, option_ids });
-    document.getElementById(modalId)?.remove();
-    await loadScreenOptions(screenId);
+    await api('PATCH', `/screen-options/${optionId}`, { name });
+    inputEl.defaultValue = name;
     toast('저장됐습니다', 'success');
+  } catch(e) { toast(e.message, 'error'); inputEl.value = inputEl.defaultValue; }
+}
+
+async function deleteScreenOption(optionId, screenId) {
+  if (!confirm('이 옵션 그룹을 삭제합니다. 연결된 화면 링크도 모두 삭제됩니다.')) return;
+  try {
+    await api('DELETE', `/screen-options/${optionId}`);
+    if (_optionCurrentId === optionId) _optionCurrentId = null;
+    document.getElementById('screen-options-modal')?.remove();
+    toast('삭제됐습니다', 'success');
+    await loadScreenOptions(screenId);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function openOptionScreenPicker(screenId, optionId) {
+  pickerSlot = '__option__';
+  pickerSelected = new Set();
+  pickerFilters = {company: state.currentSet?.company_code||'', type:'', subtype:'', screen_type:'', version:''};
+  pickerScreens = [];
+  const optName = _optionCurrentData.find(o => o.id === optionId)?.name || '';
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'option-picker-overlay';
+  overlay.innerHTML = `
+    <div class="picker-modal">
+      <div class="picker-header">
+        <div class="picker-title">화면 연결 — ${optName}</div>
+        <button class="modal-close" onclick="document.getElementById('option-picker-overlay').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="picker-filters">
+        <select class="filter-pill" id="pf-company" onchange="onPickerFilter('company',this.value)">
+          <option value="">기업명</option>
+          ${state.companies.map(c=>`<option value="${c.code}" ${c.code===pickerFilters.company?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-type" onchange="onPickerFilter('type',this.value)">
+          <option value="">유형</option>
+          ${state.types.map(t=>`<option value="${t.code}">${t.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-subtype" onchange="onPickerFilter('subtype',this.value)">
+          <option value="">유형상세</option>
+          ${state.subtypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-screen-type" onchange="onPickerFilter('screen_type',this.value)">
+          <option value="">화면유형</option>
+          ${state.screenTypes.map(s=>`<option value="${s.code}">${s.name}</option>`).join('')}
+        </select>
+        <select class="filter-pill" id="pf-version" onchange="onPickerFilter('version',this.value)">
+          <option value="">버전</option>
+        </select>
+      </div>
+      <div class="picker-body" id="picker-body">
+        <div class="picker-empty">필터를 선택하면 화면이 나타납니다</div>
+      </div>
+      <div class="picker-footer">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="pickerSelectAll()">전체선택</button>
+          <button class="btn btn-ghost btn-sm" onclick="pickerDeselectAll()">전체해제</button>
+          <span style="font-size:14px;color:var(--text-secondary)" id="picker-count">0개 선택됨</span>
+        </div>
+        <button class="btn btn-primary" onclick="applyOptionScreens('${screenId}',${optionId})">연결하기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  if (pickerFilters.company) {
+    updatePickerFilterStyles();
+    await loadPickerScreens();
+  }
+}
+
+async function applyOptionScreens(screenId, optionId) {
+  const selected = pickerScreens.filter(s => pickerSelected.has(s.id));
+  if (!selected.length) return toast('화면을 선택해주세요', 'error');
+  let successCount = 0;
+  for (const s of selected) {
+    try {
+      await api('POST', '/screen-option-screens', { screen_option_id: optionId, linked_screen_id: s.id });
+      successCount++;
+    } catch(e) {
+      if (!e.message?.includes('unique') && !e.message?.includes('중복')) toast(`연결 실패: ${e.message}`, 'error');
+    }
+  }
+  document.getElementById('option-picker-overlay')?.remove();
+  toast(`${successCount}개 화면 연결됨`, 'success');
+  _optionCurrentId = optionId;
+  await loadScreenOptions(screenId);
+}
+
+async function deleteOptionScreen(linkId, screenId, optionId) {
+  if (!confirm('연결을 해제할까요?')) return;
+  try {
+    await api('DELETE', `/screen-option-screens/${linkId}`);
+    toast('연결 해제됐습니다', 'success');
+    _optionCurrentId = optionId;
+    await loadScreenOptions(screenId);
   } catch(e) { toast(e.message, 'error'); }
 }
