@@ -1427,7 +1427,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const orderStr = String(sc.order_no).padStart(3, "0");
         const hashPrefix = content_hash ? String(content_hash).slice(0, 8) : Date.now().toString(16);
         const filePath = `${st.company_code}/${st.type_code}/${st.subtype_code}/${st.company_code}_${st.type_code}_${st.subtype_code}_${sc.screen_type_code}_${orderStr}_${hashPrefix}.${ext}`;
-        const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath);
+        const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath, { upsert: true });
         if (error) return err(error.message);
         return json({ upload_url: data.signedUrl, file_path: filePath });
       }
@@ -1438,7 +1438,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const orderStr = String(order_no).padStart(3, "0");
         const hashPrefix = content_hash ? String(content_hash).slice(0, 8) : Date.now().toString(16);
         const filePath = `${company_code}/${type_code}/${subtype_code}/${company_code}_${type_code}_${subtype_code}_${screen_type_code}_${orderStr}_${hashPrefix}.${ext}`;
-        const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath);
+        const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath, { upsert: true });
         if (error) return err(error.message);
         return json({ upload_url: data.signedUrl, file_path: filePath, token: data.token });
       }
