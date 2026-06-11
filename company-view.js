@@ -316,7 +316,14 @@ function openScreenDetail(screenId, setId, push=true) {
           <div class="detail-meta-row"><div class="detail-meta-label">화면유형</div><div class="detail-meta-value">${stName}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value" id="screen-order-display">${screen.order_no}</div></div>
           <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange" id="screen-version-display">V${screen.current_version_no||1}</span></div></div>
-          <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업데이트</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
+          <div class="detail-meta-row"><div class="detail-meta-label">업데이트</div><div class="detail-meta-value">${set.uploaded_at}</div></div>
+          <div class="detail-meta-row" style="border-bottom:none;align-items:flex-start" id="screen-options-row">
+            <div class="detail-meta-label" style="padding-top:2px">옵션</div>
+            <div class="detail-meta-value" style="flex:1">
+              <div id="screen-options-display" style="color:var(--text-tertiary);font-size:13px">불러오는 중...</div>
+              ${isAdmin?`<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:12px" onclick="openScreenOptionsModal('${screen.id}','${screen.screen_type_code}')">+ 옵션 관리</button>`:''}
+            </div>
+          </div>
         </div>
       </div>
       <!-- 버전 히스토리 -->
@@ -347,6 +354,7 @@ function openScreenDetail(screenId, setId, push=true) {
     try { history.pushState({page:'company', setId: set.id, screenId: screen.id}, '', `#company?set=${set.id}&screen=${screen.id}`); } catch(e) {}
   }
   setTimeout(() => loadRelatedScreens(screen.id), 100);
+  setTimeout(() => loadScreenOptions(screen.id), 100);
   state.currentViewingRevisionId = null;
   state.currentScreenRevisions = [];
   loadVersionHistory(screen.id);
@@ -819,4 +827,100 @@ async function openScreenMetaEditor(screenId, setId) {
       } catch(e) { toast(e.message, 'error'); }
     }
   );
+}
+
+// ── 화면 옵션 로드 ────────────────────────────────────────────────────
+async function loadScreenOptions(screenId) {
+  const el = document.getElementById('screen-options-display');
+  if (!el) return;
+  try {
+    const data = await api('GET', `/screen-options?screen_id=${screenId}`);
+    if (!data || data.length === 0) {
+      el.textContent = '없음';
+    } else {
+      el.innerHTML = data.map(d => `<span class="badge" style="margin-right:4px;margin-bottom:4px">${d.option?.name||''}</span>`).join('');
+    }
+  } catch(e) {
+    el.textContent = '불러오기 실패';
+  }
+}
+
+// ── 화면 옵션 관리 모달 ──────────────────────────────────────────────
+async function openScreenOptionsModal(screenId, screenTypeCode) {
+  const modalId = 'screen-options-modal';
+  document.getElementById(modalId)?.remove();
+
+  const [allOptions, linkedOptions] = await Promise.all([
+    api('GET', `/screen-type-options?screen_type_code=${screenTypeCode}`),
+    api('GET', `/screen-options?screen_id=${screenId}`)
+  ]);
+  const linkedIds = new Set((linkedOptions||[]).map(d => d.option_id));
+
+  const optRows = (allOptions||[]).map(opt => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" value="${opt.id}" ${linkedIds.has(opt.id)?'checked':''} style="width:16px;height:16px">
+      <span style="font-size:14px">${opt.name}</span>
+      <button onclick="deleteScreenTypeOption(${opt.id},'${screenTypeCode}','${screenId}')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:12px">삭제</button>
+    </label>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = modalId;
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'display:flex;z-index:1000';
+  modal.innerHTML = `
+    <div class="modal" style="width:380px;max-height:80vh;display:flex;flex-direction:column">
+      <div class="modal-header">
+        <div class="modal-title">옵션 관리</div>
+        <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y:auto;flex:1">
+        <div id="options-list" style="margin-bottom:16px">
+          ${allOptions?.length ? optRows : '<div style="font-size:13px;color:var(--text-tertiary);padding:8px 0">등록된 옵션이 없습니다.</div>'}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="new-option-name" type="text" class="input" placeholder="새 옵션명 입력" style="flex:1;font-size:13px">
+          <button class="btn btn-secondary btn-sm" onclick="addScreenTypeOption('${screenTypeCode}','${screenId}')">추가</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('${modalId}').remove()">취소</button>
+        <button class="btn btn-primary" onclick="saveScreenOptions('${screenId}','${modalId}')">저장</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function addScreenTypeOption(screenTypeCode, screenId) {
+  const input = document.getElementById('new-option-name');
+  const name = input?.value?.trim();
+  if (!name) return toast('옵션명을 입력해주세요', 'error');
+  try {
+    await api('POST', '/screen-type-options', { screen_type_code: screenTypeCode, name });
+    input.value = '';
+    const modalId = 'screen-options-modal';
+    document.getElementById(modalId)?.remove();
+    await openScreenOptionsModal(screenId, screenTypeCode);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteScreenTypeOption(optionId, screenTypeCode, screenId) {
+  if (!confirm('이 옵션을 삭제하면 연결된 화면에서도 제거됩니다. 삭제할까요?')) return;
+  try {
+    await api('DELETE', `/screen-type-options/${optionId}`);
+    document.getElementById('screen-options-modal')?.remove();
+    await openScreenOptionsModal(screenId, screenTypeCode);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function saveScreenOptions(screenId, modalId) {
+  const checks = document.querySelectorAll(`#${modalId} input[type=checkbox]:checked`);
+  const option_ids = [...checks].map(c => Number(c.value));
+  try {
+    await api('POST', '/screen-options', { screen_id: screenId, option_ids });
+    document.getElementById(modalId)?.remove();
+    await loadScreenOptions(screenId);
+    toast('저장됐습니다', 'success');
+  } catch(e) { toast(e.message, 'error'); }
 }

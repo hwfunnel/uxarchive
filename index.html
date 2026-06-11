@@ -552,10 +552,18 @@ async function openFunctionScreenDetail(screenId) {
             <div class="detail-meta-row"><div class="detail-meta-label">순서</div><div class="detail-meta-value">${screen.order_no}</div></div>
             <div class="detail-meta-row"><div class="detail-meta-label">버전</div><div class="detail-meta-value"><span class="badge badge-orange">${setDetail.version}</span></div></div>
             <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${setDetail.uploaded_at}</div></div>
+            <div class="detail-meta-row" style="border-bottom:none;align-items:flex-start" id="screen-options-row">
+              <div class="detail-meta-label" style="padding-top:2px">옵션</div>
+              <div class="detail-meta-value" style="flex:1">
+                <div id="screen-options-display" style="color:var(--text-tertiary);font-size:13px">불러오는 중...</div>
+                ${isAdmin?`<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:12px" onclick="openScreenOptionsModal('${screen.id}','${screen.screen_type_code}')">+ 옵션 관리</button>`:''}
+              </div>
+            </div>
           </div>
         </div>
       </div>`;
     setTimeout(() => loadRelatedScreens(screen.id), 100);
+    setTimeout(() => loadScreenOptions(screen.id), 100);
   } catch(e) {
     toast(e.message, 'error');
     if (currentFunctionType) loadFunctionScreens(currentFunctionType);
