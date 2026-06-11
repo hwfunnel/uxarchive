@@ -1123,11 +1123,19 @@ async function startUpload(){
   const relatedFiles=state.uploadFiles.filter(f=>f.isRelated);
   let setId=null;
 
-  // 메인 플로우 업로드 (order_no: 1, 2, 3...)
+  // 메인 플로우 업로드: 기존 세트가 있으면 max order_no 뒤에 이어붙임
+  let mainStartOrder = 1;
+  try {
+    const existingSets = await api('GET', `/screen-sets?company=${meta.company}&type=${meta.type}&subtype=${meta.subtype}`);
+    if (existingSets?.length) {
+      const mainScreens = (existingSets[0].screens||[]).filter(s => (s.order_no||0) < 9000);
+      if (mainScreens.length) mainStartOrder = Math.max(...mainScreens.map(s => s.order_no)) + 1;
+    }
+  } catch(e) {}
   for(let i=0;i<mainFiles.length;i++){
     const item=mainFiles[i]; item.status='uploading'; renderUploadPreviews();
     try{
-      const orderNo=i+1;
+      const orderNo = mainStartOrder + i;
       const ext=item.file.name.split('.').pop()||'png';
       const contentHash=await computeFileHash(item.file);
       const urlRes=await api('POST','/storage/upload-url',{company_code:meta.company,type_code:meta.type,subtype_code:meta.subtype,screen_type_code:item.screenTypeCode,order_no:orderNo,content_hash:contentHash,ext});
