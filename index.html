@@ -535,14 +535,6 @@ async function openFunctionScreenDetail(screenId) {
               <div style="font-size: 14px;color:var(--text-tertiary);padding:8px 0">불러오는 중...</div>
             </div>
           </div>
-          <div id="screen-options-section" style="margin-top:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연결된 옵션 화면</div>
-              ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openScreenOptionsModal('${screen.id}')">+ 옵션 추가</button>`:''}
-            </div>
-            <div id="screen-options-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-            <div id="screen-options-content"></div>
-          </div>
         </div>
         <div class="card">
           <div class="card-header">
@@ -562,6 +554,15 @@ async function openFunctionScreenDetail(screenId) {
             <div class="detail-meta-row" style="border-bottom:none"><div class="detail-meta-label">업로드일자</div><div class="detail-meta-value">${setDetail.uploaded_at}</div></div>
           </div>
         </div>
+      </div>
+      <!-- 연결된 옵션 화면: 전체 너비 -->
+      <div id="screen-options-section" style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연결된 옵션 화면</div>
+          ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openScreenOptionsModal('${screen.id}')">+ 옵션 추가</button>`:''}
+        </div>
+        <div id="screen-options-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="screen-options-content"></div>
       </div>`;
     setTimeout(() => loadRelatedScreens(screen.id), 100);
     setTimeout(() => loadScreenOptions(screen.id), 100);

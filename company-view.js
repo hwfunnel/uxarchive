@@ -291,14 +291,6 @@ function openScreenDetail(screenId, setId, push=true) {
           </div>
         </div>
         ${screen.signed_url?`<div style="margin-top:6px;font-size:14px;color:var(--text-tertiary);text-align:center">클릭하여 원본 · 스크롤로 전체 확인</div>`:''}
-        <div id="screen-options-section" style="margin-top:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연결된 옵션 화면</div>
-            ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openScreenOptionsModal('${screen.id}')">+ 옵션 추가</button>`:''}
-          </div>
-          <div id="screen-options-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-          <div id="screen-options-content"></div>
-        </div>
       </div>
       <!-- 플로우 2열 그리드: 고정 너비 -->
       <div style="flex-shrink:0;width:240px">
@@ -348,6 +340,15 @@ function openScreenDetail(screenId, setId, push=true) {
         </div>
       </div>
     </div>
+    </div>
+    <!-- 연결된 옵션 화면: 전체 너비 -->
+    <div id="screen-options-section" style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:500;color:var(--text-tertiary)">연결된 옵션 화면</div>
+        ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openScreenOptionsModal('${screen.id}')">+ 옵션 추가</button>`:''}
+      </div>
+      <div id="screen-options-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <div id="screen-options-content"></div>
     </div>`;
   // 연관 화면 비동기 로드
   // push deep state for screen detail
@@ -894,11 +895,15 @@ function renderOptionContent(screenId, option) {
       <div style="font-size:13px;color:var(--text-tertiary)">${option.name} (${screens.length}개)</div>
       ${isAdmin?`<button class="btn btn-ghost btn-sm" style="font-size:12px" onclick="openOptionScreenPicker('${screenId}',${option.id})">+ 화면 연결</button>`:''}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+    <div class="screen-grid-5">
       ${screens.length ? screens.map(s => `
-        <div style="position:relative;cursor:pointer" onclick="openRelatedScreenDetail('${s.id}')">
-          ${s.signed_url?`<img src="${s.signed_url}" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px;border:1px solid var(--border)" loading="lazy">`:`<div style="width:100%;aspect-ratio:9/16;background:var(--surface);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-tertiary)">없음</div>`}
-          ${isAdmin?`<button onclick="event.stopPropagation();deleteOptionScreen(${s.link_id},'${screenId}',${option.id})" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" stroke-width="1.5"><path d="M1 1l6 6M7 1l-6 6"/></svg></button>`:''}
+        <div style="position:relative">
+          <div class="screen-card" onclick="openRelatedScreenDetail('${s.id}')">
+            <div class="screen-card-thumb">
+              ${s.signed_url?`<img src="${s.signed_url}" loading="lazy">`:`<span class="no-img">없음</span>`}
+            </div>
+          </div>
+          ${isAdmin?`<button onclick="event.stopPropagation();deleteOptionScreen(${s.link_id},'${screenId}',${option.id})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" stroke-width="1.5"><path d="M1 1l6 6M7 1l-6 6"/></svg></button>`:''}
         </div>`).join('') : '<div style="font-size:13px;color:var(--text-tertiary);grid-column:1/-1;padding:8px 0">연결된 화면 없음</div>'}
     </div>`;
 }

@@ -121,7 +121,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--gray-50);
 
 /* DETAIL */
 .detail-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
-.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 80vh; }
+.detail-img-wrap { background: var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: flex-start; justify-content: center; width: 100%; min-height: 80vh; }
 .detail-img-viewport { width: 390px; height: 80vh; overflow-y: auto; overflow-x: hidden; border-radius: var(--radius-md); scrollbar-width: thin; flex-shrink: 0; box-shadow: 0 2px 16px rgba(0,0,0,0.12); }
 .detail-img-viewport::-webkit-scrollbar { width: 3px; }
 .detail-img-viewport::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
