@@ -38,27 +38,45 @@ function ensureChangeDashboardStyles() {
     }
     .change-dashboard .change-company-card {
       width: 100%;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       text-align: left;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 20px 22px 16px;
       cursor: pointer;
-      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+      transition: border-color .18s, box-shadow .18s, transform .18s, background .18s;
+      position: relative;
+      overflow: hidden;
     }
+    .change-dashboard .change-company-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--primary);
+      opacity: 0;
+      transition: opacity .18s;
+    }
+    .change-dashboard .change-company-card:hover::before { opacity: 1; }
     .change-dashboard .change-company-card:hover {
       border-color: var(--primary);
-      box-shadow: var(--shadow-sm);
-      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+      background: var(--primary-subtle, #fff8f6);
+    }
+    .change-dashboard .change-company-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
     .change-dashboard .change-company-main {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
     }
     .change-dashboard .change-company-meta {
@@ -72,6 +90,7 @@ function ensureChangeDashboardStyles() {
     }
     .change-dashboard .change-company-name {
       color: var(--text-primary);
+      font-size: 16px;
       font-weight: 700;
     }
     .change-dashboard .change-summary {
@@ -83,18 +102,30 @@ function ensureChangeDashboardStyles() {
       color: var(--primary);
       font-weight: 700;
     }
-    .change-dashboard .change-card-arrow {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      display: flex;
+    .change-dashboard .change-count-badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--primary);
       background: var(--primary-subtle);
-      font-size: 18px;
+      border: 1px solid var(--primary-light, #ffd0c0);
+      border-radius: 999px;
+      padding: 3px 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .change-dashboard .change-card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
       font-weight: 700;
+      color: var(--primary);
     }
     .change-dashboard .change-report-shell {
       max-width: 980px;
@@ -162,17 +193,47 @@ function ensureChangeDashboardStyles() {
       margin-top: 16px;
     }
     .change-dashboard .report-chip-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       border: 1px solid #CDE6E0;
       background: #fff;
-      color: #055F59;
-      border-radius: 999px;
-      padding: 8px 15px;
-      font-size: 13px;
-      font-weight: 700;
+      border-radius: 12px;
+      padding: 10px 16px 10px 12px;
       cursor: pointer;
+      text-align: left;
+      transition: transform .15s, box-shadow .15s, background .15s;
     }
     .change-dashboard .report-chip-btn:hover {
       background: #E8F4F1;
+      box-shadow: 0 4px 12px rgba(5,95,89,.12);
+      transform: translateY(-1px);
+    }
+    .change-dashboard .report-chip-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #E8F4F1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .change-dashboard .report-chip-texts {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .change-dashboard .report-chip-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #055F59;
+      display: block;
+    }
+    .change-dashboard .report-chip-sub {
+      font-size: 11px;
+      color: #52706A;
+      display: block;
     }
     .change-dashboard .report-summary-grid {
       display: grid;
@@ -424,17 +485,23 @@ function renderChangeDashboardList() {
       <div class="change-section-title">변동이 감지된 경쟁사</div>
       <div class="change-list">
         <button class="change-company-card" type="button" onclick="openChangeDashboardDetail()">
-          <div class="change-company-main">
-            <div class="change-company-meta">
-              <span class="change-company-name">하나손해보험</span>
-              <span>|</span>
-              <span>26.06.12 업데이트</span>
+          <div class="change-company-top">
+            <div class="change-company-main">
+              <div class="change-company-meta">
+                <span class="change-company-name">하나손해보험</span>
+                <span style="color:var(--text-tertiary)">|</span>
+                <span style="font-weight:400;color:var(--text-tertiary)">26.06.12 업데이트</span>
+              </div>
+              <div class="change-summary">
+                <b>변동 요약:</b> 전화가입 유도 버튼 추가, 특약율 변경, 갱신고객 전용 버튼 추가
+              </div>
             </div>
-            <div class="change-summary">
-              <b>변동 요약:</b> 전화가입 유도 버튼 추가, 특약율 변경, 갱신고객 전용 버튼 추가
-            </div>
+            <span class="change-count-badge">변경 3건</span>
           </div>
-          <div class="change-card-arrow">›</div>
+          <div class="change-card-cta">
+            보고서 보기
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h8M8 4l3 3-3 3"/></svg>
+          </div>
         </button>
       </div>
     </div>
@@ -459,8 +526,24 @@ function renderChangeDashboardDetail() {
               화면 구조와 입력 폼은 동일하며, 아래 3건만 변경이 확인됩니다.
             </div>
             <div class="report-full-links">
-              <button class="report-chip-btn" type="button" onclick="openChangeDashboardImage('screen-2604.png')">4월 버전 전체 화면</button>
-              <button class="report-chip-btn" type="button" onclick="openChangeDashboardImage('screen-2607.png')">7월 버전 전체 화면</button>
+              <button class="report-chip-btn" type="button" onclick="openChangeDashboardImage('screen-2604.png')">
+                <div class="report-chip-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#008C82" stroke-width="1.5"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.5"/><path d="M1.5 12l3.5-3.5 2.5 2.5 2-2 4.5 4.5"/></svg>
+                </div>
+                <div class="report-chip-texts">
+                  <span class="report-chip-label">4월 버전 전체 화면</span>
+                  <span class="report-chip-sub">클릭하여 전체 화면 보기</span>
+                </div>
+              </button>
+              <button class="report-chip-btn" type="button" onclick="openChangeDashboardImage('screen-2607.png')">
+                <div class="report-chip-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#008C82" stroke-width="1.5"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.5"/><path d="M1.5 12l3.5-3.5 2.5 2.5 2-2 4.5 4.5"/></svg>
+                </div>
+                <div class="report-chip-texts">
+                  <span class="report-chip-label">7월 버전 전체 화면</span>
+                  <span class="report-chip-sub">클릭하여 전체 화면 보기</span>
+                </div>
+              </button>
             </div>
 
             <div class="report-summary-grid">
