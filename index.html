@@ -68,6 +68,9 @@
         <button class="nav-item" id="nav-analysis-history" onclick="navigate('analysis-history')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M5 8h6M7 4h2"/><path d="M2 14V2h12v12H2z"/></svg>분석 히스토리
         </button>
+        <button class="nav-item" id="nav-change-dashboard" onclick="navigate('change-dashboard')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V5M8 13V3M13 13V8"/><path d="M2 13h12"/></svg>변동사항 대시보드
+        </button>
       </div>
       <div class="nav-section" id="admin-nav" style="display:none">
         <div class="nav-section-label">관리자</div>
@@ -119,6 +122,7 @@
       <div class="page" id="page-rename"><div id="rename-view"></div></div>
       <div class="page" id="page-darkpattern"><div id="darkpattern-view"></div></div>
       <div class="page" id="page-analysis-history"><div id="analysis-history-view"></div></div>
+      <div class="page" id="page-change-dashboard"><div id="change-dashboard-view"></div></div>
     </div>
   </div>
 </div>
@@ -156,6 +160,7 @@
 <script src="darkpattern.js"></script>
 <script src="company-view.js"></script>
 <script src="admin-tools.js"></script>
+<script src="change-dashboard.js"></script>
 <script>
 const AI_MODEL_LABEL = 'Claude Sonnet 4.6';
 let state = {
@@ -232,7 +237,7 @@ async function initApp() {
 }
 
 function getPageFromHash() {
-  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history'];
+  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history','change-dashboard'];
   const h = (location.hash||'').replace('#','');
   return allowed.includes(h)?h:'company';
 }
@@ -255,7 +260,7 @@ function navigate(page, push=true) {
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   const pageEl = document.getElementById(`page-${page}`);
   if (pageEl) pageEl.classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리'};
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리', 'change-dashboard':'변동사항 대시보드'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
 
@@ -272,6 +277,7 @@ function navigate(page, push=true) {
   if (page==='rename') renderRenameView();
   if (page==='darkpattern') renderDarkpatternView();
   if (page==='analysis-history') renderAnalysisHistoryView();
+  if (page==='change-dashboard') renderChangeDashboardView();
 }
 
 // handle browser back/forward
