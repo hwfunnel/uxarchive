@@ -13,12 +13,22 @@ function renderDarkpatternView() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">검수할 화면 선택</div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('__dp__')">+ 화면 추가</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('__dp__')">+ 아카이브에서 추가</button>
           <button class="btn btn-ghost btn-sm" onclick="dpClearAll()">초기화</button>
         </div>
       </div>
-      <div id="dp-empty" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:32px;text-align:center;background:var(--gray-50)">
-        <div style="font-size:14px;color:var(--text-secondary);font-weight:500">화면 추가 버튼으로 검수할 화면을 선택하세요</div>
+      <div id="dp-dropzone"
+        style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:20px;text-align:center;background:var(--gray-50);cursor:pointer;margin-bottom:10px;transition:border-color 0.15s,background 0.15s"
+        ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='var(--primary-subtle)'"
+        ondragleave="this.style.borderColor='';this.style.background='var(--gray-50)'"
+        ondrop="event.preventDefault();this.style.borderColor='';this.style.background='var(--gray-50)';dpHandleDrop(event)"
+        onclick="document.getElementById('dp-file-input').click()">
+        <div style="font-size:13px;font-weight:500;color:var(--text-secondary)">로컬 이미지 드래그앤드롭 또는 클릭하여 파일 선택</div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">JPG · PNG · WEBP · 최대 20장 (DB 저장 없음)</div>
+      </div>
+      <input type="file" id="dp-file-input" accept="image/*" multiple style="display:none" onchange="dpHandleFiles(this.files)">
+      <div id="dp-empty" style="display:none;border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;text-align:center;background:var(--gray-50)">
+        <div style="font-size:14px;color:var(--text-secondary);font-weight:500">화면을 추가하면 여기에 미리보기가 나타납니다</div>
         <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">단일 화면 또는 여러 화면 플로우 분석 (최대 20장)</div>
       </div>
       <div id="dp-preview" style="display:none">
@@ -31,7 +41,13 @@ function renderDarkpatternView() {
 
     <!-- 추가 분석 요청 -->
     <div style="background:var(--gray-0);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px">
-      <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">추가 분석 요청 <span style="font-weight:400;color:var(--text-tertiary)">(선택)</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">추가 분석 요청 <span style="font-weight:400;color:var(--text-tertiary)">(선택)</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="dpCopyConservativePrompt()" title="할루시네이션 방지 분석 지침을 클립보드에 복사합니다" style="display:flex;align-items:center;gap:5px">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4.5" y="4.5" width="7" height="7" rx="1"/><path d="M4.5 4.5V3a1 1 0 011-1h4.5a1 1 0 011 1v1.5"/></svg>
+          보수적 분석 지침 복사
+        </button>
+      </div>
       <textarea id="dp-extra" placeholder="특별히 집중해서 분석해야 할 부분이 있으면 입력해주세요. 예) 동의 버튼 배치 방식이 잘못된 계층구조에 해당하는지 확인해줘" style="width:100%;box-sizing:border-box;min-height:72px;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);resize:vertical;font-family:inherit"></textarea>
     </div>
 
@@ -54,6 +70,26 @@ function renderDarkpatternView() {
   // 상태 초기화
   state.dpFiles = [];
   state.dpScreens = [];
+}
+
+function dpCopyConservativePrompt() {
+  const text = [
+    '이미지에 명확히 보이는 것만 설명해주세요. 추정하지 말아주세요.',
+    '보이지 않거나 불확실한 요소는 "확인 불가"라고 작성해주세요.',
+    '이미지 밖의 맥락, 의도, 원인은 추측하지 말아주세요.',
+    '작게 보이거나 흐릿한 요소는 단정하지 말고 "희미하게 보임"으로 표현해주세요.',
+    '텍스트는 실제로 읽히는 글자만 옮기고, 읽히지 않으면 "판독 불가"라고 써주세요.',
+    '사람의 감정, 직업, 관계, 성격은 표정이나 복장만으로 판단하지 말아주세요.',
+    '없는 물체를 보완해서 말하지 말고, 실제 보이는 범위만 설명해주세요.',
+    '답변은 확실한 사실 / 가능성 있는 해석 / 확인 불가 항목으로 구분해주세요.',
+    '각 주장마다 이미지 안에서 확인 가능한 근거가 있는지 검토해주세요.',
+    '근거 없는 디테일은 추가하지 말고, 애매하면 보수적으로 답변해주세요.',
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    toast('보수적 분석 지침이 복사되었습니다');
+  }).catch(() => {
+    toast('복사 실패: 브라우저에서 클립보드 접근이 차단되어 있습니다', 'error');
+  });
 }
 
 // 파일 드롭 핸들러
@@ -87,6 +123,18 @@ function dpRenderPreview() {
   if (!total) { previewWrap.style.display = 'none'; return; }
   previewWrap.style.display = 'block';
   countEl.textContent = total + '장 선택됨' + (total > 1 ? ' · 순서대로 플로우 분석' : ' · 단일 화면 분석');
+  const localNotice = document.getElementById('dp-local-notice');
+  if (files.length > 0) {
+    if (!localNotice) {
+      const notice = document.createElement('div');
+      notice.id = 'dp-local-notice';
+      notice.style.cssText = 'font-size:12px;color:var(--text-tertiary);margin-bottom:8px';
+      notice.textContent = '로컬 이미지는 분석 히스토리에서 다시 표시되지 않을 수 있습니다.';
+      grid.before(notice);
+    }
+  } else if (localNotice) {
+    localNotice.remove();
+  }
   const fileItems = files.map((f, i) => {
     const url = URL.createObjectURL(f);
     return `<div style="position:relative;width:80px;flex-shrink:0">
@@ -149,7 +197,9 @@ function dpClearAll() {
 
 async function startDarkpatternAnalysis(mode) {
   const screens = state.dpScreens || [];
-  if (!screens.length) { toast('검수할 화면을 먼저 선택해주세요', 'error'); return; }
+  const localFiles = state.dpFiles || [];
+  const totalCount = screens.length + localFiles.length;
+  if (!totalCount) { toast('검수할 화면을 먼저 선택해주세요', 'error'); return; }
 
   const resultWrap = document.getElementById('dp-result-wrap');
   const extra = (document.getElementById('dp-extra') || {}).value || '';
@@ -161,10 +211,18 @@ async function startDarkpatternAnalysis(mode) {
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <div class="spinner"></div>
       <span style="font-size:14px;font-weight:500">다크패턴 검수 중... (${modeLabel})</span>
-      <span style="font-size:14px;color:var(--text-tertiary)">${AI_MODEL_LABEL} · ${screens.length}장</span>
+      <span style="font-size:14px;color:var(--text-tertiary)">${AI_MODEL_LABEL} · ${totalCount}장</span>
     </div>
   </div>`;
   resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
+
+  // 로컬 File → base64 변환
+  const toBase64FromFile = (file) => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = () => rej(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
 
   // signed_url → base64 변환 (다크패턴용: 이미지 최대 1000×1400으로 축소해 요청 크기 절감)
   const toBase64FromUrl = (url) => new Promise((res, rej) => {
@@ -191,21 +249,32 @@ async function startDarkpatternAnalysis(mode) {
   const context = extra || (isFlow ? '구독 서비스 중도 해지 여정 확인 및 결제 취소' : '디렉토리 탐색 및 서비스 가입/해지 테스트 단계');
 
   if (isFlow) {
-    userContent.push({type:'text', text: `여정 목표(User Goal): ${context}\n여정 이미지 흐름: 아래 ${screens.length}장 이미지 순서대로 분석\n각 화면의 앞뒤 인과관계를 철저히 추적하여, 사용자의 주의를 의도적으로 분산시키는 전술 및 경제적 선택 침해 전술을 종단적(Longitudinal)으로 탐지하고 결과를 보고해주십시오.`});
+    userContent.push({type:'text', text: `여정 목표(User Goal): ${context}\n여정 이미지 흐름: 아래 ${totalCount}장 이미지 순서대로 분석\n각 화면의 앞뒤 인과관계를 철저히 추적하여, 사용자의 주의를 의도적으로 분산시키는 전술 및 경제적 선택 침해 전술을 종단적(Longitudinal)으로 탐지하고 결과를 보고해주십시오.`});
   } else {
     userContent.push({type:'text', text: `분석 대상 이미지: 아래 화면\n이용자 현재 상황(Context): ${context}\n위의 가이드라인에 근거하여 기만적 UX 요소의 심층 거시 분석을 진행하고 JSON 결과를 반환해주십시오.`});
   }
 
+  // 아카이브 화면 (signed_url 기반)
   for (let i = 0; i < screens.length; i++) {
     const s = screens[i];
     const stName = state.screenTypes.find(st => st.code === s.screen_type_code)?.name || s.screen_type_code || '';
-    userContent.push({type:'text', text: `[화면 ${i+1}/${screens.length} · ${stName}]`});
+    userContent.push({type:'text', text: `[화면 ${i+1}/${totalCount} · ${stName}]`});
     if (s.signed_url) {
       try {
         const b64 = await toBase64FromUrl(s.signed_url);
         userContent.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
       } catch(e) { console.warn('이미지 로드 실패:', e); }
     }
+  }
+
+  // 로컬 파일 (File 객체 기반, DB 저장 없음)
+  for (let i = 0; i < localFiles.length; i++) {
+    const f = localFiles[i];
+    userContent.push({type:'text', text: `[화면 ${screens.length+i+1}/${totalCount} · 로컬파일 · ${f.name}]`});
+    try {
+      const b64 = await toBase64FromFile(f);
+      userContent.push({type:'image', source:{type:'base64', media_type:f.type||'image/jpeg', data:b64}});
+    } catch(e) { console.warn('로컬 파일 읽기 실패:', e); }
   }
 
   const systemPrompt = isFlow ? PROMPTS.DARKPATTERN_FLOW : PROMPTS.DARKPATTERN_UI;
@@ -244,7 +313,7 @@ async function startDarkpatternAnalysis(mode) {
 
       if (!res) throw new Error('분석 요청 실패');
       const rawText = (res.content || []).find(b => b.type === 'text')?.text || '';
-      renderDarkpatternResult(resultWrap, rawText, screens.length, mode);
+      renderDarkpatternResult(resultWrap, rawText, totalCount, mode);
       return;
 
     } catch(e) {

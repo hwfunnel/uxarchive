@@ -658,8 +658,9 @@ function lazyImg(signedUrl, imgsrc, extraStyle='', extraAttr='') {
 
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
-let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
+let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:'',is_product:false};
 let pickerRevisionMode=false;
+let pickerLoadSeq=0;
 
 async function openScreenPicker(slot) {
   openCompareImagePicker(slot);
@@ -689,6 +690,7 @@ function updatePickerFilterStyles(){
 }
 
 async function loadPickerScreens(){
+  const seq=++pickerLoadSeq;
   const body=document.getElementById('picker-body');
   if(!body)return;
   const {company,type,subtype,screen_type,version}=pickerFilters;
@@ -713,11 +715,13 @@ async function loadPickerScreens(){
         const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
         targetSets=latest?[latest]:[];
       }
-      for(const s of targetSets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      const details1=await Promise.all(targetSets.map(s=>api('GET',`/screen-sets/${s.id}`)));
+      details1.forEach(detail=>screens.push(...(detail?.screens||[])));
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company&&type){
       const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&latest_only=true`)||[];
-      for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      const details2=await Promise.all(sets.map(s=>api('GET',`/screen-sets/${s.id}`)));
+      details2.forEach(detail=>screens.push(...(detail?.screens||[])));
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company){
       if(screen_type){
@@ -726,12 +730,10 @@ async function loadPickerScreens(){
         screens=await api('GET',`/screens?screen_type=${screen_type}&company=${company}${inclRelParam}`)||[];
       } else {
         const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];
-        for(const s of sets){
-          // 연관모드: include_related=true로 9000번대 포함
-          const inclRelParam = isRelationMode ? '?include_related=true' : '';
-          const detail=await api('GET',`/screen-sets/${s.id}${inclRelParam}`);
-          screens.push(...(detail?.screens||[]));
-        }
+        // 연관모드: include_related=true로 9000번대 포함
+        const inclRelParam = isRelationMode ? '?include_related=true' : '';
+        const details3=await Promise.all(sets.map(s=>api('GET',`/screen-sets/${s.id}${inclRelParam}`)));
+        details3.forEach(detail=>screens.push(...(detail?.screens||[])));
       }
     } else if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];}
     const seen=new Set();screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
@@ -749,16 +751,18 @@ async function loadPickerScreens(){
       if(pickerFilters.version){
         const vNo=Number(pickerFilters.version);
         const revCache=new Map();revCache.set(refScreen.id,revs);
-        for(let i=0;i<screens.length;i++){
-          if(!revCache.has(screens[i].id))revCache.set(screens[i].id,await api('GET',`/screens/${screens[i].id}/revisions`)||[]);
-          const rev=(revCache.get(screens[i].id)||[]).find(r=>r.version_no===vNo);
-          if(rev)screens[i]={...screens[i],imgsrc:rev.imgsrc,signed_url:rev.signed_url};
-        }
+        const needFetch=screens.filter(s=>!revCache.has(s.id));
+        const fetched=await Promise.all(needFetch.map(s=>api('GET',`/screens/${s.id}/revisions`).then(r=>[s.id,r||[]])));
+        fetched.forEach(([id,r])=>revCache.set(id,r));
+        screens=screens.map(s=>{const rev=(revCache.get(s.id)||[]).find(r=>r.version_no===vNo);return rev?{...s,imgsrc:rev.imgsrc,signed_url:rev.signed_url}:s;});
       }
     }
+    if(pickerFilters.is_product)screens=screens.filter(s=>state.subtypes.find(st=>st.code===s.set?.subtype_code)?.is_product===true);
+    if(seq!==pickerLoadSeq)return;
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
     // 피커 렌더 후 레이지 observe (아래 innerHTML 세팅 후 처리)
+    if(seq!==pickerLoadSeq)return;
   body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
       const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
       const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';

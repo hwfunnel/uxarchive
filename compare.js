@@ -320,7 +320,7 @@ async function openCompareImagePicker(slot) {
   pickerSlot = slot;
   pickerSelected = new Set();
   // __dp__ 슬롯은 회사 제한 없음
-  pickerFilters = {company: slot==='__dp__' ? '' : (compareCompany[slot]||''), type:'', subtype:'', screen_type:'', version:''};
+  pickerFilters = {company: slot==='__dp__' ? '' : (compareCompany[slot]||''), type:'', subtype:'', screen_type:'', version:'', is_product:false};
 
   const overlay=document.createElement('div');
   overlay.className='modal-overlay'; overlay.id='picker-overlay';
@@ -351,6 +351,7 @@ async function openCompareImagePicker(slot) {
           <option value="">버전</option>
         </select>
         <label class="picker-order-toggle"><input type="checkbox" id="picker-order-keep" ${pickerOrderKeep?'checked':''} onchange="pickerOrderKeep=this.checked"> 순서 유지</label>
+        <label class="picker-order-toggle"><input type="checkbox" id="pf-product" onchange="onPickerFilter('is_product',this.checked)"> 상품만 보기</label>
       </div>
       <div class="picker-body" id="picker-body">
         <div class="picker-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="var(--gray-300)" stroke-width="1.5"><rect x="6" y="4" width="14" height="24" rx="2"/><path d="M10 10h6M10 14h6M10 18h4"/></svg><span>필터를 선택하면 화면이 나타납니다</span></div>
