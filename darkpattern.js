@@ -13,7 +13,7 @@ function renderDarkpatternView() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">검수할 화면 선택</div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('__dp__')">+ 아카이브에서 추가</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCompareImagePicker('__dp__')">+ 사이트에서 추가</button>
           <button class="btn btn-ghost btn-sm" onclick="dpClearAll()">초기화</button>
         </div>
       </div>
@@ -45,7 +45,7 @@ function renderDarkpatternView() {
         <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">추가 분석 요청 <span style="font-weight:400;color:var(--text-tertiary)">(선택)</span></div>
         <button class="btn btn-ghost btn-sm" onclick="dpCopyConservativePrompt()" title="할루시네이션 방지 분석 지침을 클립보드에 복사합니다" style="display:flex;align-items:center;gap:5px">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4.5" y="4.5" width="7" height="7" rx="1"/><path d="M4.5 4.5V3a1 1 0 011-1h4.5a1 1 0 011 1v1.5"/></svg>
-          보수적 분석 지침 복사
+          이미지 오류 최소화 문구
         </button>
       </div>
       <textarea id="dp-extra" placeholder="특별히 집중해서 분석해야 할 부분이 있으면 입력해주세요. 예) 동의 버튼 배치 방식이 잘못된 계층구조에 해당하는지 확인해줘" style="width:100%;box-sizing:border-box;min-height:72px;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gray-50);color:var(--text-primary);resize:vertical;font-family:inherit"></textarea>
