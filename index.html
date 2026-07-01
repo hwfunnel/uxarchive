@@ -52,28 +52,31 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <div class="nav-section-label">조회</div>
-        <button class="nav-item active" id="nav-company" onclick="navigate('company')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>기업별 조회
+        <div class="nav-section-label">메뉴</div>
+        <button class="nav-item" id="nav-change-dashboard" onclick="navigate('change-dashboard')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V5M8 13V3M13 13V8"/><path d="M2 13h12"/></svg>변동사항 대시보드
         </button>
         <button class="nav-item" id="nav-function" onclick="navigate('function')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>기능별 조회
         </button>
-        <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>화면 비교
+        <button class="nav-item active" id="nav-company" onclick="navigate('company')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>기업별 조회
         </button>
         <button class="nav-item" id="nav-darkpattern" onclick="navigate('darkpattern')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 10.5v.5"/></svg>다크패턴 검수
         </button>
-        <button class="nav-item" id="nav-analysis-history" onclick="navigate('analysis-history')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M5 8h6M7 4h2"/><path d="M2 14V2h12v12H2z"/></svg>분석 히스토리
+        <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>화면 비교
         </button>
-        <button class="nav-item" id="nav-change-dashboard" onclick="navigate('change-dashboard')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V5M8 13V3M13 13V8"/><path d="M2 13h12"/></svg>변동사항 대시보드
+        <button class="nav-item" id="nav-nemotron" onclick="navigate('nemotron')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>사용성 체험
         </button>
       </div>
       <div class="nav-section" id="admin-nav" style="display:none">
         <div class="nav-section-label">관리자</div>
+        <button class="nav-item" id="nav-analysis-history" onclick="navigate('analysis-history')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M5 8h6M7 4h2"/><path d="M2 14V2h12v12H2z"/></svg>분석 히스토리
+        </button>
         <button class="nav-item" id="nav-upload" onclick="navigate('upload')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V3M5 6l3-3 3 3M3 13h10"/></svg>화면 업로드
         </button>
@@ -123,6 +126,7 @@
       <div class="page" id="page-darkpattern"><div id="darkpattern-view"></div></div>
       <div class="page" id="page-analysis-history"><div id="analysis-history-view"></div></div>
       <div class="page" id="page-change-dashboard"><div id="change-dashboard-view"></div></div>
+      <div class="page" id="page-nemotron"><div id="nemotron-view"></div></div>
     </div>
   </div>
 </div>
@@ -161,6 +165,7 @@
 <script src="company-view.js"></script>
 <script src="admin-tools.js"></script>
 <script src="change-dashboard.js"></script>
+<script src="nemotron-lab.js"></script>
 <script>
 const AI_MODEL_LABEL = 'Claude Sonnet 4.6';
 let state = {
@@ -237,7 +242,7 @@ async function initApp() {
 }
 
 function getPageFromHash() {
-  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history','change-dashboard'];
+  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history','change-dashboard','nemotron'];
   const h = (location.hash||'').replace('#','');
   return allowed.includes(h)?h:'company';
 }
@@ -260,7 +265,7 @@ function navigate(page, push=true) {
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   const pageEl = document.getElementById(`page-${page}`);
   if (pageEl) pageEl.classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리', 'change-dashboard':'변동사항 대시보드'};
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리', 'change-dashboard':'변동사항 대시보드', nemotron:'사용성 체험'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
 
@@ -278,6 +283,7 @@ function navigate(page, push=true) {
   if (page==='darkpattern') renderDarkpatternView();
   if (page==='analysis-history') renderAnalysisHistoryView();
   if (page==='change-dashboard') renderChangeDashboardView();
+  if (page==='nemotron') renderNemotronLabView();
 }
 
 // handle browser back/forward
@@ -325,7 +331,12 @@ async function renderFunctionView() {
     }
     const counts = state.screenTypeCounts;
     const q = filterText.trim().toLowerCase();
-    const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
+    const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))]
+      .sort((a, b) => {
+        const aCount = state.screenTypes.filter(s=>s.category===a).reduce((acc,s)=>acc+(counts[s.code]||0),0);
+        const bCount = state.screenTypes.filter(s=>s.category===b).reduce((acc,s)=>acc+(counts[s.code]||0),0);
+        return bCount - aCount;
+      });
 
     // 검색 중일 땐 기존 단일 컬럼 모드
     if (q) {
