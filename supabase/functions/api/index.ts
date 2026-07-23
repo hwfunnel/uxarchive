@@ -720,25 +720,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
           let reportSaved = false;
           let reportId: number | null = null;
           let reportError: string | undefined;
-          try {
-            const { data: insertData, error: insertError } = await supabase
-              .from("analysis_reports")
-              .insert(reportPayload)
-              .select("id")
-              .single();
-            if (insertError) {
-              reportError = insertError.message;
-            } else if (insertData && typeof insertData.id === "number") {
-              reportSaved = true;
-              reportId = insertData.id;
+          if (analysisType !== "darkpattern") {
+            try {
+              const { data: insertData, error: insertError } = await supabase
+                .from("analysis_reports")
+                .insert(reportPayload)
+                .select("id")
+                .single();
+              if (insertError) {
+                reportError = insertError.message;
+              } else if (insertData && typeof insertData.id === "number") {
+                reportSaved = true;
+                reportId = insertData.id;
+              }
+            } catch (saveErr) {
+              reportError = saveErr instanceof Error ? saveErr.message : String(saveErr);
             }
-          } catch (saveErr) {
-            reportError = saveErr instanceof Error ? saveErr.message : String(saveErr);
           }
 
           const responseBody: Record<string, unknown> = { content, report_saved: reportSaved };
           if (reportSaved) responseBody.report_id = reportId;
-          if (!reportSaved) responseBody.report_error = reportError ?? "analysis_reports 저장에 실패했습니다.";
+          if (!reportSaved && analysisType !== "darkpattern") responseBody.report_error = reportError ?? "analysis_reports 저장에 실패했습니다.";
           return json(responseBody);
         } catch (e) {
           const errorMsg = e instanceof Error ? e.message : typeof e === "string" ? e : "AI 분석 중 오류가 발생했습니다.";
@@ -1441,6 +1443,118 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const { data, error } = await supabase.storage.from("screens").createSignedUploadUrl(filePath, { upsert: true });
         if (error) return err(error.message);
         return json({ upload_url: data.signedUrl, file_path: filePath, token: data.token });
+      }
+
+      // ── dark pattern audit dashboard ────────────────────────────────
+      if (path === "/audit-files/upload-url" && method === "POST") {
+        const { file_path, content_type } = await req.json();
+        const filePath = String(file_path || "").replace(/^\/+/, "");
+        if (!filePath || filePath.includes("..")) return err("유효하지 않은 파일 경로입니다.", 400);
+        const { data, error } = await supabase.storage
+          .from("dp-audit-files")
+          .createSignedUploadUrl(filePath, { upsert: true });
+        if (error) return err(error.message, 500);
+        return json({ upload_url: data.signedUrl, file_path: filePath, content_type: content_type || "application/octet-stream" });
+      }
+
+      if (path === "/audit-reports" && method === "POST") {
+        const body = await req.json() as Record<string, unknown>;
+        const payload = {
+          id: body.id,
+          title: body.title || "다크패턴 검사 보고서",
+          risk_level: body.risk_level || "보통",
+          description: body.description || "",
+          owner: body.owner || "",
+          status: body.status || "검토 전",
+          files: Array.isArray(body.files) ? body.files : [],
+          created_at: body.created_at || new Date().toISOString(),
+        };
+        if (!payload.id) return err("id가 필요합니다.", 400);
+        const { data, error } = await supabase.from("dp_audit_reports").insert(payload).select().single();
+        if (error) return err(error.message, 500);
+        return json(data, 201);
+      }
+
+      if (path === "/audit-items" && method === "POST") {
+        const body = await req.json() as Record<string, unknown>;
+        const rows = Array.isArray(body.rows) ? body.rows : [];
+        if (!rows.length) return err("rows가 필요합니다.", 400);
+        const { data, error } = await supabase.from("dp_audit_items").insert(rows).select();
+        if (error) return err(error.message, 500);
+        return json(data, 201);
+      }
+
+      if (path === "/audit-items" && method === "GET") {
+        const { data: reports, error: reportsError } = await supabase
+          .from("dp_audit_reports")
+          .select("id, title, files, created_at")
+          .order("created_at", { ascending: false });
+        if (reportsError) return err(reportsError.message, 500);
+
+        const { data: items, error: itemsError } = await supabase
+          .from("dp_audit_items")
+          .select("*")
+          .order("uploaded_at", { ascending: false });
+        if (itemsError) return err(itemsError.message, 500);
+
+        const reportMap = new Map((reports || []).map((report: Record<string, unknown>) => [report.id, report]));
+        const storagePaths = [...new Set(((items || []) as Record<string, unknown>[])
+          .map((item) => String(item.image_url || ""))
+          .filter((value) => value && !value.startsWith("http") && !value.startsWith("data:")))];
+        const signedUrlMap = new Map<string, string>();
+        if (storagePaths.length) {
+          const { data: signedUrls } = await supabase.storage
+            .from("dp-audit-files")
+            .createSignedUrls(storagePaths, 3600);
+          for (const signed of (signedUrls || []) as { path: string; signedUrl: string }[]) {
+            if (signed.path && signed.signedUrl) signedUrlMap.set(signed.path, signed.signedUrl);
+          }
+        }
+        return json({
+          items: ((items || []) as Record<string, unknown>[]).map((item) => {
+            const report = reportMap.get(item.report_id);
+            const imageUrl = String(item.image_url || "");
+            return {
+              id: item.id,
+              reportId: item.report_id,
+              imageUrl: signedUrlMap.get(imageUrl) || imageUrl,
+              screenName: item.screen_name || "",
+              riskLevel: item.risk_level || "보통",
+              fix: item.fix || "",
+              reason: item.reason || "",
+              checklist: item.checklist || "",
+              area: item.area || "",
+              sourceFileName: item.source_file_name || "",
+              needsReview: Boolean(item.needs_review),
+              uploadedAt: item.uploaded_at || "",
+              reportTitle: report?.title || "",
+              files: Array.isArray(report?.files) ? report.files : [],
+            };
+          }),
+        });
+      }
+
+      if (path.match(/^\/audit-items\/[\w.-]+$/) && method === "PATCH") {
+        const itemId = path.split("/")[2];
+        const body = await req.json() as Record<string, unknown>;
+        const updates: Record<string, unknown> = {};
+        if (body.needs_review !== undefined) updates.needs_review = Boolean(body.needs_review);
+        if (body.risk_level !== undefined) updates.risk_level = body.risk_level;
+        if (body.screen_name !== undefined) updates.screen_name = body.screen_name;
+        if (body.fix !== undefined) updates.fix = body.fix;
+        if (body.reason !== undefined) updates.reason = body.reason;
+        if (body.checklist !== undefined) updates.checklist = body.checklist;
+        if (!Object.keys(updates).length) return err("수정할 값이 없습니다.", 400);
+        const { data, error } = await supabase.from("dp_audit_items").update(updates).eq("id", itemId).select().single();
+        if (error) return err(error.message, 500);
+        return json(data);
+      }
+
+      if (path.match(/^\/audit-items\/[\w.-]+$/) && method === "DELETE") {
+        const itemId = path.split("/")[2];
+        const { error } = await supabase.from("dp_audit_items").delete().eq("id", itemId);
+        if (error) return err(error.message, 500);
+        return json({ ok: true });
       }
 
       // ── screen-options ───────────────────────────────────────────────
