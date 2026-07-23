@@ -1,1 +1,1 @@
-window.UXARCHIVE_API_URL = 'https://lsrjrmdsanxxfdebmoet.supabase.co/functions/v1/api';
+window.UXARCHIVE_API_URL = 'https://ihgevkunxkjygoxlcfxn.supabase.co/functions/v1/api';
