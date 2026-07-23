@@ -6,7 +6,7 @@
 <title>UX Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=design-system-20260723">
 </head>
 <body>
 <div id="toast-container"></div>
@@ -52,24 +52,21 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">
-        <div class="nav-section-label">조회</div>
-        <button class="nav-item active" id="nav-company" onclick="navigate('company')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>기업별 조회
+        <div class="nav-section-label">메뉴</div>
+        <button class="nav-item" id="nav-audit-dashboard" onclick="navigate('audit-dashboard')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"/><path d="M5 6h6M5 9h4"/></svg>다크패턴 대시보드
+        </button>
+        <button class="nav-item" id="nav-change-dashboard" onclick="navigate('change-dashboard')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V5M8 13V3M13 13V8"/><path d="M2 13h12"/></svg>변동사항 대시보드
         </button>
         <button class="nav-item" id="nav-function" onclick="navigate('function')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>기능별 조회
         </button>
+        <button class="nav-item active" id="nav-company" onclick="navigate('company')">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>기업별 조회
+        </button>
         <button class="nav-item" id="nav-compare" onclick="navigate('compare')">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2H2v12h4M10 2h4v12h-4M8 5v6"/></svg>화면 비교
-        </button>
-        <button class="nav-item" id="nav-darkpattern" onclick="navigate('darkpattern')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 10.5v.5"/></svg>다크패턴 검수
-        </button>
-        <button class="nav-item" id="nav-analysis-history" onclick="navigate('analysis-history')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M5 8h6M7 4h2"/><path d="M2 14V2h12v12H2z"/></svg>분석 히스토리
-        </button>
-        <button class="nav-item" id="nav-change-dashboard" onclick="navigate('change-dashboard')">
-          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13V5M8 13V3M13 13V8"/><path d="M2 13h12"/></svg>변동사항 대시보드
         </button>
       </div>
       <div class="nav-section" id="admin-nav" style="display:none">
@@ -120,9 +117,10 @@
       <div class="page" id="page-upload"><div id="upload-view"></div></div>
       <div class="page" id="page-master"><div id="master-view"></div></div>
       <div class="page" id="page-rename"><div id="rename-view"></div></div>
-      <div class="page" id="page-darkpattern"><div id="darkpattern-view"></div></div>
-      <div class="page" id="page-analysis-history"><div id="analysis-history-view"></div></div>
       <div class="page" id="page-change-dashboard"><div id="change-dashboard-view"></div></div>
+      <div class="page" id="page-audit-dashboard">
+        <iframe src="audit/?embedded=1" title="다크패턴 대시보드" style="width:100%;height:calc(100vh - 100px);border:0;border-radius:var(--radius-lg);background:var(--gray-100);display:block"></iframe>
+      </div>
     </div>
   </div>
 </div>
@@ -155,9 +153,7 @@
 <script src="prompts.js"></script>
 <script src="config.js"></script>
 <script src="api-client.js"></script>
-<script src="analysis-history.js"></script>
 <script src="compare.js"></script>
-<script src="darkpattern.js"></script>
 <script src="company-view.js"></script>
 <script src="admin-tools.js"></script>
 <script src="change-dashboard.js"></script>
@@ -237,7 +233,7 @@ async function initApp() {
 }
 
 function getPageFromHash() {
-  const allowed = ['company','function','compare','darkpattern','upload','rename','master','analysis-history','change-dashboard'];
+  const allowed = ['company','function','compare','audit-dashboard','upload','rename','master','change-dashboard'];
   const h = (location.hash||'').replace('#','');
   return allowed.includes(h)?h:'company';
 }
@@ -260,7 +256,7 @@ function navigate(page, push=true) {
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   const pageEl = document.getElementById(`page-${page}`);
   if (pageEl) pageEl.classList.add('active');
-  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환',darkpattern:'다크패턴 검수', 'analysis-history':'분석 히스토리', 'change-dashboard':'변동사항 대시보드'};
+  const titles={company:'기업별 조회',function:'기능별 조회',compare:'화면 비교','audit-dashboard':'다크패턴 대시보드',upload:'화면 업로드',master:'마스터 관리',rename:'파일명 변환', 'change-dashboard':'변동사항 대시보드'};
   document.getElementById('topbar-title').textContent=titles[page]||'';
   document.getElementById('topbar-actions').innerHTML='';
 
@@ -275,8 +271,6 @@ function navigate(page, push=true) {
   if (page==='upload') renderUploadView();
   if (page==='master') renderMasterView();
   if (page==='rename') renderRenameView();
-  if (page==='darkpattern') renderDarkpatternView();
-  if (page==='analysis-history') renderAnalysisHistoryView();
   if (page==='change-dashboard') renderChangeDashboardView();
 }
 
@@ -325,7 +319,12 @@ async function renderFunctionView() {
     }
     const counts = state.screenTypeCounts;
     const q = filterText.trim().toLowerCase();
-    const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))];
+    const categories = [...new Set(state.screenTypes.map(s=>s.category).filter(Boolean))]
+      .sort((a, b) => {
+        const aCount = state.screenTypes.filter(s=>s.category===a).reduce((acc,s)=>acc+(counts[s.code]||0),0);
+        const bCount = state.screenTypes.filter(s=>s.category===b).reduce((acc,s)=>acc+(counts[s.code]||0),0);
+        return bCount - aCount;
+      });
 
     // 검색 중일 땐 기존 단일 컬럼 모드
     if (q) {
@@ -658,8 +657,9 @@ function lazyImg(signedUrl, imgsrc, extraStyle='', extraAttr='') {
 
 // ── 기존 picker 함수 재사용 (openScreenPicker 대체) ─────────
 let pickerSlot=null, pickerSelected=new Set(), pickerScreens=[], pickerOrderKeep=true;
-let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:''};
+let pickerFilters={company:'',type:'',subtype:'',screen_type:'',version:'',is_product:false};
 let pickerRevisionMode=false;
+let pickerLoadSeq=0;
 
 async function openScreenPicker(slot) {
   openCompareImagePicker(slot);
@@ -689,6 +689,7 @@ function updatePickerFilterStyles(){
 }
 
 async function loadPickerScreens(){
+  const seq=++pickerLoadSeq;
   const body=document.getElementById('picker-body');
   if(!body)return;
   const {company,type,subtype,screen_type,version}=pickerFilters;
@@ -713,11 +714,13 @@ async function loadPickerScreens(){
         const latest=targetSets.find(s=>s.is_latest)||targetSets[0];
         targetSets=latest?[latest]:[];
       }
-      for(const s of targetSets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      const details1=await Promise.all(targetSets.map(s=>api('GET',`/screen-sets/${s.id}`)));
+      details1.forEach(detail=>screens.push(...(detail?.screens||[])));
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company&&type){
       const sets=await api('GET',`/screen-sets?company=${company}&type=${type}&latest_only=true`)||[];
-      for(const s of sets){const detail=await api('GET',`/screen-sets/${s.id}`);screens.push(...(detail?.screens||[]));}
+      const details2=await Promise.all(sets.map(s=>api('GET',`/screen-sets/${s.id}`)));
+      details2.forEach(detail=>screens.push(...(detail?.screens||[])));
       if(screen_type)screens=screens.filter(s=>s.screen_type_code===screen_type);
     } else if(company){
       if(screen_type){
@@ -726,12 +729,10 @@ async function loadPickerScreens(){
         screens=await api('GET',`/screens?screen_type=${screen_type}&company=${company}${inclRelParam}`)||[];
       } else {
         const sets=await api('GET',`/screen-sets?company=${company}&latest_only=true`)||[];
-        for(const s of sets){
-          // 연관모드: include_related=true로 9000번대 포함
-          const inclRelParam = isRelationMode ? '?include_related=true' : '';
-          const detail=await api('GET',`/screen-sets/${s.id}${inclRelParam}`);
-          screens.push(...(detail?.screens||[]));
-        }
+        // 연관모드: include_related=true로 9000번대 포함
+        const inclRelParam = isRelationMode ? '?include_related=true' : '';
+        const details3=await Promise.all(sets.map(s=>api('GET',`/screen-sets/${s.id}${inclRelParam}`)));
+        details3.forEach(detail=>screens.push(...(detail?.screens||[])));
       }
     } else if(screen_type){screens=await api('GET',`/screens?screen_type=${screen_type}`)||[];}
     const seen=new Set();screens=screens.filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;});
@@ -749,16 +750,18 @@ async function loadPickerScreens(){
       if(pickerFilters.version){
         const vNo=Number(pickerFilters.version);
         const revCache=new Map();revCache.set(refScreen.id,revs);
-        for(let i=0;i<screens.length;i++){
-          if(!revCache.has(screens[i].id))revCache.set(screens[i].id,await api('GET',`/screens/${screens[i].id}/revisions`)||[]);
-          const rev=(revCache.get(screens[i].id)||[]).find(r=>r.version_no===vNo);
-          if(rev)screens[i]={...screens[i],imgsrc:rev.imgsrc,signed_url:rev.signed_url};
-        }
+        const needFetch=screens.filter(s=>!revCache.has(s.id));
+        const fetched=await Promise.all(needFetch.map(s=>api('GET',`/screens/${s.id}/revisions`).then(r=>[s.id,r||[]])));
+        fetched.forEach(([id,r])=>revCache.set(id,r));
+        screens=screens.map(s=>{const rev=(revCache.get(s.id)||[]).find(r=>r.version_no===vNo);return rev?{...s,imgsrc:rev.imgsrc,signed_url:rev.signed_url}:s;});
       }
     }
+    if(pickerFilters.is_product)screens=screens.filter(s=>state.subtypes.find(st=>st.code===s.set?.subtype_code)?.is_product===true);
+    if(seq!==pickerLoadSeq)return;
     pickerScreens=screens;
     if(!screens.length){body.innerHTML='<div class="picker-empty"><span>조건에 맞는 화면이 없습니다</span></div>';return;}
     // 피커 렌더 후 레이지 observe (아래 innerHTML 세팅 후 처리)
+    if(seq!==pickerLoadSeq)return;
   body.innerHTML=`<div class="picker-grid">${screens.map(s=>{
       const stName=state.screenTypes.find(st=>st.code===s.screen_type_code)?.name||s.screen_type_code;
       const companyName=state.companies.find(c=>c.code===s.set?.company_code)?.name||'';
