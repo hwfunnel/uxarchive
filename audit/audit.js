@@ -1032,6 +1032,15 @@ function xmlEscape(value) {
   return String(value || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
 }
 
+function xmlUnescape(value) {
+  return String(value || "")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'")
+    .replaceAll("&amp;", "&");
+}
+
 function riskClass(value) {
   if (value === "위험") return "risk-high";
   if (value === "낮음") return "risk-low";
