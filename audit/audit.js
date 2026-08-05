@@ -334,21 +334,49 @@ async function extractAuditItemsFromBrowserXlsx(arrayBuffer, file, reportId) {
     .filter((row) => parsedSheet.headerIndex >= 0 || !looksLikeAuditHeaderRow(row))
     .map((row) => ({ ...auditItemFromCells(headers, row, ""), sourceFileName: file.name }))
     .filter(hasMeaningfulAuditItem);
-  const imageFile = [...entries.keys()].find((name) => /^xl\/media\/image\d+\.(png|jpg|jpeg)$/i.test(name));
-  if (imageFile && items.length) {
+  const embeddedImagePaths = [...new Set(items.map((item) => item.embeddedImagePath).filter(Boolean))];
+  if (embeddedImagePaths.length && items.length) {
+    const uploadedImages = new Map();
     try {
-      const imageBytes = entries.get(imageFile);
-      const imageName = embeddedImageName(file.name, imageFile);
-      const imagePath = `${reportId}/${imageName}`;
-      const imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
+      for (const imageFile of embeddedImagePaths) {
+        const imageBytes = entries.get(imageFile);
+        if (!imageBytes) continue;
+        const imageName = embeddedImageName(file.name, imageFile);
+        const imagePath = `${reportId}/${imageName}`;
+        const imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
+        uploadedImages.set(imageFile, imageUrl);
+      }
       items.forEach((item) => {
-        if (!item.imageUrl) item.imageUrl = imageUrl;
+        if (!item.imageUrl && uploadedImages.has(item.embeddedImagePath)) item.imageUrl = uploadedImages.get(item.embeddedImagePath);
+        delete item.embeddedImagePath;
       });
     } catch (error) {
       setStatus(`이미지 업로드는 실패했지만 검수 항목은 저장합니다: ${error.message}`);
     }
+  } else {
+    const imageFile = [...entries.keys()].find((name) => /^xl\/media\/image\d+\.(png|jpg|jpeg|webp)$/i.test(name));
+    if (imageFile && items.length) {
+      try {
+        const imageBytes = entries.get(imageFile);
+        const imageName = embeddedImageName(file.name, imageFile);
+        const imagePath = `${reportId}/${imageName}`;
+        const imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
+        items.forEach((item) => {
+          if (!item.imageUrl) item.imageUrl = imageUrl;
+          delete item.embeddedImagePath;
+        });
+      } catch (error) {
+        setStatus(`이미지 업로드는 실패했지만 검수 항목은 저장합니다: ${error.message}`);
+      }
+    }
   }
+  items.forEach((item) => delete item.embeddedImagePath);
   return items;
+}
+
+function embeddedImagePathFromValue(value) {
+  const match = String(value || "").match(/^embedded:\/\/(.+)$/i);
+  return match ? match[1].replace(/^\/+/, "") : "";
 }
 
 function auditItemFromSupabaseRow(item, report = {}) {
@@ -495,10 +523,15 @@ function reviewCheckbox(item) {
 function imageCell(url) {
   if (!url) return `<span class="image-link">이미지 없음</span>`;
   const absoluteUrl = new URL(url, location.href).href;
-  if (/\.(png|jpg|jpeg)$/i.test(url) || /\/image\d+\.(png|jpg|jpeg)$/i.test(url)) {
-    return `<a href="${escapeHtml(absoluteUrl)}" data-image-preview="${escapeHtml(absoluteUrl)}"><img class="thumb" src="${escapeHtml(url)}" alt="화면 이미지"></a>`;
+  if (isImageUrl(url)) {
+    return `<a href="${escapeHtml(absoluteUrl)}" data-image-preview="${escapeHtml(absoluteUrl)}"><img class="thumb" src="${escapeHtml(absoluteUrl)}" alt="화면 이미지"></a>`;
   }
   return `<a class="image-link" href="${escapeHtml(absoluteUrl)}" target="_blank" rel="noreferrer">보기</a>`;
+}
+
+function isImageUrl(url) {
+  const cleanUrl = String(url || "").split("#")[0].split("?")[0];
+  return /\.(png|jpg|jpeg|webp)$/i.test(cleanUrl) || /\/image\d+\.(png|jpg|jpeg|webp)$/i.test(cleanUrl);
 }
 
 function openImagePreview(url) {
@@ -541,9 +574,11 @@ function auditItemFromCells(headers, row, fallbackImageUrl) {
     return index >= 0 ? cleanText(row[index] || "") : "";
   };
   const imageValue = value(/이미지|썸네일|캡처|스크린샷|URL/i);
-  const validImageUrl = /^\/|^https?:|^data:image/.test(imageValue) && !/^embedded:/.test(imageValue) ? imageValue : fallbackImageUrl;
+  const embeddedImagePath = embeddedImagePathFromValue(imageValue);
+  const validImageUrl = !embeddedImagePath && /^\/|^https?:|^data:image/.test(imageValue) ? imageValue : fallbackImageUrl;
   return {
     imageUrl: validImageUrl,
+    embeddedImagePath,
     screenName: value(/분석\s*화면|화면\s*명|화면명|화면|프레임|페이지|구간|항목|케이스|대상/i),
     riskLevel: normalizeAuditRisk(value(/위험\s*도|위험\s*수준|리스크|등급|판정|결과/i)),
     fix: value(/보완\s*점|보완|개선\s*안|개선안|문제\s*점|문제점|이슈|내용|조치/i),
