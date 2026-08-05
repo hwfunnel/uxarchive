@@ -303,7 +303,7 @@ async function extractAuditItemsFromBrowserFile(file, reportId) {
       }];
     }
   } catch (error) {
-    setStatus(`파일 파싱 실패: ${error.message}`);
+    throw new Error(`파일 파싱 실패: ${error.message}`);
   }
   return [];
 }
@@ -329,19 +329,26 @@ async function extractAuditItemsFromBrowserXlsx(arrayBuffer, file, reportId) {
     ? parsedSheet.rows[parsedSheet.headerIndex].map((cell) => cell.trim())
     : AUDIT_DEFAULT_HEADERS;
   const dataStartIndex = parsedSheet.headerIndex >= 0 ? parsedSheet.headerIndex + 1 : 0;
-  const imageFile = [...entries.keys()].find((name) => /^xl\/media\/image\d+\.(png|jpg|jpeg)$/i.test(name));
-  let imageUrl = "";
-  if (imageFile) {
-    const imageBytes = entries.get(imageFile);
-    const imageName = embeddedImageName(file.name, imageFile);
-    const imagePath = `${reportId}/${imageName}`;
-    imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
-  }
-  return parsedSheet.rows.slice(dataStartIndex)
+  const items = parsedSheet.rows.slice(dataStartIndex)
     .filter((row) => row.some(Boolean))
     .filter((row) => parsedSheet.headerIndex >= 0 || !looksLikeAuditHeaderRow(row))
-    .map((row) => ({ ...auditItemFromCells(headers, row, imageUrl), sourceFileName: file.name }))
+    .map((row) => ({ ...auditItemFromCells(headers, row, ""), sourceFileName: file.name }))
     .filter(hasMeaningfulAuditItem);
+  const imageFile = [...entries.keys()].find((name) => /^xl\/media\/image\d+\.(png|jpg|jpeg)$/i.test(name));
+  if (imageFile && items.length) {
+    try {
+      const imageBytes = entries.get(imageFile);
+      const imageName = embeddedImageName(file.name, imageFile);
+      const imagePath = `${reportId}/${imageName}`;
+      const imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
+      items.forEach((item) => {
+        if (!item.imageUrl) item.imageUrl = imageUrl;
+      });
+    } catch (error) {
+      setStatus(`이미지 업로드는 실패했지만 검수 항목은 저장합니다: ${error.message}`);
+    }
+  }
+  return items;
 }
 
 function auditItemFromSupabaseRow(item, report = {}) {
