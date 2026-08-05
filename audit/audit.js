@@ -247,7 +247,7 @@ async function createAuditReport(file) {
   };
   const extractedItems = await extractAuditItemsFromBrowserFile(file, reportId);
   if (/\.xlsx$/i.test(file.name) && !extractedItems.length) {
-    throw new Error("엑셀에서 검수 항목을 찾지 못했습니다. XLSX 첫 시트에 분석 화면, 위험도, 보완점, 개선 이유, 관련 검토 기준 컬럼이 있는지 확인해 주세요.");
+    throw new Error(await xlsxDebugMessage(file));
   }
   const firstItem = extractedItems[0] || {};
   const report = {
@@ -598,6 +598,26 @@ function looksLikeAuditHeaderRow(row) {
 
 function hasMeaningfulAuditItem(item) {
   return Boolean(item.screenName || item.fix || item.reason || item.checklist || item.area);
+}
+
+async function xlsxDebugMessage(file) {
+  try {
+    const entries = await unzipEntries(await file.arrayBuffer());
+    const sharedStrings = await parseSharedStrings(entries.get("xl/sharedStrings.xml"));
+    const sheetNames = [...entries.keys()]
+      .filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name))
+      .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+    const summaries = sheetNames.slice(0, 3).map((sheetName) => {
+      const xml = new TextDecoder().decode(entries.get(sheetName));
+      const rows = parseXlsxRows(xml, sharedStrings).filter((row) => row.some(Boolean));
+      const firstRow = (rows[0] || []).filter(Boolean).slice(0, 8).join(", ");
+      const headerIndex = findAuditHeaderIndex(rows);
+      return `${sheetName}: ${rows.length}행, 헤더 ${headerIndex >= 0 ? headerIndex + 1 : "미검출"}, 첫 행 [${firstRow || "비어 있음"}]`;
+    });
+    return `엑셀에서 검수 항목을 찾지 못했습니다. ${summaries.join(" / ") || "워크시트를 찾지 못했습니다."}`;
+  } catch (error) {
+    return `엑셀에서 검수 항목을 찾지 못했습니다. 진단 중 오류: ${error.message}`;
+  }
 }
 
 async function unzipEntries(arrayBuffer) {
