@@ -23,6 +23,16 @@ const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect");
 const API = window.UXARCHIVE_API_URL;
 const authToken = localStorage.getItem("ux_token") || "";
+const AUDIT_DEFAULT_HEADERS = ["이미지 URL", "분석 화면", "위험도", "보완점", "개선 이유", "관련 검토 기준", "개선영역"];
+const AUDIT_HEADER_PATTERNS = [
+  /이미지|썸네일|캡처|스크린샷|URL/i,
+  /분석\s*화면|화면\s*명|화면명|화면|프레임|페이지|구간|항목|케이스|대상/i,
+  /위험\s*도|위험\s*수준|리스크|등급|판정|결과/i,
+  /보완\s*점|보완|개선\s*안|개선안|문제\s*점|문제점|이슈|내용|조치/i,
+  /개선\s*이유|개선\s*사유|이유|사유|설명|검토\s*의견|의견/i,
+  /체크\s*리스트|체크리스트|관련\s*검토\s*기준|검토\s*기준|기준|근거|법률|위반|가이드라인/i,
+  /개선\s*영역|개선영역|영역|유형|카테고리|다크\s*패턴\s*유형/i
+];
 
 let auditItems = [];
 let activeFilter = "all";
@@ -237,7 +247,7 @@ async function createAuditReport(file) {
   };
   const extractedItems = await extractAuditItemsFromBrowserFile(file, reportId);
   if (/\.xlsx$/i.test(file.name) && !extractedItems.length) {
-    throw new Error("엑셀에서 검수 항목을 찾지 못했습니다. 컬럼명을 확인해 주세요.");
+    throw new Error("엑셀에서 검수 항목을 찾지 못했습니다. XLSX 첫 시트에 분석 화면, 위험도, 보완점, 개선 이유, 관련 검토 기준 컬럼이 있는지 확인해 주세요.");
   }
   const firstItem = extractedItems[0] || {};
   const report = {
@@ -305,15 +315,20 @@ async function extractAuditItemsFromBrowserXlsx(arrayBuffer, file, reportId) {
     .filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name))
     .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
   const parsedSheets = [];
+  const fallbackSheets = [];
   for (const sheetName of sheetNames) {
     const sheetXml = await entryText(entries.get(sheetName));
     const rows = parseXlsxRows(sheetXml, sharedStrings).filter((row) => row.some(Boolean));
     const headerIndex = findAuditHeaderIndex(rows);
     if (headerIndex >= 0) parsedSheets.push({ rows, headerIndex });
+    if (rows.length) fallbackSheets.push({ rows, headerIndex: -1 });
   }
-  const parsedSheet = parsedSheets[0];
+  const parsedSheet = parsedSheets[0] || findPositionalAuditSheet(fallbackSheets);
   if (!parsedSheet) return [];
-  const headers = parsedSheet.rows[parsedSheet.headerIndex].map((cell) => cell.trim());
+  const headers = parsedSheet.headerIndex >= 0
+    ? parsedSheet.rows[parsedSheet.headerIndex].map((cell) => cell.trim())
+    : AUDIT_DEFAULT_HEADERS;
+  const dataStartIndex = parsedSheet.headerIndex >= 0 ? parsedSheet.headerIndex + 1 : 0;
   const imageFile = [...entries.keys()].find((name) => /^xl\/media\/image\d+\.(png|jpg|jpeg)$/i.test(name));
   let imageUrl = "";
   if (imageFile) {
@@ -322,8 +337,9 @@ async function extractAuditItemsFromBrowserXlsx(arrayBuffer, file, reportId) {
     const imagePath = `${reportId}/${imageName}`;
     imageUrl = await uploadAuditFile(imagePath, new Blob([imageBytes], { type: contentTypeFromName(imageName) }), contentTypeFromName(imageName));
   }
-  return parsedSheet.rows.slice(parsedSheet.headerIndex + 1)
+  return parsedSheet.rows.slice(dataStartIndex)
     .filter((row) => row.some(Boolean))
+    .filter((row) => parsedSheet.headerIndex >= 0 || !looksLikeAuditHeaderRow(row))
     .map((row) => ({ ...auditItemFromCells(headers, row, imageUrl), sourceFileName: file.name }))
     .filter(hasMeaningfulAuditItem);
 }
@@ -504,7 +520,7 @@ function fileToPayload(file) {
 function extractAuditItemsFromHtml(htmlText, file) {
   const rows = [...htmlText.matchAll(/<tr[\s\S]*?<\/tr>/gi)]
     .map((match) => [...match[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((cell) => stripHtml(cell[1])));
-  const headerIndex = rows.findIndex((row) => row.some((cell) => /위험도/.test(cell)) && row.some((cell) => /보완점/.test(cell)));
+  const headerIndex = findAuditHeaderIndex(rows);
   if (headerIndex === -1) return [];
   const headers = rows[headerIndex];
   return rows.slice(headerIndex + 1)
@@ -521,12 +537,12 @@ function auditItemFromCells(headers, row, fallbackImageUrl) {
   const validImageUrl = /^\/|^https?:|^data:image/.test(imageValue) && !/^embedded:/.test(imageValue) ? imageValue : fallbackImageUrl;
   return {
     imageUrl: validImageUrl,
-    screenName: value(/분석\s*화면|화면\s*명|화면|프레임|페이지|구간|항목|케이스/i),
-    riskLevel: normalizeAuditRisk(value(/위험\s*도|위험\s*수준|리스크|등급/i)),
-    fix: value(/보완\s*점|보완|개선\s*안|문제\s*점|이슈|내용/i),
-    reason: value(/개선\s*이유|개선\s*사유|이유|사유|설명/i),
-    checklist: value(/체크\s*리스트|체크리스트|근거|법률|위반|가이드라인/i),
-    area: value(/개선\s*영역|영역|유형|카테고리/i)
+    screenName: value(/분석\s*화면|화면\s*명|화면명|화면|프레임|페이지|구간|항목|케이스|대상/i),
+    riskLevel: normalizeAuditRisk(value(/위험\s*도|위험\s*수준|리스크|등급|판정|결과/i)),
+    fix: value(/보완\s*점|보완|개선\s*안|개선안|문제\s*점|문제점|이슈|내용|조치/i),
+    reason: value(/개선\s*이유|개선\s*사유|이유|사유|설명|검토\s*의견|의견/i),
+    checklist: value(/체크\s*리스트|체크리스트|관련\s*검토\s*기준|검토\s*기준|기준|근거|법률|위반|가이드라인/i),
+    area: value(/개선\s*영역|개선영역|영역|유형|카테고리|다크\s*패턴\s*유형/i)
   };
 }
 
@@ -535,20 +551,42 @@ function findAuditHeaderIndex(rows) {
   let bestScore = 0;
   rows.slice(0, 30).forEach((row, index) => {
     const joined = row.join(" ");
-    const score = [
-      /이미지|썸네일|캡처|스크린샷|URL/i,
-      /분석\s*화면|화면\s*명|화면|프레임|페이지|구간|항목|케이스/i,
-      /위험\s*도|위험\s*수준|리스크|등급/i,
-      /보완\s*점|보완|개선\s*안|문제\s*점|이슈|내용/i,
-      /개선\s*이유|개선\s*사유|이유|사유|설명/i,
-      /체크\s*리스트|체크리스트|근거|법률|위반|가이드라인/i
-    ].reduce((count, pattern) => count + (pattern.test(joined) ? 1 : 0), 0);
+    const score = AUDIT_HEADER_PATTERNS.reduce((count, pattern) => count + (pattern.test(joined) ? 1 : 0), 0);
     if (score > bestScore) {
       bestScore = score;
       bestIndex = index;
     }
   });
   return bestScore >= 2 ? bestIndex : -1;
+}
+
+function findPositionalAuditSheet(sheets) {
+  let bestSheet = null;
+  let bestScore = 0;
+  for (const sheet of sheets) {
+    const sampleRows = sheet.rows.slice(0, 20);
+    const score = sampleRows.reduce((sum, row) => sum + positionalAuditScore(row), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestSheet = sheet;
+    }
+  }
+  return bestScore >= 3 ? bestSheet : null;
+}
+
+function positionalAuditScore(row) {
+  const values = row.map((cell) => cleanText(cell));
+  const joined = values.join(" ");
+  let score = 0;
+  if (values.length >= 5) score += 1;
+  if (/위험|보통|낮음|높음|리스크|다크\s*패턴/i.test(joined)) score += 1;
+  if (/보완|개선|문제|이슈|조치/i.test(joined)) score += 1;
+  if (/근거|기준|법률|가이드라인|검토/i.test(joined)) score += 1;
+  return score;
+}
+
+function looksLikeAuditHeaderRow(row) {
+  return AUDIT_HEADER_PATTERNS.reduce((count, pattern) => count + (pattern.test(row.join(" ")) ? 1 : 0), 0) >= 2;
 }
 
 function hasMeaningfulAuditItem(item) {
