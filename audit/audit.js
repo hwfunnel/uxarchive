@@ -818,6 +818,7 @@ function pptExportPayload(item) {
   return {
     imageUrl: item.imageUrl || "",
     screenName: item.screenName || "",
+    screenDescription: item.description || item.screenDescription || item.fix || "",
     riskLevel: item.riskLevel || "",
     fix: item.fix || "",
     reason: item.reason || "",
@@ -879,8 +880,11 @@ async function loadPptImage(imageUrl, slideNumber) {
 }
 
 function pptSlideXml(item, slideNumber, image) {
-  const riskColor = item.riskLevel === "위험" ? "D92D20" : item.riskLevel === "낮음" ? "008A45" : "B76E00";
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="F5F8FC"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${pptTextShape(2, 0.45, 0.28, 1.4, 0.34, `#${slideNumber}`, { size: 15, bold: true, color: "0064FF" })}${pptTextShape(3, 1.1, 0.72, 7.35, 0.72, item.screenName || "-", { size: 25, bold: true, color: "191F28" })}${pptTextShape(4, 8.65, 0.77, 1.15, 0.42, item.riskLevel || "보통", { size: 15, bold: true, color: riskColor, fill: "FFFFFF" })}${pptTextShape(5, 10.0, 0.77, 1.9, 0.42, formatDate(item.uploadedAt), { size: 12, bold: true, color: "6B7684", fill: "FFFFFF" })}${image ? pptImageShape(6, image) : pptTextShape(6, 0.7, 1.58, 3.55, 4.9, "이미지 없음", { size: 18, bold: true, color: "0064FF", fill: "EEF2F6" })}${pptInfoBox(7, 4.55, 1.62, 3.8, 2.05, "보완점", item.fix || "-")}${pptInfoBox(8, 8.55, 1.62, 3.8, 2.05, "개선 이유", item.reason || "-")}${pptInfoBox(9, 4.55, 3.92, 7.8, 1.85, "근거", item.checklist || "-")}${pptTextShape(10, 0.7, 6.78, 11.6, 0.24, "Dark Pattern Audit Manager", { size: 9, color: "8B95A1" })}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+  const caseTitle = `미흡사례 ${slideNumber}번`;
+  const patternText = `${slideNumber}. ${item.area || "패턴 유형"}\n- ${item.checklist || "-"}`;
+  const planText = item.fix || "-";
+  const descriptionText = item.screenDescription || item.reason || item.fix || "-";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${pptRectShape(2, 0.38, 0.02, 12.6, 0.55, "E5F0F5", "8A8A8A")}${pptTextShape(3, 0.65, 0.15, 3.0, 0.24, caseTitle, { size: 12, bold: true })}${pptRectShape(4, 0.38, 0.86, 12.6, 6.20, "FFFFFF", "222222")}${pptTextShape(5, 0.84, 0.90, 5.15, 0.28, caseTitle, { size: 7, bold: true, fill: "FFFFFF", border: "222222" })}${pptRectShape(6, 0.84, 1.18, 5.60, 5.35, "151515", "151515")}${image ? pptImageShape(7, image) : pptTextShape(7, 1.15, 1.52, 2.9, 4.25, "이미지 없음", { size: 14, bold: true, color: "FFFFFF", fill: "2A2A2A" })}${pptRedIssueCard(8, 4.45, 2.06, slideNumber, item.reason || item.fix || "-")}${pptRedIssueCard(13, 4.45, 4.08, Math.max(2, slideNumber), item.fix || "-")}${pptTableCell(18, 6.72, 0.90, 1.80, 0.32, "화면명칭", { fill: "EAEAEA", bold: true })}${pptTableCell(19, 8.52, 0.90, 4.08, 0.32, "화면설명", { fill: "EAEAEA", bold: true })}${pptTableCell(20, 6.72, 1.22, 1.80, 1.02, item.screenName || "-", { size: 8 })}${pptTableCell(21, 8.52, 1.22, 4.08, 1.02, descriptionText, { size: 7 })}${pptTableCell(22, 6.72, 2.38, 1.80, 0.32, "패턴 유형 구분", { fill: "EAEAEA", bold: true })}${pptTableCell(23, 8.52, 2.38, 4.08, 0.32, "개선이유", { fill: "EAEAEA", bold: true })}${pptTableCell(24, 6.72, 2.70, 1.80, 1.16, patternText, { size: 7 })}${pptTableCell(25, 8.52, 2.70, 4.08, 1.16, item.reason || "-", { size: 8 })}${pptTableCell(26, 6.72, 4.00, 5.88, 0.32, "개선계획", { fill: "EAEAEA", bold: true })}${pptTableCell(27, 6.72, 4.32, 5.88, 0.75, planText, { size: 8 })}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 }
 
 function pptSlideRelsXml(image) {
@@ -889,24 +893,42 @@ function pptSlideRelsXml(image) {
 }
 
 function pptImageShape(id, image) {
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Audit image"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${emu(0.7)}" y="${emu(1.58)}"/><a:ext cx="${emu(3.55)}" cy="${emu(4.9)}"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Audit image"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${emu(1.15)}" y="${emu(1.52)}"/><a:ext cx="${emu(2.80)}" cy="${emu(4.68)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
 }
 
 function pptInfoBox(id, x, y, width, height, label, body) {
   return `${pptTextShape(id, x, y, width, 0.32, label, { size: 12, bold: true, color: "6B7684", fill: "FFFFFF" })}${pptTextShape(id + 20, x, y + 0.34, width, height - 0.34, body, { size: 13, color: "191F28", fill: "FFFFFF" })}`;
 }
 
+function pptRedIssueCard(id, x, y, number, text) {
+  return `${pptRectShape(id, x, y, 1.55, 0.34, "FF1A00", "FF1A00")}${pptTextShape(id + 1, x, y + 0.06, 1.55, 0.17, `${number}번`, { size: 7, bold: true, color: "FFFFFF" })}${pptTextShape(id + 2, x, y + 0.34, 1.55, 1.17, text || "-", { size: 5, fill: "FFFFFF", border: "FFFFFF" })}`;
+}
+
+function pptTableCell(id, x, y, width, height, text, options = {}) {
+  return pptTextShape(id, x, y, width, height, text, {
+    size: options.size || 8,
+    bold: Boolean(options.bold),
+    fill: options.fill || "FFFFFF",
+    border: options.border || "222222"
+  });
+}
+
+function pptRectShape(id, x, y, width, height, fill = "FFFFFF", border = "222222") {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Rect ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="${border}"/></a:solidFill></a:ln></p:spPr></p:sp>`;
+}
+
 function pptTextShape(id, x, y, width, height, text, options = {}) {
   const fill = options.fill ? `<a:solidFill><a:srgbClr val="${options.fill}"/></a:solidFill>` : `<a:noFill/>`;
+  const line = options.border ? `<a:ln w="9525"><a:solidFill><a:srgbClr val="${options.border}"/></a:solidFill></a:ln>` : `<a:ln><a:noFill/></a:ln>`;
   const runs = pptTextLines(text).map((line) => `<a:p><a:r><a:rPr lang="ko-KR" sz="${(options.size || 14) * 100}"${options.bold ? ` b="1"` : ""}><a:solidFill><a:srgbClr val="${options.color || "191F28"}"/></a:solidFill><a:latin typeface="Arial"/><a:ea typeface="Malgun Gothic"/></a:rPr><a:t>${xmlEscape(line)}</a:t></a:r><a:endParaRPr lang="ko-KR" sz="${(options.size || 14) * 100}"/></a:p>`).join("");
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom>${fill}<a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="t"><a:spAutoFit/></a:bodyPr><a:lstStyle/>${runs}</p:txBody></p:sp>`;
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${fill}${line}</p:spPr><p:txBody><a:bodyPr wrap="square" anchor="t" lIns="70000" tIns="45000" rIns="70000" bIns="45000"/><a:lstStyle/>${runs}</p:txBody></p:sp>`;
 }
 
 function pptTextLines(value) {
   const text = cleanText(value || "-");
   const chunks = [];
-  for (let index = 0; index < text.length; index += 72) chunks.push(text.slice(index, index + 72));
-  return chunks.length ? chunks.slice(0, 8) : ["-"];
+  for (let index = 0; index < text.length; index += 44) chunks.push(text.slice(index, index + 44));
+  return chunks.length ? chunks.slice(0, 9) : ["-"];
 }
 
 function pptContentTypesXml(slideCount, mediaPaths) {
@@ -918,7 +940,7 @@ function pptContentTypesXml(slideCount, mediaPaths) {
 
 function pptPresentationXml(slideCount) {
   const slideIds = Array.from({ length: slideCount }, (_, index) => `<p:sldId id="${256 + index}" r:id="rId${index + 2}"/>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slideIds}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000" type="screen4x3"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slideIds}</p:sldIdLst><p:sldSz cx="12192000" cy="6858000" type="screen16x9"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
 }
 
 function pptPresentationRelsXml(slideCount) {
