@@ -247,6 +247,7 @@ function navigate(page, push=true) {
     // still ensure active class correctness
     document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
     document.getElementById(`nav-${page}`)?.classList.add('active');
+    if (page === 'audit-dashboard') refreshAuditDashboard();
     return;
   }
 
@@ -272,6 +273,13 @@ function navigate(page, push=true) {
   if (page==='master') renderMasterView();
   if (page==='rename') renderRenameView();
   if (page==='change-dashboard') renderChangeDashboardView();
+  if (page==='audit-dashboard') refreshAuditDashboard();
+}
+
+function refreshAuditDashboard() {
+  const iframe = document.querySelector('#page-audit-dashboard iframe');
+  if (!iframe?.contentWindow) return;
+  iframe.contentWindow.postMessage({ type: 'uxarchive:audit-refresh' }, window.location.origin);
 }
 
 // handle browser back/forward

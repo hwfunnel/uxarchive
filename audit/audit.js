@@ -22,7 +22,6 @@ const filterButtons = [...document.querySelectorAll("[data-filter]")];
 const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect");
 const API = window.UXARCHIVE_API_URL;
-const authToken = localStorage.getItem("ux_token") || "";
 const AUDIT_DEFAULT_HEADERS = ["이미지 URL", "분석 화면", "위험도", "보완점", "개선 이유", "관련 검토 기준", "개선영역"];
 const AUDIT_HEADER_PATTERNS = [
   /이미지|썸네일|캡처|스크린샷|URL/i,
@@ -38,6 +37,10 @@ let auditItems = [];
 let activeFilter = "all";
 let searchQuery = "";
 let activeSort = "uploadedAt-desc";
+
+function getAuthToken() {
+  return localStorage.getItem("ux_token") || "";
+}
 
 openUploadButton.addEventListener("click", () => {
   uploadModal.classList.remove("hidden");
@@ -192,7 +195,7 @@ async function uploadFiles(files) {
 }
 
 async function loadItems() {
-  if (!authToken) {
+  if (!getAuthToken()) {
     auditItems = [];
     setStatus("UX Archive 로그인이 필요합니다. 상단의 UX Archive로 돌아가 로그인한 뒤 다시 열어주세요.");
     renderCounts();
@@ -1132,7 +1135,7 @@ function publicSupabaseFileUrl(path) {
 }
 
 async function uxApi(method, path, body) {
-  const token = localStorage.getItem("ux_token") || authToken;
+  const token = getAuthToken();
   if (!API) throw new Error("UX Archive API 설정을 찾을 수 없습니다.");
   if (!token) throw new Error("UX Archive 로그인이 필요합니다.");
   const response = await fetch(API + path, {
@@ -1275,6 +1278,12 @@ function formatDate(value) {
 function setStatus(message) {
   statusText.textContent = message;
 }
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type !== "uxarchive:audit-refresh") return;
+  loadItems().catch((error) => setStatus(error.message));
+});
 
 function escapeHtml(value) {
   return String(value || "")
